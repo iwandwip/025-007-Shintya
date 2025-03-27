@@ -28,6 +28,8 @@
 #include "WiFiClientSecure.h"
 #include "DFRobotDFPlayerMini.h"
 
+#define JUST_TESTING 0
+
 ////////// Utility //////////
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 7 * 3600;  // Offset for WIB (UTC+7)
@@ -50,6 +52,7 @@ HardSerial usbSerial;
 ////////// Input Module //////////
 DigitalIn buttonDown(36);
 DigitalIn buttonOk(39);
+#if JUST_TESTING
 PCF8574Module pcfModuleA(0x21);
 PCF8574Module pcfModuleB(0x22);
 
@@ -65,6 +68,7 @@ PCF8574DigitalIn limitSwitch9(PCF_PIN0);
 PCF8574DigitalIn limitSwitch10(PCF_PIN1);
 PCF8574DigitalIn limitSwitch11(PCF_PIN2);
 PCF8574DigitalIn limitSwitch12(PCF_PIN3);
+#endif
 
 ////////// Output Module //////////
 DigitalOut buzzer(4);
@@ -75,8 +79,10 @@ DigitalOut relayA(33);
 DigitalOut relayB(32);
 
 LcdMenu menu(0x27, 20, 4);
+#if JUST_TESTING
 HCPCA9685 servoDriver(0x40);
 DFRobotDFPlayerMini mp3Player;
+#endif
 
 ////////// Global Variable //////////
 bool firebaseEnable = false;

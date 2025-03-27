@@ -6,6 +6,8 @@ void setup() {
 
   menu.initialize(true);
   menu.setLen(20, 4);
+
+#if JUST_TESTING
   if (!mp3Player.begin(Serial2, true, true)) {
     while (true) { Serial.println("| mp3Player Error !!"); }
   }
@@ -32,9 +34,11 @@ void setup() {
 
   servoDriver.Init(SERVO_MODE);
   servoDriver.Sleep(false);
+#endif
 
   sensor.addModule("sonar", new UltrasonicSens(14, 27));
   sensor.addModule("code", new GM67Sens(&Serial1, 9600, SERIAL_8N1, 26, 25));
+#if JUST_TESTING
   sensor.addModule("keypad", []() -> BaseSens* {
     const uint8_t NUM_ROW = 4;
     char customKeys[NUM_ROW][NUM_ROW] = {
@@ -47,6 +51,7 @@ void setup() {
     uint8_t colPins[NUM_ROW] = { 7, 6, 5, 4 };
     return new KeypadI2CSens(makeKeymap(customKeys), rowPins, colPins, 4, 4, 0x20);
   });
+#endif
   sensor.init();
   buzzer.toggleInit(100, 5);
 }
@@ -68,5 +73,7 @@ void loop() {
 
   DigitalIn::updateAll(&buttonDown, &buttonOk, DigitalIn::stop());
   DigitalOut::updateAll(&buzzer, &ledRed, &ledGreen, &ledYellow, &relayA, &relayB, DigitalOut::stop());
-  PCF8574DigitalIn::updateAll(&limitSwitch1, &limitSwitch2, &limitSwitch3, &limitSwitch4, &limitSwitc5, &limitSwitch6, &limitSwitch7, &limitSwitch8, &limitSwitch9, &limitSwitch10, &limitSwitch11, &limitSwitch12, PCF8574DigitalIn::stop());
+#if JUST_TESTING
+  PCF8574DigitalIn::updateAll(&limitSwitch1, &limitSwitch2, &limitSwitch3, &limitSwitch4, &limitSwitch5, &limitSwitch6, &limitSwitch7, &limitSwitch8, &limitSwitch9, &limitSwitch10, &limitSwitch11, &limitSwitch12, PCF8574DigitalIn::stop());
+#endif
 }
