@@ -64,12 +64,15 @@ void loop() {
 
   MenuCursor cursor{
     .up = false,
-    .down = false,
-    .select = false,
+    .down = !buttonDownStr.isEmpty(),
+    .select = !buttonOkStr.isEmpty(),
     .back = false,
     .show = true
   };
   menu.onListen(&cursor, onLcdMenu);
+
+  buttonDownStr = "";
+  buttonOkStr = "";
 
   DigitalIn::updateAll(&buttonDown, &buttonOk, DigitalIn::stop());
   DigitalOut::updateAll(&buzzer, &ledRed, &ledGreen, &ledYellow, &relayA, &relayB, DigitalOut::stop());

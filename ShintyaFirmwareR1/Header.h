@@ -113,3 +113,24 @@ enum FirebaseMessagingState {
 FirebaseRTDBState firebaseRTDBState = RTDB_IDLE;
 FirebaseFirestoreState firebaseFirestoreState = FIRESTORE_IDE;
 FirebaseMessagingState firebaseMessagingState = MESSAGING_IDLE;
+
+String buttonDownStr = "";
+String buttonOkStr = "";
+
+const uint8_t PAKET_MAX = 5;
+struct ResiData {
+  String nama;
+  String noResi;
+  String packetType;
+  int resiId;
+};
+
+const uint8_t USER_MAX = 20;
+struct UserData {
+  String displayName;
+  String name;
+  String email;
+};
+
+ResiData resiData[PAKET_MAX];
+UserData userData[USER_MAX];

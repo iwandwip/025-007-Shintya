@@ -12,6 +12,8 @@ void usbCommunicationTask(const String& dataRecv) {
   } else {
     dataHeader.toUpperCase();
     if (dataHeader == "R") ESP.restart();
+    if (dataHeader == "D") buttonDownStr = "D";
+    if (dataHeader == "S") buttonOkStr = "S";
 
     // Firebase RTDB
     if (dataHeader == "RTDB_SET_VALUE") firebaseRTDBState = RTDB_SET_VALUE;

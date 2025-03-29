@@ -1,17 +1,17 @@
-#define FIREBASE_DATABASE_URL "https://anisa-km-default-rtdb.firebaseio.com/"
-#define FIREBASE_PROJECT_ID "anisa-km"
-#define FIREBASE_API_KEY "AIzaSyAE0KeDPNL-oHbnMY_BJz-ekqd6wJ_anpQ"
+#define FIREBASE_DATABASE_URL "https://shintya-b7e78-default-rtdb.firebaseio.com/"
+#define FIREBASE_PROJECT_ID "shintya-b7e78"
+#define FIREBASE_API_KEY "AIzaSyCI2bkv6iIel9WJv0Mx53pZ1h9bL7lhsZw"
 #define FIREBASE_USER_EMAIL "iwan.dwp@gmail.com"
 #define FIREBASE_USER_PASSWORD "admin123"
-#define FIREBASE_CLIENT_EMAIL "firebase-adminsdk-fbsvc@anisa-km.iam.gserviceaccount.com"
+#define FIREBASE_CLIENT_EMAIL "firebase-adminsdk-fbsvc@shintya-b7e78.iam.gserviceaccount.com"
 #define FIREBASE_MSG_DEVICE_TOKEN "cJnjCBzORlawc7T2WvCq2L:APA91bEyoA65YjDAEU6Y_Mj6DQzw5KH_Svfs7ZoLv3Vdl-ZurpiN8BGi1R3qaOh1Ux_wNHacMHSGOfHuxxKQraLcWC-RowpmEvPQboZasgsWJQ_MWdS285Q"
-const char FIREBASE_PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQComXoZhw8Bfxsw\n3V4saUeF3DZ2P+tq8ZU4mU0NuYvnewG0F4F9q4Q1r0B7c8+gc+p3pek5v/oGAxzg\nrEBmaXwngb6dssH766Z191ZQKm40DzA9/eX6/iD/PsC+pQo1wr+lbNIyHfqQpj5y\nwpza806vDv9fSeILM0xQS8z3I/1Sf9M8gOlDhyV1TtKJpCsXB7HYfBiIk7Wmvhp0\n+EGEG7wJOaj7mv/tK0M2suaV+3/NnZy9hx8Sl1I+utwkdGjhIVGEQMU0DU8AwETk\ncxeJkPWN6Cbx4ji87z27GASR4iwt15aaRlYjb/aPwmQIunYubw4Rn2umxcCqGJPO\nXKSYMypzAgMBAAECggEAHSAiVS2dPINyNY9QWPi499lyeRwSta9VOWlWQ9Q1ZIA9\n65gR8R1DoiiLyafYit3rd87sCuNstEQuZWusVmTLo2GJBeIfG796Sq+3M/MYhZrI\nGTV22NS065MyJd0J9f6WL+QsLac7JWjqqdWP1k0o3xoGqLXxPEEY4lgt6NXJScpu\ncV1FakwgYVJyMf+vL0pzGNOz2YZGW0krexywIlgvbuGW+sY62E78ba7nQGdXDYJ1\nOtwUa9DV73rWFeYOaU4rSC4ENJvSmvPuvY/R7QWe+uGE1TxXCY89M8UrafhjdlGO\nX6NbICG0/AOAgx4X/KHiFQOb6pd+OgPOEPZxrbK71QKBgQDR2ITkMoLyt9MjqAcg\nbtI8CoqiHpITMfqNgTQ8J9xLYWPHE/L5+4o7DqlP1Py5mFFvNiuBa7HbDEq+1pki\njAMDwDvtCAedic6ShfuDuh0dJAL3o7AGqzxkSjkSXN3zufyFA5O5YKTosXGqf5Rd\nxzNdjeYufXIC5MDbphBpBxkCRwKBgQDNrpCVqAdWVRaS6WUHJx1hj4Q1nV3KtxKP\nyJtwPAevLQTLOnHjRIoHvty9YRinjMhVhZwZNJZxXgnrM8gpJMuH+NVctV2usD3f\nJuLE5Jfx9CTjiej45blBAMDBUS8a/BGu6uBciEFBRX5VDqtbGmPGhKhcWZU06Zmb\nwx7wHoHgdQKBgQDRGYeSPCLv6OyjYxN25fbnjTmHQh8csXiQ+GYsayvAkVLzVJWR\nM20SXBGqUvlhlr3Oq5O+aqnXM/BnKT9+hTWbzznnf1DXUjJdHtT49cN8/h1W1ezZ\nOFf9N1iXS6J+8p0FjgLtfbfVhrtUwbv9ljlAx9zOBoJND9R9CoTfowrwkQKBgQCQ\ne6DbUCafUbRCzSsH5EUyZFN2Ki5ZmVKzqDLwm2q2doRYkpywDlR77mo3qj5cbHvJ\n/8pQtm08A9gp3b0skclbocOXlVvSu8EqwbEoqH/IGj3TjOwX85+39uRwqCvT4+A0\nJJAo0Bou1LdS3rQmkhomuMdf4Bn9Cl+6WE2iVXvchQKBgH4EXXtYLzbFsUapaL7b\nnnQLpqGzEDDj4mwCFZsYbhmZqZxLbMPjeSUc+moOVoanni4AGhAQGtWtz6yyQlYb\nxJeEK6RPcZXHt8wiGi1KEBCWiwqLeYdKZ8EfDKBvUppPeJydFTZ7S8g3snDofE7B\nGy0XToC5qXxI84XabPHtmnKL\n-----END PRIVATE KEY-----\n";
+const char FIREBASE_PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDhOh4YETBWsmRe\nxdGbfViM1JE10QcFdBIAV8TFZnqE046b+ZcLsR4u+nC104vPVB+roiQ4ao2lZRgo\n2Joz1T+cV8YJYhjcvJBDeD3LfGNAhZXuOzUsdvtBBfEqSsbHYaTobVGwC8LNT2m5\nf2nvJGCByIMZHRbju3TwWzxqsnf6QJTBAz1Ry/bgk+Ei2BPSfzH9pQjTjP45QoJO\noPkPOn2Tji+4hghkGQCi6goNDt9AQz7Tg662Dg2uWcu9yVU/J8ysoWbz9q5fL7d6\n/8yday6KRSK0tl7oLnZiJ/duoylcY7qvy701gN2VnUqvDX2v57tpcnHIFOr6ACWl\nLpGkkIJNAgMBAAECggEAAYHIisOurZ3S8xliviYYDhUsBY6o+93bcvojXGjDoBjk\nRuHkI1VjjM/rKiRItrHq5lSW5nO8D+O9xiQw3/Do1Ix3zD9GSE/QrUrkKvThmyBp\nsObfg7UmGDjIdM58RwA9wLpehg2GF6aU4ANcu5dkN+oWCnh52zs5XJRXsqUQDXIW\n9htedSuD4B3nmTsPGBpaZ/41xncTVREPodj0i7Z4yt+hh+yVyf2mX1J6DOoS9EY7\nXgyzqdazwtekYXN5iCoRId1mRvSC6oG52FrX5EzkttSPMkSwDfwmoTMsVseDOVdv\nykkgRRLgJSGmiOxfMhUV+TPWJTtaxjXzePB4q2jjxwKBgQDwYMEK3ucX7cfQrl5z\nRqK2rn1zq1/oceNrhstunDbYm/ebKWrGX0tTBhA+FoWhLZ85hd4mHLZwyUTGfUIM\nEeemxc8p9lMQ3CngHmAATIjRI1Ffj3W3FUOt73MuxtcfIjEa+UzJbrayc65ym0nE\nVDyIq1GuJSDW50FiDQWfEE53iwKBgQDv3UrqnhyZGzVQ4wPM0j2uMLqLtrZl+C6E\nTE6+T2RC+kKRUNz1NCCoqqiKDmZKa9rQ41pjy6DSlEf5OsZY28BpqctxCNrcQriS\nt5aa5nbvg/ugzSpIRTk9AUVA8px1JkEkZkVqLEmaWA37EAY1cbBrfuVN9Y/zojsC\nIDha271ohwKBgQDcnpDO32KOjciU+VTqzGvO6zttDF9MQisOp3rTHEEicZPCLzM2\nuoOxwaDqu1UOZ4b6DqmjpTq1LaUX4CLcXRqV8HuA8fmvQcKVVouZ+qSf/qBS6qKJ\n1NR3MYwv5IPQqVsUfLdDMYAxLQdxXKFJtl6QuVyQTrdjRoC182mzYg4CnQKBgQCU\nySPLXMBIiIQN5INa7Z6tCjTsrS1/Gu9fySWfDwgWM75O/WXSA7+uYA2jdUMmLrjQ\nkfZjqM/dT3VFt5uJSuaTpGs5dlCsCAcNmyukcgickbXoDNuJcMcMfFlE7Dj4wf3u\nYjH0pfwR7UTe0xXG2Pqh81ixfv0IFz2bF/ldAqj+yQKBgQCVVFIxakgwIUK/11fj\nITv3i9mzAYGIkZClIlZfgvfqEI5IES1Ec1buVQotHlpEwNkGzFzo26PRkixk/ZRw\ndgQMJJ7laYYC5YS2vlOZceqLyF34jGHshnu95SGn+WQML+Qg2nsFv8hlutyHIX5t\nRjj8WLer+Qar1H1gl9pAFybxtQ==\n-----END PRIVATE KEY-----\n";
 
 void wifiTask() {
   task.setInitCoreID(1);
   task.createTask(10000, [](void* pvParameter) {
-    WiFi.begin("TIMEOSPACE", "1234Saja");
-    // WiFi.begin("silenceAndSleep", "11111111");
+    // WiFi.begin("TIMEOSPACE", "1234Saja");
+    WiFi.begin("silenceAndSleep", "11111111");
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       Serial.print(".");
@@ -54,7 +54,7 @@ void wifiTask() {
 
       static uint32_t dateTimeNTPTimer;
       if (millis() - dateTimeNTPTimer >= 1000 && dateTime.update()) {
-        Serial.println(dateTime.getDateTimeString());
+        // Serial.println(dateTime.getDateTimeString());
         dateTimeNTPTimer = millis();
       }
 
@@ -64,87 +64,121 @@ void wifiTask() {
         firebaseRTDBTimer = millis();
       }  // FIREBASE_RTDB_END
 
-      if (!firestore->isReady()) {  // FIREBASE_FIRESTORE_START
-        buzzer.toggleAsync(250, [](bool state) {
-          Serial.println("Wait for Firestore Ready !!");
-        });
-      } else {
-        switch (firebaseFirestoreState) {
-          case FIRESTORE_CREATE:
-            Serial.print("| FIRESTORE_CREATE: ");
-            Serial.print(FIRESTORE_CREATE);
-            Serial.println();
+      static uint32_t firebaseFirestoreTimer;
+      if (millis() - firebaseFirestoreTimer >= 5000 && firestore->isReady() && FirebaseV3Application::getInstance()->isReady()) {
+        firebaseFirestoreTimer = millis();
 
-            documentData["fields"]["name"]["stringValue"] = "John Doe";
-            documentData["fields"]["age"]["integerValue"] = 30;
-            documentData["fields"]["active"]["booleanValue"] = true;
-            serializeJson(documentData, documentDataStr);
+        String userDataResultStr = firestore->getDocument("users", "", true);
+        String resiDataResultStr = firestore->getDocument("resiData", "", true);
 
-            resultStr = firestore->createDocument("users/user1", documentDataStr, true);
-            Serial.print("| resultStr");
-            Serial.print(resultStr);
-            Serial.println();
+        JsonDocument userDataDocument;
+        JsonDocument resiDataDocument;
+        deserializeJson(userDataDocument, userDataResultStr);
+        deserializeJson(resiDataDocument, resiDataResultStr);
 
-            firebaseFirestoreState = FIRESTORE_IDE;
-            break;
-          case FIRESTORE_READ:
-            Serial.print("| FIRESTORE_READ: ");
-            Serial.print(FIRESTORE_READ);
-            Serial.println();
+        uint8_t userDataIndex = 0;
+        uint8_t resiDataIndex = 0;
 
-            resultStr = firestore->getDocument("users/user1", "", true);
-            Serial.print("| resultStr");
-            Serial.print(resultStr);
-            Serial.println();
-
-            firebaseFirestoreState = FIRESTORE_IDE;
-            break;
-          case FIRESTORE_UPDATE:
-            Serial.print("| FIRESTORE_UPDATE: ");
-            Serial.print(FIRESTORE_UPDATE);
-            Serial.println();
-
-            documentData["fields"]["name"]["stringValue"] = "John Doe " + String(random(0, 30));
-            documentData["fields"]["age"]["integerValue"] = random(0, 30);
-            serializeJson(documentData, documentDataStr);
-
-            resultStr = firestore->updateDocument("users/user1", documentDataStr, "name,age", true);
-            Serial.print("| resultStr");
-            Serial.print(resultStr);
-            Serial.println();
-
-            firebaseFirestoreState = FIRESTORE_IDE;
-            break;
-          case FIRESTORE_DELETE:
-            Serial.print("| FIRESTORE_DELETE: ");
-            Serial.print(FIRESTORE_DELETE);
-            Serial.println();
-
-            resultStr = firestore->deleteDocument("users/user1", true);
-            Serial.print("| resultStr");
-            Serial.print(resultStr);
-            Serial.println();
-
-            firebaseFirestoreState = FIRESTORE_IDE;
-            break;
+        for (JsonVariant fields : userDataDocument["documents"].as<JsonArray>()) {
+          if (userDataIndex < USER_MAX) {
+            userData[userDataIndex].displayName = fields["fields"]["displayName"]["stringValue"].as<String>();
+            userData[userDataIndex].name = fields["fields"]["name"]["stringValue"].as<String>();
+            userData[userDataIndex].email = fields["fields"]["email"]["stringValue"].as<String>();
+            userDataIndex++;
+          }
         }
-      }  // FIREBASE_FIRESTORE_END
 
-      if (!messaging->isReady()) {  // FIREBASE_MESSAGING_START
-        buzzer.toggleAsync(250, [](bool state) {
-          Serial.println("Wait for Mesagging Ready !!");
-        });
-      } else {
-        if (firebaseMessagingState == MESSAGING_SEND) {
-          messaging->clearMessage();
-          messaging->setToken(FIREBASE_MSG_DEVICE_TOKEN);
-          messaging->setNotification("Pesan dari ESP32", "Hallo ESP32");
-          messaging->setAndroidPriority(true);
-          resultStr = messaging->sendMessage(true);
-          Serial.println(resultStr);
-          firebaseMessagingState = MESSAGING_IDLE;
+        for (JsonVariant fields : resiDataDocument["documents"].as<JsonArray>()) {
+          if (resiDataIndex < PAKET_MAX) {
+            resiData[resiDataIndex].nama = fields["fields"]["nama"]["stringValue"].as<String>();
+            resiData[resiDataIndex].noResi = fields["fields"]["noResi"]["stringValue"].as<String>();
+            resiData[resiDataIndex].packetType = fields["fields"]["packetType"]["stringValue"].as<String>();
+            resiData[resiDataIndex].resiId = fields["fields"]["resiId"]["integerValue"].as<int>();
+            resiDataIndex++;
+          }
         }
-      }  // FIREBASE_MESSAGING_END
+      }
+      // if (!firestore->isReady()) {  // FIREBASE_FIRESTORE_START
+      //   buzzer.toggleAsync(250, [](bool state) {
+      //     Serial.println("Wait for Firestore Ready !!");
+      //   });
+      // } else {
+      //   switch (firebaseFirestoreState) {
+      //     case FIRESTORE_CREATE:
+      //       Serial.print("| FIRESTORE_CREATE: ");
+      //       Serial.print(FIRESTORE_CREATE);
+      //       Serial.println();
+
+      //       documentData["fields"]["name"]["stringValue"] = "John Doe";
+      //       documentData["fields"]["age"]["integerValue"] = 30;
+      //       documentData["fields"]["active"]["booleanValue"] = true;
+      //       serializeJson(documentData, documentDataStr);
+
+      //       resultStr = firestore->createDocument("users/user1", documentDataStr, true);
+      //       Serial.print("| resultStr");
+      //       Serial.print(resultStr);
+      //       Serial.println();
+
+      //       firebaseFirestoreState = FIRESTORE_IDE;
+      //       break;
+      //     case FIRESTORE_READ:
+      //       Serial.print("| FIRESTORE_READ: ");
+      //       Serial.print(FIRESTORE_READ);
+      //       Serial.println();
+
+      //       resultStr = firestore->getDocument("users/user1", "", true);
+      //       Serial.print("| resultStr");
+      //       Serial.print(resultStr);
+      //       Serial.println();
+
+      //       firebaseFirestoreState = FIRESTORE_IDE;
+      //       break;
+      //     case FIRESTORE_UPDATE:
+      //       Serial.print("| FIRESTORE_UPDATE: ");
+      //       Serial.print(FIRESTORE_UPDATE);
+      //       Serial.println();
+
+      //       documentData["fields"]["name"]["stringValue"] = "John Doe " + String(random(0, 30));
+      //       documentData["fields"]["age"]["integerValue"] = random(0, 30);
+      //       serializeJson(documentData, documentDataStr);
+
+      //       resultStr = firestore->updateDocument("users/user1", documentDataStr, "name,age", true);
+      //       Serial.print("| resultStr");
+      //       Serial.print(resultStr);
+      //       Serial.println();
+
+      //       firebaseFirestoreState = FIRESTORE_IDE;
+      //       break;
+      //     case FIRESTORE_DELETE:
+      //       Serial.print("| FIRESTORE_DELETE: ");
+      //       Serial.print(FIRESTORE_DELETE);
+      //       Serial.println();
+
+      //       resultStr = firestore->deleteDocument("users/user1", true);
+      //       Serial.print("| resultStr");
+      //       Serial.print(resultStr);
+      //       Serial.println();
+
+      //       firebaseFirestoreState = FIRESTORE_IDE;
+      //       break;
+      //   }
+      // }  // FIREBASE_FIRESTORE_END
+
+      // if (!messaging->isReady()) {  // FIREBASE_MESSAGING_START
+      //   buzzer.toggleAsync(250, [](bool state) {
+      //     Serial.println("Wait for Mesagging Ready !!");
+      //   });
+      // } else {
+      //   if (firebaseMessagingState == MESSAGING_SEND) {
+      //     messaging->clearMessage();
+      //     messaging->setToken(FIREBASE_MSG_DEVICE_TOKEN);
+      //     messaging->setNotification("Pesan dari ESP32", "Hallo ESP32");
+      //     messaging->setAndroidPriority(true);
+      //     resultStr = messaging->sendMessage(true);
+      //     Serial.println(resultStr);
+      //     firebaseMessagingState = MESSAGING_IDLE;
+      //   }
+      // }  // FIREBASE_MESSAGING_END
     }
   });
 }

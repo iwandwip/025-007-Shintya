@@ -1,4 +1,4 @@
 void onLcdMenu() {
-  static auto menuMain = menu.createMenu(menu.begin(4), "Testing LCD", "I2C 20 x 4", "LCD I2C", "OK");
+  static auto menuMain = menu.createMenu(4, "Resi Non-COD", "Resi COD", "Ambil Paket", "Info: Paket Penuh");
   menu.showMenu(menuMain);
 }
