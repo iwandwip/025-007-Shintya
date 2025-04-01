@@ -72,7 +72,7 @@ PCF8574DigitalIn limitSwitch12(PCF_PIN3);
 
 ////////// Output Module //////////
 DigitalOut buzzer(4);
-DigitalOut ledRed(5);
+DigitalOut ledRed(LED_BUILTIN);  // 5
 DigitalOut ledGreen(18);
 DigitalOut ledYellow(19);
 DigitalOut relayA(33);
@@ -134,3 +134,8 @@ struct UserData {
 
 ResiData resiData[PAKET_MAX];
 UserData userData[USER_MAX];
+
+String resiBarcode = "";
+String userQRCode = "";
+String statusTinggiPaket = "";
+int tinggiPaket = 0;

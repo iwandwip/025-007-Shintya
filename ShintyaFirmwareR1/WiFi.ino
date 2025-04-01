@@ -13,8 +13,8 @@ void wifiTask() {
     // WiFi.begin("TIMEOSPACE", "1234Saja");
     WiFi.begin("silenceAndSleep", "11111111");
     while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+      ledRed.toggle();
+      delay(50);
     }
     Serial.println("IP: " + WiFi.localIP().toString());
     client.setInsecure();
@@ -51,6 +51,9 @@ void wifiTask() {
       if (firebase) firebase->loop();
       if (firestore) firestore->loop();
       if (messaging) messaging->loop();
+
+      if (!firebase->ready() || !firestore->isReady()) ledRed.toggleAsync(150);
+      else ledRed.on();
 
       static uint32_t dateTimeNTPTimer;
       if (millis() - dateTimeNTPTimer >= 1000 && dateTime.update()) {
