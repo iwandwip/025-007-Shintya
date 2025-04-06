@@ -10,8 +10,8 @@ const char FIREBASE_PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvw
 void wifiTask() {
   task.setInitCoreID(1);
   task.createTask(10000, [](void* pvParameter) {
-    // WiFi.begin("TIMEOSPACE", "1234Saja");
-    WiFi.begin("silenceAndSleep", "11111111");
+    WiFi.begin("TIMEOSPACE", "1234Saja");
+    // WiFi.begin("silenceAndSleep", "11111111");
     while (WiFi.status() != WL_CONNECTED) {
       ledRed.toggle();
       delay(50);
@@ -101,6 +101,7 @@ void wifiTask() {
           }
         }
       }
+      
       // if (!firestore->isReady()) {  // FIREBASE_FIRESTORE_START
       //   buzzer.toggleAsync(250, [](bool state) {
       //     Serial.println("Wait for Firestore Ready !!");

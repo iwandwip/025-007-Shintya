@@ -139,3 +139,4 @@ String resiBarcode = "";
 String userQRCode = "";
 String statusTinggiPaket = "";
 int tinggiPaket = 0;
+bool ambilPaketState = false;

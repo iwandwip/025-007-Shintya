@@ -16,7 +16,7 @@ void usbCommunicationTask(const String& dataRecv) {
     if (dataHeader == "S") buttonOkStr = "S";
 
     if (dataHeader == "RESI") resiBarcode = dataValue;  // RESI#111
-    if (dataHeader == "USER") userQRCode = dataValue;   // USER#iwan
+    if (dataHeader == "USER") userQRCode = dataValue;   // USER#admin
 
     // Firebase RTDB
     if (dataHeader == "RTDB_SET_VALUE") firebaseRTDBState = RTDB_SET_VALUE;
