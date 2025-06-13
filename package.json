@@ -1,21 +1,25 @@
 {
-  "name": "025-007-shintya",
+  "name": "shintya-app",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "reset": "expo start -c",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-navigation/native": "^7.1.10",
-    "@react-navigation/stack": "^7.3.3",
     "expo": "~53.0.11",
-    "expo-barcode-scanner": "^13.0.1",
+    "expo-barcode-scanner": "~13.0.1",
     "expo-camera": "~16.1.8",
+    "expo-constants": "~17.1.6",
+    "expo-linking": "~7.1.2",
     "expo-notifications": "~0.31.3",
+    "expo-router": "~5.1.0",
+    "expo-splash-screen": "~0.30.9",
     "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "~5.0.8",
     "firebase": "^11.9.1",
     "react": "19.0.0",
     "react-native": "0.79.3",
@@ -23,10 +27,12 @@
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-svg": "^15.12.0"
+    "react-native-svg": "15.11.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "@babel/traverse": "^7.27.4",
+    "babel-preset-expo": "~13.0.0"
   },
   "private": true
 }

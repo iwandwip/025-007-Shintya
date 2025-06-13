@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "025-007-Shintya",
-    "slug": "025-007-Shintya",
+    "name": "Shintya App",
+    "slug": "shintya-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-packet.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon-packet.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,16 +17,21 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-packet.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon-packet.png"
     },
     "plugins": [
-      "expo-barcode-scanner"
-    ]
+      "expo-barcode-scanner",
+      "expo-router"
+    ],
+    "scheme": "smart-packet-box",
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }
