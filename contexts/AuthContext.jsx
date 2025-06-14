@@ -2,7 +2,6 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserProfile } from "../services/userService";
-import { paymentStatusManager } from "../services/paymentStatusManager";
 
 const AuthContext = createContext({});
 
@@ -14,7 +13,6 @@ export const useAuth = () => {
       userProfile: null,
       loading: false,
       authInitialized: true,
-      isAdmin: false,
       refreshProfile: () => {},
     };
   }
@@ -26,88 +24,23 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authInitialized, setAuthInitialized] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  const checkAdminStatus = (user, profile) => {
-    return (
-      user?.email === "admin@gmail.com" ||
-      profile?.role === "admin" ||
-      profile?.isAdmin
-    );
-  };
 
   const loadUserProfile = async (user) => {
     if (!user) {
       setUserProfile(null);
-      setIsAdmin(false);
       return;
     }
 
     try {
       const result = await getUserProfile(user.uid);
       if (result.success) {
-        const adminStatus = checkAdminStatus(user, result.profile);
-        setIsAdmin(adminStatus);
         setUserProfile(result.profile);
-
-        if (!adminStatus && result.profile.role === "user") {
-          try {
-            await paymentStatusManager.handleUserLogin(user.uid);
-          } catch (error) {
-            console.warn("Error during payment status update on login:", error);
-          }
-        } else if (adminStatus) {
-          try {
-            await paymentStatusManager.handleUserLogin(null);
-          } catch (error) {
-            console.warn(
-              "Error during admin payment status update on login:",
-              error
-            );
-          }
-        }
-      } else {
-        const adminStatus = checkAdminStatus(user, null);
-        setIsAdmin(adminStatus);
-
-        if (adminStatus) {
-          setUserProfile({
-            id: user.uid,
-            email: user.email,
-            name: "Admin",
-            role: "admin",
-            isAdmin: true,
-          });
-
-          try {
-            await paymentStatusManager.handleUserLogin(null);
-          } catch (error) {
-            console.warn(
-              "Error during admin payment status update on login:",
-              error
-            );
-          }
-        } else {
-          console.warn("Failed to load user profile:", result.error);
-          setUserProfile(null);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-      const adminStatus = checkAdminStatus(user, null);
-      setIsAdmin(adminStatus);
-
-      if (adminStatus) {
-        setUserProfile({
-          id: user.uid,
-          email: user.email,
-          name: "Admin",
-          role: "admin",
-          isAdmin: true,
-        });
       } else {
         setUserProfile(null);
       }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      setUserProfile(null);
     }
   };
 
@@ -129,7 +62,6 @@ export const AuthProvider = ({ children }) => {
           setUserProfile(null);
           setLoading(false);
           setAuthInitialized(true);
-          setIsAdmin(false);
         }
         return;
       }
@@ -156,7 +88,6 @@ export const AuthProvider = ({ children }) => {
               setUserProfile(null);
               setLoading(false);
               setAuthInitialized(true);
-              setIsAdmin(false);
             }
           }
         );
@@ -167,7 +98,6 @@ export const AuthProvider = ({ children }) => {
           setUserProfile(null);
           setLoading(false);
           setAuthInitialized(true);
-          setIsAdmin(false);
         }
       }
     };
@@ -179,7 +109,6 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(null);
         setLoading(false);
         setAuthInitialized(true);
-        setIsAdmin(false);
       }
     }, 5000);
 
@@ -199,7 +128,6 @@ export const AuthProvider = ({ children }) => {
     userProfile,
     loading,
     authInitialized,
-    isAdmin,
     refreshProfile,
   };
 

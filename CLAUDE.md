@@ -21,8 +21,11 @@ npm run web
 npm run clear
 npm run reset
 
-# Clean up Firebase data
-npm run cleanup
+# Testing and utilities
+npm run test          # Run ESP32 simulator for hardware testing
+npm run cleanup       # Clean up Firebase data using interactive CLI
+
+# No lint/typecheck commands - project uses minimal linting setup
 ```
 
 ## Architecture
@@ -47,10 +50,18 @@ All business logic is separated into service files:
 - `pairingService.js` - RFID card-to-student mapping
 
 ### State Management
-Global state via React Context:
-- `AuthContext` - User authentication and role
-- `SettingsContext` - App configuration
-- `NotificationContext` - Toast notifications
+Layered React Context architecture:
+```javascript
+<ErrorBoundary>
+  <SettingsProvider>      // Theme, language, app settings
+    <AuthProvider>        // Authentication state, user profiles  
+      <NotificationProvider> // Toast notifications
+        <App />
+      </NotificationProvider>
+    </AuthProvider>
+  </SettingsProvider>
+</ErrorBoundary>
+```
 
 ## Hardware Integration
 
@@ -91,24 +102,34 @@ Firebase Firestore collections:
 - `payments` - Payment records and history  
 - `timelines` - Payment schedule templates
 - `settings` - System configuration
+- `rfid_pairing` - Real-time RFID pairing sessions (Firebase Realtime DB)
 
 ## Development Notes
 
 ### Firebase Configuration
-- Configuration hardcoded in `services/firebase.js`
-- Consider moving to environment variables for security
+- Configuration hardcoded in `services/firebase.js` (security concern)
+- Uses `.env.example` template for environment variables
+- Environment variables follow `EXPO_PUBLIC_` prefix pattern
 
 ### Language Support
-- Primary language: Indonesian (Bahasa Indonesia)
+- Primary language: Indonesian (Bahasa Indonesia)  
 - UI text and validation messages in Indonesian
+- No formal i18n system - hardcoded Indonesian strings throughout
 
 ### Testing ESP32 Integration
-- Requires physical ESP32 hardware setup
-- RFID reader and LCD display needed for full functionality
+- Run `npm run test` to use ESP32 simulator for development
+- Physical hardware: ESP32 + RFID reader + LCD display needed for full functionality
 - WiFi credentials configured via device menu system
+- Hardware communicates via Firebase real-time database
+
+### Performance Considerations
+- `paymentStatusManager.js` implements sophisticated caching and throttling
+- Real-time Firebase listeners for hardware state synchronization
+- Background state management for app resume scenarios
 
 ### Common File Patterns
 - Screen components in `app/` follow Expo Router conventions
 - Reusable UI components in `components/ui/`
 - Business logic abstracted to `services/`
 - Form validation centralized in `utils/validation.js`
+- Complex payment status logic in `utils/paymentStatusUtils.js`

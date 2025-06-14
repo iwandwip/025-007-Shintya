@@ -13,45 +13,45 @@ export default function RoleSelection() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleAdminPress = () => {
-    router.push("/(auth)/admin-login");
+  const handleLoginPress = () => {
+    router.push("/(auth)/login");
   };
 
-  const handleWaliPress = () => {
-    router.push("/(auth)/wali-login");
+  const handleRegisterPress = () => {
+    router.push("/(auth)/register");
   };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.content}>
         <View style={styles.headerSection}>
-          <Text style={styles.title}>Smart Bisyaroh</Text>
+          <Text style={styles.title}>Shintya App</Text>
           <Text style={styles.subtitle}>
-            Sistem Administrasi Pembayaran TPQ Ibadurrohman
+            Smart Packet Box COD Application
           </Text>
         </View>
 
         <View style={styles.logoContainer}>
           <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>🕌</Text>
+            <Text style={styles.logoText}>📦</Text>
           </View>
         </View>
 
         <View style={styles.roleSection}>
-          <Text style={styles.roleTitle}>Pilih Peran Anda</Text>
+          <Text style={styles.roleTitle}>Selamat Datang</Text>
 
           <TouchableOpacity
-            style={[styles.roleCard, styles.adminCard]}
-            onPress={handleAdminPress}
+            style={[styles.roleCard, styles.loginCard]}
+            onPress={handleLoginPress}
             activeOpacity={0.8}
           >
             <View style={styles.roleIcon}>
-              <Text style={styles.roleIconText}>👨‍💼</Text>
+              <Text style={styles.roleIconText}>🔑</Text>
             </View>
             <View style={styles.roleContent}>
-              <Text style={styles.roleCardTitle}>Admin TPQ</Text>
+              <Text style={styles.roleCardTitle}>Masuk</Text>
               <Text style={styles.roleCardDesc}>
-                Kelola data santri dan pembayaran bisyaroh
+                Masuk ke akun yang sudah ada
               </Text>
             </View>
             <View style={styles.arrowContainer}>
@@ -60,17 +60,17 @@ export default function RoleSelection() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.roleCard, styles.waliCard]}
-            onPress={handleWaliPress}
+            style={[styles.roleCard, styles.registerCard]}
+            onPress={handleRegisterPress}
             activeOpacity={0.8}
           >
             <View style={styles.roleIcon}>
-              <Text style={styles.roleIconText}>👨‍👩‍👧‍👦</Text>
+              <Text style={styles.roleIconText}>📝</Text>
             </View>
             <View style={styles.roleContent}>
-              <Text style={styles.roleCardTitle}>Wali Santri</Text>
+              <Text style={styles.roleCardTitle}>Daftar</Text>
               <Text style={styles.roleCardDesc}>
-                Pantau dan bayar bisyaroh anak Anda
+                Buat akun baru untuk memulai
               </Text>
             </View>
             <View style={styles.arrowContainer}>
@@ -80,8 +80,8 @@ export default function RoleSelection() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>TPQ Ibadurrohman</Text>
-          <Text style={styles.footerSubtext}>Malang, Jawa Timur</Text>
+          <Text style={styles.footerText}>Shintya App</Text>
+          <Text style={styles.footerSubtext}>Smart Packet Box</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -162,10 +162,10 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 2,
   },
-  adminCard: {
+  loginCard: {
     borderColor: "#3b82f6",
   },
-  waliCard: {
+  registerCard: {
     borderColor: "#10b981",
   },
   roleIcon: {

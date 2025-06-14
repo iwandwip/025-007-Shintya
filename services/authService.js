@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   deleteUser,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth } from './firebase';
 import { createUserProfile, getUserProfile } from './userService';
@@ -122,6 +123,54 @@ export const signOutUser = async () => {
     return { success: true };
   } catch (error) {
     console.error('Error keluar:', error);
+    return { success: false, error: handleAuthError(error) };
+  }
+};
+
+export const registerWithEmail = async (email, password, profileData) => {
+  try {
+    if (!auth) {
+      throw new Error('Firebase Auth belum diinisialisasi.');
+    }
+
+    console.log('Mencoba membuat akun untuk:', email);
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    
+    const profilePayload = {
+      email,
+      ...profileData,
+    };
+
+    const profileResult = await createUserProfile(result.user.uid, profilePayload);
+
+    if (!profileResult.success) {
+      try {
+        await deleteUser(result.user);
+      } catch (deleteError) {
+        console.error('Error menghapus user setelah gagal membuat profil:', deleteError);
+      }
+      throw new Error(profileResult.error || 'Gagal membuat profil user');
+    }
+
+    console.log('Registrasi berhasil');
+    return { success: true, user: result.user };
+  } catch (error) {
+    console.error('Error registrasi:', error);
+    return { success: false, error: handleAuthError(error) };
+  }
+};
+
+export const resetPassword = async (email) => {
+  try {
+    if (!auth) {
+      throw new Error('Firebase Auth belum diinisialisasi');
+    }
+    
+    await sendPasswordResetEmail(auth, email);
+    console.log('Email reset password berhasil dikirim');
+    return { success: true };
+  } catch (error) {
+    console.error('Error reset password:', error);
     return { success: false, error: handleAuthError(error) };
   }
 };

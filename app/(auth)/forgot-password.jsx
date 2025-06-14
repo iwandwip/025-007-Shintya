@@ -9,32 +9,35 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
-import { signInWithEmail } from "../../services/authService";
+import { resetPassword } from "../../services/authService";
 
-export default function AdminLogin() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Mohon isi email dan password");
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert("Error", "Mohon isi email Anda");
       return;
     }
 
     setLoading(true);
-    const result = await signInWithEmail(email, password);
+    const result = await resetPassword(email);
 
     if (result.success) {
-      router.replace("/(admin)");
+      Alert.alert(
+        "Berhasil", 
+        "Link reset password telah dikirim ke email Anda",
+        [{ text: "OK", onPress: () => router.back() }]
+      );
     } else {
-      Alert.alert("Masuk Gagal", result.error);
+      Alert.alert("Gagal", result.error);
     }
     setLoading(false);
   };
@@ -56,43 +59,35 @@ export default function AdminLogin() {
 
         <View style={styles.content}>
           <View style={styles.titleSection}>
-            <Text style={styles.title}>Masuk Admin</Text>
+            <Text style={styles.title}>Lupa Password</Text>
             <Text style={styles.subtitle}>
-              Masuk sebagai Administrator TPQ Ibadurrohman
+              Masukkan email Anda untuk menerima link reset password
             </Text>
           </View>
 
           <View style={styles.formSection}>
             <Input
               label="Email"
-              placeholder="Masukkan email admin"
+              placeholder="Masukkan email Anda"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
 
-            <Input
-              label="Password"
-              placeholder="Masukkan password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-
             <Button
-              title={loading ? "Sedang Masuk..." : "Masuk"}
-              onPress={handleLogin}
+              title={loading ? "Mengirim..." : "Kirim Link Reset"}
+              onPress={handleResetPassword}
               disabled={loading}
-              style={styles.loginButton}
+              style={styles.resetButton}
             />
-          </View>
 
-          <View style={styles.registerSection}>
-            <Text style={styles.registerText}>Belum memiliki akun admin?</Text>
-            <Link href="/(auth)/admin-register" style={styles.registerLink}>
-              Daftar Sekarang
-            </Link>
+            <TouchableOpacity
+              style={styles.linkButton}
+              onPress={() => router.push("/(auth)/login")}
+            >
+              <Text style={styles.linkText}>Kembali ke Masuk</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -103,7 +98,7 @@ export default function AdminLogin() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#f0fdf4",
   },
   keyboardContainer: {
     flex: 1,
@@ -117,7 +112,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#3b82f6",
+    color: "#10b981",
     fontWeight: "500",
   },
   content: {
@@ -144,20 +139,17 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: 32,
   },
-  loginButton: {
+  resetButton: {
     marginTop: 8,
+    backgroundColor: "#10b981",
   },
-  registerSection: {
+  linkButton: {
     alignItems: "center",
+    marginTop: 16,
   },
-  registerText: {
+  linkText: {
     fontSize: 14,
-    color: "#64748b",
-    marginBottom: 8,
-  },
-  registerLink: {
-    fontSize: 14,
-    color: "#3b82f6",
-    fontWeight: "600",
+    color: "#10b981",
+    fontWeight: "500",
   },
 });

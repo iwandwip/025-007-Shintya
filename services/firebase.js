@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDXKj-ZsNWqkwxvB7iYMgSzXKY1WmUkutw",
-  authDomain: "haikal-ef006.firebaseapp.com",
-  projectId: "haikal-ef006",
-  storageBucket: "haikal-ef006.firebasestorage.app",
-  messagingSenderId: "11927917023",
-  appId: "1:11927917023:web:11135a87b63106fe56346a",
-  measurementId: "G-8B1KZ5DLJ4"
+  apiKey: "AIzaSyA5Lsxqplxa4eQ9H8Zap3e95R_-SFGe2yU",
+  authDomain: "alien-outrider-453003-g8.firebaseapp.com",
+  projectId: "alien-outrider-453003-g8",
+  storageBucket: "alien-outrider-453003-g8.firebasestorage.app",
+  messagingSenderId: "398044917472",
+  appId: "1:398044917472:web:4ec00f19fafe5523442a85",
+  measurementId: "G-J6BPHF1V0Z"
 };
 
 let app;
