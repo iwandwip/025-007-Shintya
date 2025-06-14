@@ -1,43 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { Redirect } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Text } from 'react-native-paper';
-import { onAuthChange } from './services/auth';
+import React, { useEffect } from "react";
+import { View, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { useAuth } from "../contexts/AuthContext";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { Colors } from "../constants/Colors";
 
-export default function IndexScreen() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Index() {
+  const { currentUser, loading, authInitialized, userProfile } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    if (authInitialized && !loading) {
+      if (currentUser && userProfile) {
+        if (userProfile.role === "admin") {
+          router.replace("/(admin)");
+        } else if (userProfile.role === "user") {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/role-selection");
+        }
+      } else {
+        router.replace("/role-selection");
+      }
+    }
+  }, [currentUser, loading, authInitialized, userProfile]);
 
-    return unsubscribe;
-  }, []);
-
-  if (loading) {
+  if (!authInitialized || loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <LoadingSpinner text="Memuat..." />
       </View>
     );
   }
 
-  // Redirect based on auth state
-  return user ? <Redirect href="/(main)" /> : <Redirect href="/login" />;
+  return (
+    <View style={styles.container}>
+      <LoadingSpinner text="Mengarahkan..." />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-  loadingText: {
-    marginTop: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.background,
   },
 });

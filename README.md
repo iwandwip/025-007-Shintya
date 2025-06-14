@@ -1,117 +1,150 @@
-# 🚀 Smart Packet Box COD
+# Firebase Auth Template with Data Table
 
-IoT system for automated package reception with Cash on Delivery transactions that integrates **React Native + Expo** (mobile app), **Firebase Realtime Database** (cloud storage), and **ESP32** (hardware controller).
+A clean and modern React Native template with Firebase authentication, data table management, multi-language support, and theme switching.
 
-## 📱 Tech Stack
+## Features
 
-- **Frontend**: React Native + Expo Router
-- **UI Library**: React Native Paper (Material Design 3)
-- **Navigation**: Expo Router (file-based routing)
-- **Authentication**: Firebase Auth
-- **Database**: Firebase Firestore
-- **Icons & Illustrations**: SVG illustrations
-- **Hardware**: ESP32 + IoT Sensors
+- 🔐 **Firebase Authentication** - Complete auth flow with login, register, and password reset
+- 👤 **User Profiles** - User profile management with personal information
+- 👨‍💼 **Admin Panel** - Built-in admin functionality with admin@gmail.com
+- 📊 **Data Table** - Interactive table with sample data generation
+- 🌍 **Multi-language** - English and Indonesian language support
+- 🌙 **Dark/Light Theme** - Theme switching with persistent storage
+- 📱 **Modern UI** - Clean and responsive interface with illustrations
+- 🏗️ **Expo Router** - File-based routing system
+- 💾 **Firestore Integration** - Cloud database for user data
 
-## 📁 Project Structure
+## Quick Start
 
-```
-app/
-├── _layout.jsx                    # Root layout with navigation
-├── index.jsx                      # Entry point with auth redirect
-├── login.jsx                      # Login screen
-├── register.jsx                   # Register screen
-├── forgot-password.jsx            # Forgot password screen
-├── (main)/                        # Authenticated app routes
-│   ├── _layout.jsx               # Main app layout
-│   └── index.jsx                 # Dashboard/home screen
-├── components/                    # Reusable UI components
-│   ├── AuthCard.jsx              # Authentication card wrapper
-│   ├── AuthInput.jsx             # Input component for auth
-│   └── index.js                  # Component exports
-├── config/                        # Configuration files
-│   ├── firebase.js               # Firebase configuration
-│   └── theme.js                  # App theme configuration
-├── services/                      # Business logic & API calls
-│   └── auth.js                   # Authentication services
-├── lib/                          # Utility functions
-│   ├── validation.js             # Form validation helpers
-│   └── index.js                  # Lib exports
-└── constants/                     # App constants
-    ├── illustrations.js          # SVG illustrations
-    └── index.js                  # Constants exports
+### 1. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
 ```
 
-## 🚀 Getting Started
+### 2. Setup Firebase
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Authentication with Email/Password
+3. Create a Firestore Database
+4. Get your Firebase config from Project Settings
+5. Replace the config in `services/firebase.js`:
 
-2. **Start the development server**:
-   ```bash
-   npx expo start --clear
-   ```
+```javascript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN", 
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+```
 
-3. **Run on device**:
-   - Scan QR code with Expo Go app
-   - Or use: `npm run android` / `npm run ios`
+### 3. Run the App
 
-## 🔧 Features
+```bash
+npm start
+# or 
+yarn start
+```
 
-### ✅ Currently Implemented
-- **Authentication System**: Login, Register, Forgot Password
-- **Modern UI**: Material Design 3 with React Native Paper
-- **File-based Routing**: Expo Router for navigation
-- **Form Validation**: Input validation with helpers
-- **Responsive Design**: Works on all screen sizes
+## Customization
 
-### 🔄 Coming Soon
-- **QR Code Scanning**: Package verification
-- **Real-time Monitoring**: Box capacity tracking
-- **Push Notifications**: Package arrival alerts
-- **COD Payment**: Cash on delivery processing
-- **ESP32 Integration**: IoT sensor communication
+### Colors
+Edit `constants/Colors.js` to customize your app's color scheme:
 
-## 🏗️ Architecture
+```javascript
+export const lightTheme = {
+  primary: '#YOUR_PRIMARY_COLOR',
+  secondary: '#YOUR_SECONDARY_COLOR',
+  // ... other colors
+};
+```
 
-The app follows modern React Native and Expo Router conventions:
+### App Name & Assets
+1. Update `app.json` with your app name and metadata
+2. Replace assets in `/assets/` folder:
+   - `icon.png` - App icon
+   - `splash.png` - Splash screen
+   - `adaptive-icon.png` - Android adaptive icon
+   - `favicon.png` - Web favicon
 
-- **File-based routing** with Expo Router
-- **Component-based architecture** with reusable UI components
-- **Service layer** for business logic and API calls
-- **Utility functions** for validation and helpers
-- **Centralized configuration** for theme and Firebase
-- **Constants management** for static data like illustrations
+### Translations
+Add or modify translations in `constants/translations.js`:
 
-## 🔐 Authentication Flow
+```javascript
+export const translations = {
+  en: {
+    // English translations
+  },
+  id: {
+    // Indonesian translations  
+  },
+  // Add more languages
+};
+```
 
-1. **Entry Point** (`index.jsx`): Checks authentication state
-2. **Auth Screens**: Login, Register, Forgot Password
-3. **Auto Redirect**: Based on Firebase Auth state
-4. **Protected Routes**: Main app routes in `(main)` folder
+## Project Structure
 
-## 🎨 Design System
+```
+├── app/                    # App screens (Expo Router)
+│   ├── (auth)/            # Authentication screens
+│   ├── (tabs)/            # Main app tabs (Home, Table, Settings)
+│   ├── (admin)/           # Admin panel
+│   └── _layout.jsx        # Root layout
+├── components/            # Reusable components
+│   ├── auth/             # Auth-related components
+│   ├── ui/               # UI components (Button, Input, DataTable)
+│   └── illustrations/    # Auth screen illustrations
+├── contexts/             # React contexts
+├── services/             # API services
+├── utils/                # Utility functions
+├── constants/            # App constants
+└── hooks/                # Custom hooks
+```
 
-Using **Material Design 3** with custom theme:
-- **Primary Color**: `#f59e0b` (Amber)
-- **Typography**: Material Design typography scale
-- **Components**: React Native Paper components
-- **Icons**: Material Design icons
+## Authentication Flow
 
-## 📦 Dependencies
+### Regular User Registration
+1. User enters email, password, name, birthdate, gender
+2. Account created in Firebase Auth
+3. Profile saved to Firestore with user role
 
-### Core
-- `expo` - Expo framework
-- `expo-router` - File-based navigation
-- `react-native-paper` - Material Design UI components
+### Admin Access  
+- Use email: `admin@gmail.com` with any password
+- Automatically gets admin role and permissions
+- Access to admin panel with user management
 
-### Authentication & Database
-- `firebase` - Firebase SDK for auth and Firestore
+## User Roles
 
-### UI & Graphics
-- `react-native-svg` - SVG support
-- `react-native-safe-area-context` - Safe area handling
+- **User**: Regular users with profile management and table access
+- **Admin**: Full access to admin panel and user management
 
-### Development
-- `babel-preset-expo` - Babel configuration for Expo
+## Data Table Features
+
+- 📊 **Interactive Table** - Clean, responsive data table component
+- 🎲 **Sample Data Generator** - Generate random data for testing
+- 🔄 **Sorting** - Sort data by date (newest/oldest first)
+- ✏️ **Edit & Delete** - Action buttons for data management
+- 🧹 **Clear All** - Remove all data with confirmation
+- 📱 **Mobile Responsive** - Horizontal scroll for mobile devices
+
+## Technologies Used
+
+- React Native with Expo
+- Firebase (Auth + Firestore)
+- Expo Router
+- AsyncStorage for local preferences
+- React Context for state management
+
+## License
+
+MIT License - feel free to use this template for your projects.
+
+## Support
+
+For issues and questions, please create an issue on the repository.

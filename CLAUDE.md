@@ -4,53 +4,111 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Smart Packet Box COD** is an IoT system for automated package reception with Cash on Delivery transactions. The system integrates **React Native + Expo** (mobile app), **Firebase Realtime Database** (cloud storage), and **ESP32** (hardware controller).
+This is a React Native with Expo mobile application for managing payments at Islamic religious schools (TPQ). The system integrates with ESP32 firmware for RFID-based student identification and payment tracking.
 
-The mobile app uses **React Native Paper** for professional UI, featuring **QR Code scanning** (expo-barcode-scanner), **real-time box capacity monitoring**, **push notifications**, and **navigation system** for managing COD/non-COD packages. 
-
-ESP32 communicates with Firebase to synchronize sensor data (GM67 barcode scanner, ultrasonic, servo motor, solenoid lock) with the mobile application. This enables users to register package tracking numbers, insert COD payment, receive package arrival notifications, and retrieve packages using QR code verification - all within one secure and efficient integrated system that solves package delivery issues when recipients are not available.
-
-**Tech Stack:** React Native + Expo + React Native Paper + Firebase + ESP32 + IoT Sensors
-
-Currently implements user authentication functionality using Firebase Auth and Firestore for user data storage.
-
-## Common Commands
+## Development Commands
 
 ```bash
-# Start the development server
+# Start development server
 npm start
 
-# Run on specific platforms
-npm run android   # Android device/emulator
-npm run ios       # iOS simulator
-npm run web       # Web browser
+# Platform-specific development  
+npm run android
+npm run ios
+npm run web
+
+# Clear cache when needed
+npm run clear
+npm run reset
+
+# Clean up Firebase data
+npm run cleanup
 ```
 
 ## Architecture
 
-### Authentication Flow
-- App entry point (`App.js`) wraps the application with necessary providers
-- `AppNavigator.js` handles the main navigation logic and authentication state management
-- When user is not authenticated, `AuthNavigator.js` manages authentication screens (Login, Register, ForgotPassword)
-- Firebase authentication state is monitored via `onAuthChange` listener
+### Multi-Role System
+- **Admin**: Complete management access via `app/(admin)/` routes
+- **User (Wali)**: Parent/guardian access via `app/(tabs)/` routes
+- Authentication handled through `contexts/AuthContext.jsx`
 
-### Key Components Structure
-- `/src/config/` - Firebase configuration and app theme
-- `/src/navigation/` - Navigation setup (main app and auth flows)
-- `/src/screens/` - Authentication screens (Login, Register, ForgotPassword)
-- `/src/services/` - Authentication service functions
+### Key Technologies
+- **React Native + Expo SDK 53**
+- **Firebase** (Authentication + Firestore)
+- **Expo Router** for file-based navigation
+- **ESP32 Arduino firmware** with RFID integration
 
-### Firebase Integration
-- Authentication handled through `src/services/auth.js` with async functions that return `{success, user/error}` format
-- User data stored in Firestore with automatic document creation on registration
-- Firebase config contains production credentials in `src/config/firebase.js`
+### Service Layer
+All business logic is separated into service files:
+- `authService.js` - Authentication operations
+- `userService.js` - Student/parent management
+- `*paymentService.js` - Payment processing (admin/wali specific)
+- `timelineService.js` - Payment schedule management
+- `pairingService.js` - RFID card-to-student mapping
 
-### Styling
-- Uses React Native Paper with Material Design 3
-- Custom theme configured in `src/config/theme.js` with amber/orange primary colors
-- SafeAreaProvider for proper screen boundaries
+### State Management
+Global state via React Context:
+- `AuthContext` - User authentication and role
+- `SettingsContext` - App configuration
+- `NotificationContext` - Toast notifications
 
-### Navigation Pattern
-- Stack navigation for authentication screens
-- Main app navigation placeholder (currently shows loading indicator for authenticated users)
-- Authentication state determines which navigator is active
+## Hardware Integration
+
+### ESP32 Firmware
+Located in `firmware/` with two versions (R0/R1):
+- **RFID reading** for student identification
+- **KNN algorithm** for payment pattern analysis
+- **WiFi connectivity** for real-time data sync
+- **Menu system** for device configuration
+
+### Key Firmware Components
+- `KNN.ino` - Machine learning for payment predictions
+- `WiFi.ino` - Network connectivity and Firebase sync
+- `Menu.ino` - LCD interface and button controls
+- `USBComs.ino` - Serial communication
+
+## Important Implementation Details
+
+### Authentication
+- Special admin account: `admin@gmail.com` (accepts any password)
+- Regular users authenticate with email/password via Firebase
+- Role-based routing enforced in `_layout.jsx` files
+
+### Payment System
+- Timeline-based payment schedules configurable by admin
+- Real-time status updates via Firebase listeners
+- Payment status managed through `paymentStatusManager.js`
+- Complex validation logic in `utils/paymentStatusUtils.js`
+
+### RFID Integration
+- Students paired with RFID cards via `pairingService.js`
+- Card scans trigger payment processing
+- Hardware communicates with app via Firebase real-time database
+
+### Database Structure
+Firebase Firestore collections:
+- `users` - Student and parent accounts
+- `payments` - Payment records and history  
+- `timelines` - Payment schedule templates
+- `settings` - System configuration
+
+## Development Notes
+
+### Firebase Configuration
+- Configuration hardcoded in `services/firebase.js`
+- Consider moving to environment variables for security
+
+### Language Support
+- Primary language: Indonesian (Bahasa Indonesia)
+- UI text and validation messages in Indonesian
+
+### Testing ESP32 Integration
+- Requires physical ESP32 hardware setup
+- RFID reader and LCD display needed for full functionality
+- WiFi credentials configured via device menu system
+
+### Common File Patterns
+- Screen components in `app/` follow Expo Router conventions
+- Reusable UI components in `components/ui/`
+- Business logic abstracted to `services/`
+- Form validation centralized in `utils/validation.js`

@@ -1,37 +1,42 @@
 {
   "expo": {
-    "name": "Shintya App",
-    "slug": "shintya-app",
+    "name": "Haikal App",
+    "slug": "haikal-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon-packet.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "icon": "./assets/icon-money.png",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon-packet.png",
+      "image": "./assets/icon-money.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F50057"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-packet.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icon-money.png",
+        "backgroundColor": "#F50057"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.haikal.haikalapp"
     },
     "web": {
-      "favicon": "./assets/icon-packet.png"
+      "favicon": "./assets/icon-money.png",
+      "bundler": "metro"
     },
     "plugins": [
-      "expo-barcode-scanner",
       "expo-router"
     ],
-    "scheme": "smart-packet-box",
-    "experiments": {
-      "typedRoutes": false
+    "scheme": "firebase-auth-template",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "878acea5-1787-4765-a329-78bb9b93b718"
+      }
     }
   }
 }
