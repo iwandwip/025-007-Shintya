@@ -292,6 +292,15 @@ export const NotificationProvider = ({ children }) => {
     };
   }, []);
 
+  // Generic showNotification function for convenience
+  const showNotification = (message, type = "info", title = null) => {
+    return showGeneralNotification(
+      title || (type === "success" ? "Berhasil" : type === "error" ? "Error" : "Info"),
+      message,
+      type
+    );
+  };
+
   const value = {
     notifications,
     visible,
@@ -304,6 +313,7 @@ export const NotificationProvider = ({ children }) => {
     showUpdateNotification,
     showErrorNotification,
     showGeneralNotification,
+    showNotification,
     showCreditAppliedNotification,
     showCreditBalanceNotification,
     showPaymentWithCreditNotification,

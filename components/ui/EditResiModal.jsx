@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,15 +14,24 @@ import { getThemeByRole } from "../../constants/Colors";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-export default function AddResiModal({
+export default function EditResiModal({
   visible,
   onClose,
   onSubmit,
+  resiData,
   loading = false,
 }) {
   const [noResi, setNoResi] = useState("");
   const [tipePaket, setTipePaket] = useState("COD");
   const colors = getThemeByRole(false);
+
+  // Set initial values when modal opens or resiData changes
+  useEffect(() => {
+    if (resiData) {
+      setNoResi(resiData.noResi || "");
+      setTipePaket(resiData.tipePaket || "COD");
+    }
+  }, [resiData]);
 
   const handleSubmit = () => {
     if (!noResi.trim()) {
@@ -33,8 +42,11 @@ export default function AddResiModal({
   };
 
   const handleClose = () => {
-    setNoResi("");
-    setTipePaket("COD");
+    // Reset to original values
+    if (resiData) {
+      setNoResi(resiData.noResi || "");
+      setTipePaket(resiData.tipePaket || "COD");
+    }
     onClose();
   };
 
@@ -50,7 +62,7 @@ export default function AddResiModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.gray900 }]}>
-              Tambah Resi Baru
+              Edit Resi
             </Text>
             <TouchableOpacity onPress={handleClose} disabled={loading}>
               <Ionicons name="close" size={24} color={colors.gray600} />
@@ -183,7 +195,7 @@ export default function AddResiModal({
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <Text style={[styles.buttonText, { color: colors.white }]}>
-                  Tambah Resi
+                  Simpan Perubahan
                 </Text>
               )}
             </TouchableOpacity>

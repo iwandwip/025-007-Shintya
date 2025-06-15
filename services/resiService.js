@@ -11,6 +11,7 @@ import {
   doc,
   where,
   getDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 const COLLECTION_NAME = "receipts";
@@ -23,6 +24,7 @@ export const resiService = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error("Error adding resi:", error);
@@ -58,6 +60,20 @@ export const resiService = {
       return { success: true, count: querySnapshot.size };
     } catch (error) {
       console.error("Error getting user resi count:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateResi(resiId, resiData) {
+    try {
+      const resiRef = doc(db, COLLECTION_NAME, resiId);
+      await updateDoc(resiRef, {
+        ...resiData,
+        updatedAt: serverTimestamp(),
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating resi:", error);
       return { success: false, error: error.message };
     }
   },

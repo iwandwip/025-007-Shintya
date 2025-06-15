@@ -37,37 +37,49 @@ const generateRandomPhone = () => {
 };
 
 const generateUserData = async () => {
-  const email = `user${userCounter}@gmail.com`;
-  const password = 'admin123';
-  const name = generateRandomName();
-  const phone = generateRandomPhone();
+  let currentCounter = userCounter;
+  let success = false;
   
-  try {
-    console.log(`\n🔄 Generating user data...`);
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔐 Password: ${password}`);
-    console.log(`👤 Name: ${name}`);
-    console.log(`📱 Phone: ${phone}`);
+  while (!success) {
+    const email = `user${currentCounter}@gmail.com`;
+    const password = 'admin123';
+    const name = generateRandomName();
+    const phone = generateRandomPhone();
     
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    await setDoc(doc(db, 'users', user.uid), {
-      email: email,
-      name: name,
-      phone: phone,
-      role: 'wali',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    
-    console.log(`✅ User ${userCounter} created successfully!`);
-    console.log(`🆔 UID: ${user.uid}\n`);
-    
-    userCounter++;
-    
-  } catch (error) {
-    console.error(`❌ Failed to create user: ${error.message}\n`);
+    try {
+      console.log(`\n🔄 Generating user data...`);
+      console.log(`📧 Email: ${email}`);
+      console.log(`🔐 Password: ${password}`);
+      console.log(`👤 Name: ${name}`);
+      console.log(`📱 Phone: ${phone}`);
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await setDoc(doc(db, 'users', user.uid), {
+        email: email,
+        name: name,
+        phone: phone,
+        role: 'wali',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      console.log(`✅ User ${currentCounter} created successfully!`);
+      console.log(`🆔 UID: ${user.uid}\n`);
+      
+      userCounter = currentCounter + 1;
+      success = true;
+      
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        console.log(`⚠️ Email ${email} already exists, trying next number...`);
+        currentCounter++;
+      } else {
+        console.error(`❌ Failed to create user: ${error.message}\n`);
+        break;
+      }
+    }
   }
 };
 

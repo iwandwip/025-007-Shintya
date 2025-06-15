@@ -18,6 +18,7 @@ import { getThemeByRole } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { resiService } from "../../services/resiService";
 import AddResiModal from "../../components/ui/AddResiModal";
+import EditResiModal from "../../components/ui/EditResiModal";
 import { useNotification } from "../../contexts/NotificationContext";
 
 
@@ -33,6 +34,9 @@ function ListResi() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingResi, setAddingResi] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingResi, setEditingResi] = useState(false);
+  const [selectedResi, setSelectedResi] = useState(null);
   const [userResiCount, setUserResiCount] = useState(0);
 
   const onRefresh = React.useCallback(async () => {
@@ -64,8 +68,6 @@ function ListResi() {
   }, [currentUser]);
 
   const handleAddResi = async (resiData) => {
-    console.log("handleAddResi called with:", resiData);
-    
     if (!currentUser) {
       showNotification("Anda harus login terlebih dahulu", "error");
       return;
@@ -86,9 +88,7 @@ function ListResi() {
         userEmail: currentUser?.email,
       };
       
-      console.log("Adding resi to database:", resiToAdd);
       const result = await resiService.addResi(resiToAdd);
-      console.log("Add resi result:", result);
 
       if (result.success) {
         showNotification("Resi berhasil ditambahkan", "success");
@@ -102,6 +102,47 @@ function ListResi() {
     }
     
     setAddingResi(false);
+  };
+
+  const handleEditResi = async (resiData) => {
+    if (!currentUser || !selectedResi) {
+      showNotification("Terjadi kesalahan saat mengedit resi", "error");
+      return;
+    }
+
+    // Check ownership
+    if (selectedResi.userId !== currentUser.uid) {
+      showNotification("Anda hanya bisa mengedit resi milik Anda sendiri", "error");
+      return;
+    }
+
+    setEditingResi(true);
+    
+    try {
+      const result = await resiService.updateResi(selectedResi.id, resiData);
+
+      if (result.success) {
+        showNotification("Resi berhasil diperbarui", "success");
+        setShowEditModal(false);
+        setSelectedResi(null);
+      } else {
+        showNotification("Gagal memperbarui resi: " + (result.error || "Unknown error"), "error");
+      }
+    } catch (error) {
+      console.error("Error in handleEditResi:", error);
+      showNotification("Terjadi kesalahan: " + error.message, "error");
+    }
+    
+    setEditingResi(false);
+  };
+
+  const openEditModal = (resi) => {
+    if (resi.userId !== currentUser?.uid) {
+      showNotification("Anda hanya bisa mengedit resi milik Anda sendiri", "error");
+      return;
+    }
+    setSelectedResi(resi);
+    setShowEditModal(true);
   };
 
   const handleDeleteResi = (resiId, resiUserId) => {
@@ -156,12 +197,20 @@ function ListResi() {
               </Text>
             </View>
             {isOwner && (
-              <TouchableOpacity
-                onPress={() => handleDeleteResi(item.id, item.userId)}
-                style={styles.deleteButton}
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-              </TouchableOpacity>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  onPress={() => openEditModal(item)}
+                  style={styles.editButton}
+                >
+                  <Ionicons name="pencil-outline" size={20} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteResi(item.id, item.userId)}
+                  style={styles.deleteButton}
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -253,6 +302,17 @@ function ListResi() {
         onSubmit={handleAddResi}
         loading={addingResi}
       />
+
+      <EditResiModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedResi(null);
+        }}
+        onSubmit={handleEditResi}
+        resiData={selectedResi}
+        loading={editingResi}
+      />
     </SafeAreaView>
   );
 }
@@ -317,6 +377,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     marginTop: 2,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editButton: {
+    padding: 4,
   },
   deleteButton: {
     padding: 4,
