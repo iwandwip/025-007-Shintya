@@ -1,7 +1,7 @@
 // Base theme colors
 export const lightTheme = {
   primary: '#378e40',
-  secondary: '#00f59e',
+  secondary: '#378e40',
   background: '#ffffff',
   white: '#ffffff',
   black: '#000000',
@@ -33,10 +33,10 @@ export const lightTheme = {
 // Wali theme (Green)
 export const waliTheme = {
   primary: '#378e40',      // Custom Green
-  primaryLight: '#4caf50', // Lighter Green
-  primaryDark: '#2e7d32',  // Darker Green
-  secondary: '#81c784',    // Light Green
-  accent: '#e8f5e8',       // Very Light Green
+  primaryLight: '#378e40', // Lighter Green
+  primaryDark: '#378e40',  // Darker Green
+  secondary: '#378e40',    // Light Green
+  accent: '#378e40',       // Very Light Green
   background: '#ffffff',
   white: '#ffffff',
   black: '#000000',
@@ -66,7 +66,7 @@ export const waliTheme = {
 
 export const darkTheme = {
   primary: '#378e40',
-  secondary: '#00f59e',
+  secondary: '#378e40',
   background: '#111827',
   white: '#1f2937',
   black: '#ffffff',
@@ -83,7 +83,7 @@ export const darkTheme = {
   gray800: '#fcfcfd',
   gray900: '#ffffff',
   
-  success: '#059669',
+  success: '#378e40',
   warning: '#d97706',
   error: '#dc2626',
   

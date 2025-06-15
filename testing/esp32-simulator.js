@@ -1,214 +1,133 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, doc, onSnapshot, updateDoc } = require('firebase/firestore');
-const { getAuth, signInWithEmailAndPassword } = require('firebase/auth');
+const { getFirestore, doc, setDoc, collection, addDoc } = require('firebase/firestore');
+const { getAuth, createUserWithEmailAndPassword } = require('firebase/auth');
+const inquirer = require('inquirer').default;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDXKj-ZsNWqkwxvB7iYMgSzXKY1WmUkutw",
-  authDomain: "haikal-ef006.firebaseapp.com",
-  projectId: "haikal-ef006",
-  storageBucket: "haikal-ef006.firebasestorage.app",
-  messagingSenderId: "11927917023",
-  appId: "1:11927917023:web:11135a87b63106fe56346a",
-  measurementId: "G-8B1KZ5DLJ4"
+  apiKey: "AIzaSyA5Lsxqplxa4eQ9H8Zap3e95R_-SFGe2yU",
+  authDomain: "alien-outrider-453003-g8.firebaseapp.com",
+  projectId: "alien-outrider-453003-g8",
+  storageBucket: "alien-outrider-453003-g8.firebasestorage.app",
+  messagingSenderId: "398044917472",
+  appId: "1:398044917472:web:4ec00f19fafe5523442a85",
+  measurementId: "G-J6BPHF1V0Z"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const generateRandomRFID = () => {
-  const characters = 'ABCDEF0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
+let userCounter = 1;
+
+const generateRandomName = () => {
+  const firstNames = ['Ahmad', 'Siti', 'Muhammad', 'Fatimah', 'Ali', 'Khadijah', 'Omar', 'Aisha', 'Ibrahim', 'Maryam'];
+  const lastNames = ['Rahman', 'Abdullah', 'Hasan', 'Husain', 'Malik', 'Zahra', 'Saleh', 'Noor', 'Yusuf', 'Layla'];
+  
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  
+  return `${firstName} ${lastName}`;
 };
 
-const getRandomDelay = () => {
-  return Math.floor(Math.random() * (3000 - 1000) + 1000);
+const generateRandomPhone = () => {
+  const prefixes = ['0812', '0813', '0821', '0822', '0851', '0852'];
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const number = Math.floor(Math.random() * 90000000) + 10000000;
+  return `${prefix}${number}`;
 };
 
-class ESP32RFIDSimulator {
-  constructor() {
-    this.pairingRef = doc(db, 'rfid_pairing', 'current_session');
-    this.currentSession = null;
-    this.timeoutTimer = null;
-    this.processingTimer = null;
-    this.isProcessing = false;
-    this.isAuthenticated = false;
+const generateUserData = async () => {
+  const email = `user${userCounter}@gmail.com`;
+  const password = 'admin123';
+  const name = generateRandomName();
+  const phone = generateRandomPhone();
+  
+  try {
+    console.log(`\n🔄 Generating user data...`);
+    console.log(`📧 Email: ${email}`);
+    console.log(`🔐 Password: ${password}`);
+    console.log(`👤 Name: ${name}`);
+    console.log(`📱 Phone: ${phone}`);
+    
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    await setDoc(doc(db, 'users', user.uid), {
+      email: email,
+      name: name,
+      phone: phone,
+      role: 'wali',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    console.log(`✅ User ${userCounter} created successfully!`);
+    console.log(`🆔 UID: ${user.uid}\n`);
+    
+    userCounter++;
+    
+  } catch (error) {
+    console.error(`❌ Failed to create user: ${error.message}\n`);
   }
+};
 
-  async initialize() {
-    try {
-      console.log('🔐 Authenticating...');
-      await signInWithEmailAndPassword(auth, 'admin@gmail.com', 'admin123');
-      this.isAuthenticated = true;
-      console.log('✅ Authentication successful');
-      
-      this.startListening();
-      
-      console.log('🤖 ESP32 RFID Simulator Started');
-      console.log('📡 Listening for RFID pairing sessions...');
-      console.log('💡 Simulator will generate random RFID codes when pairing is active\n');
-    } catch (error) {
-      console.error('❌ Failed to initialize:', error.message);
-      process.exit(1);
-    }
-  }
-
-  startListening() {
-    onSnapshot(this.pairingRef, (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        this.handlePairingChange(data);
-      } else {
-        console.log('📄 No active pairing session');
-        this.stopCurrentSession();
+const showMenu = async () => {
+  try {
+    const answers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'Pilih menu:',
+        choices: [
+          { name: '👤 Generate User Data', value: 'generate' },
+          { name: '🚪 Exit', value: 'exit' }
+        ]
       }
-    }, (error) => {
-      console.error('❌ Firestore listener error:', error);
-    });
-  }
-
-  handlePairingChange(pairingData) {
-    console.log('📊 Pairing data received:', {
-      isActive: pairingData.isActive,
-      santriId: pairingData.santriId,
-      startTime: pairingData.startTime?.toDate?.()?.toLocaleString(),
-      hasRfidCode: !!pairingData.rfidCode
-    });
-
-    if (!pairingData.isActive) {
-      console.log('🔴 Pairing session inactive');
-      this.stopCurrentSession();
-      return;
+    ]);
+    
+    switch (answers.action) {
+      case 'generate':
+        await generateUserData();
+        await showMenu();
+        break;
+      case 'exit':
+        console.log('👋 Goodbye!');
+        process.exit(0);
+        break;
     }
-
-    if (this.isProcessing) {
-      console.log('⏳ Already processing a pairing request');
-      return;
+  } catch (error) {
+    if (error.isTtyError) {
+      console.log('❌ Prompt couldn\'t be rendered in the current environment');
+    } else {
+      console.error('❌ Error:', error.message);
     }
-
-    if (pairingData.rfidCode) {
-      console.log('✅ RFID already paired for this session');
-      return;
-    }
-
-    this.startRFIDPairing(pairingData);
+    process.exit(1);
   }
+};
 
-  startRFIDPairing(pairingData) {
-    console.log(`🔧 RFID Pairing Session Started`);
-    console.log(`👤 Santri ID: ${pairingData.santriId}`);
-    console.log(`⏰ Started at: ${pairingData.startTime?.toDate?.()?.toLocaleString()}`);
+// Initialize and show menu
+const initialize = async () => {
+  try {
+    console.log('🚀 ESP32 Data Generator Started');
+    console.log('🔥 Connected to Firebase\n');
     
-    this.currentSession = pairingData;
-    this.isProcessing = true;
-    
-    // Start timeout timer (30 seconds)
-    this.startTimeoutTimer();
-    
-    const delay = getRandomDelay();
-    console.log(`⏳ Simulating RFID card scan... (waiting ${delay}ms)`);
-    
-    this.processingTimer = setTimeout(async () => {
-      await this.completeRFIDPairing();
-    }, delay);
+    await showMenu();
+  } catch (error) {
+    console.error('❌ Failed to initialize:', error.message);
+    process.exit(1);
   }
-
-  async completeRFIDPairing() {
-    if (!this.currentSession) return;
-
-    const rfidCode = generateRandomRFID();
-    console.log(`✅ RFID Card Detected: ${rfidCode}`);
-    
-    try {
-      await updateDoc(this.pairingRef, {
-        rfidCode: rfidCode,
-        santriId: this.currentSession.santriId,
-        lastActivity: new Date()
-      });
-      
-      console.log(`📤 RFID data sent to Firestore`);
-      console.log(`🎉 RFID Pairing Complete!`);
-      console.log(`📱 App should receive: { success: true, rfidCode: "${rfidCode}", santriId: "${this.currentSession.santriId}" }\n`);
-      
-    } catch (error) {
-      console.error('❌ Failed to update RFID:', error.message);
-    }
-    
-    this.isProcessing = false;
-    this.stopCurrentSession();
-  }
-
-  startTimeoutTimer() {
-    // 30 second timeout
-    const timeoutMs = 30 * 1000;
-    
-    this.timeoutTimer = setTimeout(async () => {
-      console.log(`⏰ Pairing session timeout (30 seconds)`);
-      await this.handleTimeout();
-    }, timeoutMs);
-  }
-
-  async handleTimeout() {
-    console.log('🚨 Pairing session timed out');
-    
-    try {
-      await updateDoc(this.pairingRef, {
-        isActive: false,
-        timeout: true,
-        lastActivity: new Date()
-      });
-      
-      console.log('✅ Pairing session marked as timed out\n');
-      
-    } catch (error) {
-      console.error('❌ Failed to handle timeout:', error.message);
-    }
-    
-    this.stopCurrentSession();
-  }
-
-  stopCurrentSession() {
-    if (this.timeoutTimer) {
-      clearTimeout(this.timeoutTimer);
-      this.timeoutTimer = null;
-    }
-    
-    if (this.processingTimer) {
-      clearTimeout(this.processingTimer);
-      this.processingTimer = null;
-    }
-    
-    this.currentSession = null;
-    this.isProcessing = false;
-    
-    console.log('🔄 Session stopped, waiting for next pairing request...\n');
-  }
-
-  shutdown() {
-    console.log('🛑 Shutting down ESP32 RFID Simulator...');
-    this.stopCurrentSession();
-    process.exit(0);
-  }
-}
-
-// Create and start simulator
-const simulator = new ESP32RFIDSimulator();
+};
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  simulator.shutdown();
+  console.log('\n👋 Goodbye!');
+  process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  simulator.shutdown();
+  console.log('\n👋 Goodbye!');
+  process.exit(0);
 });
 
-// Start the simulator
-simulator.initialize().catch((error) => {
-  console.error('❌ Simulator failed to start:', error);
-  process.exit(1);
-});
+// Start the application
+initialize();

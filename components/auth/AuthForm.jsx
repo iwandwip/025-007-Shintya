@@ -1,17 +1,18 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
+import { TouchableWithoutFeedback, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import {
+  VStack,
+  HStack,
+  Text,
+  Heading,
+  Box,
+  ScrollView
+} from "@gluestack-ui/themed";
 import Input from "../ui/Input";
 import DatePicker from "../ui/DatePicker";
 import Button from "../ui/Button";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import { Colors } from "../../constants/Colors";
 import { validateEmail, validatePassword } from "../../utils/validation";
 
 const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
@@ -28,6 +29,7 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
 
   const isRegister = type === "register";
   const isForgotPassword = type === "forgot-password";
+  const isAdminEmail = formData.email.toLowerCase() === "admin@gmail.com";
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -163,197 +165,139 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <Text style={styles.title}>{getTitle()}</Text>
+      <VStack flex={1} space="lg">
+        <Heading size="xl" textAlign="center">
+          {getTitle()}
+        </Heading>
 
         {isRegister && isAdminEmail && step === 1 && (
-          <View style={styles.adminNotice}>
-            <Text style={styles.adminNoticeText}>
+          <Box 
+            bg="$primary100" 
+            p="$3" 
+            borderRadius="$md" 
+            borderWidth={1} 
+            borderColor="$primary200"
+          >
+            <Text color="$primary600" textAlign="center" fontWeight="$medium">
               🔐 Admin account will be created with default settings
             </Text>
-          </View>
+          </Box>
         )}
 
-        <KeyboardAwareScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+        <ScrollView
+          flex={1}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          enableOnAndroid={true}
-          enableAutomaticScroll={true}
-          extraScrollHeight={20}
-          bounces={false}
         >
-          {(!isRegister || step === 1) && (
-            <>
-              <Input
-                label="Email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(value) => updateFormData("email", value)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                error={errors.email}
-              />
+          <VStack space="md">
+            {(!isRegister || step === 1) && (
+              <>
+                <Input
+                  label="Email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChangeText={(value) => updateFormData("email", value)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  error={errors.email}
+                />
 
-              {!isForgotPassword && (
-                <>
-                  <Input
-                    label="Password"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChangeText={(value) => updateFormData("password", value)}
-                    secureTextEntry
-                    error={errors.password}
-                  />
-
-                  {isRegister && (
+                {!isForgotPassword && (
+                  <>
                     <Input
-                      label="Confirm Password"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChangeText={(value) =>
-                        updateFormData("confirmPassword", value)
-                      }
+                      label="Password"
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChangeText={(value) => updateFormData("password", value)}
                       secureTextEntry
-                      error={errors.confirmPassword}
+                      error={errors.password}
                     />
-                  )}
-                </>
-              )}
-            </>
-          )}
 
-          {isRegister && step === 2 && !isAdminEmail && (
-            <>
-              <Input
-                label="Name"
-                placeholder="Enter your name"
-                value={formData.name}
-                onChangeText={(value) => updateFormData("name", value)}
-                autoCapitalize="words"
-                error={errors.name}
-              />
-
-              <DatePicker
-                label="Birth Date"
-                placeholder="Select birth date"
-                value={formData.birthdate}
-                onChange={(value) => updateFormData("birthdate", value)}
-                maximumDate={maxDate}
-                minimumDate={minDate}
-                error={errors.birthdate}
-              />
-
-              <View style={styles.genderContainer}>
-                <Text style={styles.genderLabel}>Gender</Text>
-                <View style={styles.genderButtons}>
-                  <Button
-                    title="Male"
-                    onPress={() => updateFormData("gender", "male")}
-                    variant={formData.gender === "male" ? "primary" : "outline"}
-                    style={styles.genderButton}
-                  />
-                  <Button
-                    title="Female"
-                    onPress={() => updateFormData("gender", "female")}
-                    variant={
-                      formData.gender === "female" ? "primary" : "outline"
-                    }
-                    style={styles.genderButton}
-                  />
-                </View>
-                {errors.gender && (
-                  <Text style={styles.errorText}>{errors.gender}</Text>
+                    {isRegister && (
+                      <Input
+                        label="Confirm Password"
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChangeText={(value) =>
+                          updateFormData("confirmPassword", value)
+                        }
+                        secureTextEntry
+                        error={errors.confirmPassword}
+                      />
+                    )}
+                  </>
                 )}
-              </View>
-            </>
-          )}
-        </KeyboardAwareScrollView>
+              </>
+            )}
 
-        <View style={styles.buttonContainer}>
+            {isRegister && step === 2 && !isAdminEmail && (
+              <>
+                <Input
+                  label="Name"
+                  placeholder="Enter your name"
+                  value={formData.name}
+                  onChangeText={(value) => updateFormData("name", value)}
+                  autoCapitalize="words"
+                  error={errors.name}
+                />
+
+                <DatePicker
+                  label="Birth Date"
+                  placeholder="Select birth date"
+                  value={formData.birthdate}
+                  onChange={(value) => updateFormData("birthdate", value)}
+                  maximumDate={maxDate}
+                  minimumDate={minDate}
+                  error={errors.birthdate}
+                />
+
+                <VStack space="sm">
+                  <Text fontSize="$sm" fontWeight="$medium" color="$textLight700">
+                    Gender
+                  </Text>
+                  <HStack space="sm">
+                    <Button
+                      title="Male"
+                      onPress={() => updateFormData("gender", "male")}
+                      variant={formData.gender === "male" ? "solid" : "outline"}
+                      flex={1}
+                    />
+                    <Button
+                      title="Female"
+                      onPress={() => updateFormData("gender", "female")}
+                      variant={formData.gender === "female" ? "solid" : "outline"}
+                      flex={1}
+                    />
+                  </HStack>
+                  {errors.gender && (
+                    <Text fontSize="$xs" color="$error500">
+                      {errors.gender}
+                    </Text>
+                  )}
+                </VStack>
+              </>
+            )}
+          </VStack>
+        </ScrollView>
+
+        <VStack space="sm" pt="$4">
           {isRegister && step === 2 && !isAdminEmail && (
             <Button
               title="Back"
               onPress={handleBack}
               variant="outline"
-              style={styles.backButton}
             />
           )}
 
           <Button
             title={getButtonText()}
             onPress={handleSubmit}
-            style={styles.submitButton}
           />
-        </View>
-      </View>
+        </VStack>
+      </VStack>
     </TouchableWithoutFeedback>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.gray900,
-    textAlign: "center",
-    marginBottom: 32,
-  },
-  adminNotice: {
-    backgroundColor: Colors.primary + "20",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary + "40",
-  },
-  adminNoticeText: {
-    fontSize: 14,
-    color: Colors.primary,
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  genderContainer: {
-    marginBottom: 16,
-  },
-  genderLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: Colors.gray700,
-    marginBottom: 8,
-  },
-  genderButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  genderButton: {
-    flex: 1,
-  },
-  errorText: {
-    fontSize: 12,
-    color: Colors.error,
-    marginTop: 4,
-  },
-  buttonContainer: {
-    marginTop: 24,
-    paddingTop: 16,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  submitButton: {
-    marginBottom: 8,
-  },
-});
 
 export default AuthForm;

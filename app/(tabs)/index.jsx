@@ -1,18 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from '../../contexts/AuthContext';
-import { getThemeByRole } from '../../constants/Colors';
+import { useSettings } from "../../contexts/SettingsContext";
+import { getThemeByRole } from "../../constants/Colors";
 
 export default function Home() {
-  const { userProfile } = useAuth();
-  const colors = getThemeByRole(false);
+  const { userProfile, refreshProfile } = useAuth();
+  const { theme } = useSettings();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = getThemeByRole(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    }
+    setRefreshing(false);
+  }, [refreshProfile]);
+
+  const quickActions = [
+    {
+      id: 1,
+      title: "List Resi",
+      icon: "📋",
+      route: "/(tabs)/list-resi",
+      color: colors.primary,
+    },
+    {
+      id: 2,
+      title: "Kapasitas",
+      icon: "📦",
+      route: "/(tabs)/kapasitas-paket",
+      color: "#FF6B6B",
+    },
+    {
+      id: 3,
+      title: "Profil",
+      icon: "👤",
+      route: "/(tabs)/profile",
+      color: colors.gray600,
+    },
+  ];
+
+  const statsData = [
+    { label: "Total Paket", value: "5", icon: "📦" },
+    { label: "Paket COD", value: "3", icon: "💰" },
+    { label: "Menunggu Diambil", value: "2", icon: "⏳" },
+  ];
 
   return (
     <SafeAreaView
@@ -21,41 +71,153 @@ export default function Home() {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.white, borderBottomColor: colors.gray200 },
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 24 },
         ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
       >
-        <Text style={[styles.title, { color: colors.gray900 }]}>
-          Smart Packet Box COD
-        </Text>
-        {userProfile && (
-          <Text style={[styles.subtitle, { color: colors.gray600 }]}>
-            Selamat datang, {userProfile.nama}
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.greeting, { color: colors.gray600 }]}>
+            Selamat datang,
           </Text>
-        )}
-      </View>
-
-      <View style={styles.content}>
-        <View
-          style={[
-            styles.emptyCard,
-            { backgroundColor: colors.white, borderColor: colors.gray200 },
-          ]}
-        >
-          <Text style={[styles.emptyIcon, { color: colors.gray400 }]}>📦</Text>
-          <Text style={[styles.emptyTitle, { color: colors.gray900 }]}>
-            Halaman Utama
-          </Text>
-          <Text style={[styles.emptyText, { color: colors.gray600 }]}>
-            Aplikasi Smart Packet Box COD sedang dalam pengembangan
-          </Text>
-          <Text style={[styles.emptySubtext, { color: colors.gray500 }]}>
-            Fitur-fitur akan ditambahkan segera
+          <Text style={[styles.userName, { color: colors.gray900 }]}>
+            {userProfile?.nama || "User"}
           </Text>
         </View>
-      </View>
+
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          {statsData.map((stat, index) => (
+            <View
+              key={index}
+              style={[
+                styles.statCard,
+                {
+                  backgroundColor: colors.white,
+                  shadowColor: colors.shadow.color,
+                },
+              ]}
+            >
+              <Text style={styles.statIcon}>{stat.icon}</Text>
+              <Text style={[styles.statValue, { color: colors.gray900 }]}>
+                {stat.value}
+              </Text>
+              <Text style={[styles.statLabel, { color: colors.gray600 }]}>
+                {stat.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Notification Card */}
+        <View
+          style={[
+            styles.notificationCard,
+            {
+              backgroundColor: "#FFF4E6",
+              borderColor: "#FFB74D",
+            },
+          ]}
+        >
+          <Text style={styles.notificationIcon}>🔔</Text>
+          <View style={styles.notificationContent}>
+            <Text style={[styles.notificationTitle, { color: "#F57C00" }]}>
+              Pengingat
+            </Text>
+            <Text style={[styles.notificationText, { color: "#795548" }]}>
+              Anda memiliki 2 paket yang belum diambil. Segera ambil paket Anda.
+            </Text>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
+            Menu Cepat
+          </Text>
+          <View style={styles.quickActionsGrid}>
+            {quickActions.map((action) => (
+              <TouchableOpacity
+                key={action.id}
+                style={[
+                  styles.quickActionCard,
+                  {
+                    backgroundColor: colors.white,
+                    shadowColor: colors.shadow.color,
+                  },
+                ]}
+                onPress={() => router.push(action.route)}
+              >
+                <View
+                  style={[
+                    styles.quickActionIconContainer,
+                    { backgroundColor: `${action.color}15` },
+                  ]}
+                >
+                  <Text style={styles.quickActionIcon}>{action.icon}</Text>
+                </View>
+                <Text
+                  style={[styles.quickActionTitle, { color: colors.gray900 }]}
+                >
+                  {action.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
+            Aktivitas Terakhir
+          </Text>
+          <View
+            style={[
+              styles.activityCard,
+              {
+                backgroundColor: colors.white,
+                shadowColor: colors.shadow.color,
+              },
+            ]}
+          >
+            <View style={styles.activityItem}>
+              <Text style={styles.activityIcon}>📦</Text>
+              <View style={styles.activityContent}>
+                <Text style={[styles.activityText, { color: colors.gray900 }]}>
+                  Paket baru diterima
+                </Text>
+                <Text style={[styles.activityTime, { color: colors.gray500 }]}>
+                  2 jam yang lalu • REX001234571
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.gray100 }]} />
+            <View style={styles.activityItem}>
+              <Text style={styles.activityIcon}>✅</Text>
+              <View style={styles.activityContent}>
+                <Text style={[styles.activityText, { color: colors.gray900 }]}>
+                  Paket diambil
+                </Text>
+                <Text style={[styles.activityTime, { color: colors.gray500 }]}>
+                  Kemarin • REX001234569
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -64,59 +226,142 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
+  scrollView: {
+    flex: 1,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
+  scrollContent: {
+    padding: 24,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  greeting: {
+    fontSize: 16,
     marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
+  userName: {
+    fontSize: 24,
+    fontWeight: "bold",
   },
-  content: {
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  statCard: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyCard: {
-    borderRadius: 16,
-    padding: 32,
-    borderWidth: 1,
-    alignItems: 'center',
-    maxWidth: 350,
-    width: '100%',
-    shadowColor: '#000',
+    alignItems: "center",
+    padding: 16,
+    marginHorizontal: 4,
+    borderRadius: 12,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  emptyIcon: {
-    fontSize: 64,
+  statIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    textAlign: "center",
+  },
+  notificationCard: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 24,
+  },
+  notificationIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  notificationText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
     marginBottom: 16,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
+  quickActionsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  emptyText: {
-    fontSize: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-    lineHeight: 24,
+  quickActionCard: {
+    flex: 1,
+    alignItems: "center",
+    padding: 16,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  emptySubtext: {
+  quickActionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  quickActionIcon: {
+    fontSize: 24,
+  },
+  quickActionTitle: {
     fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+    fontWeight: "500",
+  },
+  activityCard: {
+    borderRadius: 12,
+    padding: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  activityIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityText: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: 12,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 12,
   },
 });

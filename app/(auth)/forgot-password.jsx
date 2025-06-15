@@ -178,18 +178,18 @@ const styles = StyleSheet.create({
   },
   backLink: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#378e40',
     fontWeight: '600',
   },
   successContainer: {
-    backgroundColor: '#d4edda',
+    backgroundColor: '#378e40',
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#c3e6cb',
+    borderColor: '#378e40',
   },
   successText: {
-    color: '#155724',
+    color: '#ffffff',
     textAlign: 'center',
     fontSize: 14,
   },

@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   SafeAreaView,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,11 +29,28 @@ export default function EditProfile() {
   const colors = getThemeByRole(false);
 
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [formData, setFormData] = useState({
     nama: userProfile?.nama || "",
     noTelp: userProfile?.noTelp || "",
   });
   const [errors, setErrors] = useState({});
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (refreshProfile) {
+        await refreshProfile();
+        setFormData({
+          nama: userProfile?.nama || "",
+          noTelp: userProfile?.noTelp || "",
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    }
+    setRefreshing(false);
+  }, [refreshProfile, userProfile]);
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -167,6 +185,14 @@ export default function EditProfile() {
             styles.scrollContent,
             { paddingBottom: insets.bottom + 32 },
           ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
         >
           <View style={styles.content}>
             <View style={styles.section}>

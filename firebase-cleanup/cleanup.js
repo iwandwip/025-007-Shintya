@@ -62,80 +62,12 @@ async function getFirestoreUsersToDelete() {
   );
 }
 
-async function getPaymentData(timelineId) {
-  const paymentsRef = db.collection('payments').doc(timelineId).collection('periods');
-  const periodsSnapshot = await paymentsRef.get();
-  
-  const allPayments = [];
-  
-  for (const periodDoc of periodsSnapshot.docs) {
-    const santriPaymentsRef = periodDoc.ref.collection('santri_payments');
-    const santriSnapshot = await santriPaymentsRef.get();
-    
-    santriSnapshot.forEach(doc => {
-      allPayments.push({
-        path: doc.ref.path,
-        data: doc.data()
-      });
-    });
-  }
-  
-  return allPayments;
-}
-
 async function getAllRelatedData() {
   const firestoreUsers = await getFirestoreUsersToDelete();
-  const userIds = firestoreUsers.map(user => user.id);
   
   const relatedData = {
-    users: firestoreUsers,
-    payments: [],
-    templates: [],
-    timeline: null,
-    pairing: []
+    users: firestoreUsers
   };
-  
-  try {
-    const timelineDoc = await db.collection('active_timeline').doc('current').get();
-    if (timelineDoc.exists()) {
-      relatedData.timeline = timelineDoc.data();
-      
-      const paymentData = await getPaymentData(timelineDoc.data().id);
-      relatedData.payments = paymentData.filter(payment => 
-        userIds.includes(payment.data.santriId)
-      );
-    }
-  } catch (error) {
-    console.log('No timeline data found');
-  }
-  
-  try {
-    const templatesSnapshot = await db.collection('timeline_templates').get();
-    templatesSnapshot.forEach(doc => {
-      relatedData.templates.push({
-        id: doc.id,
-        path: doc.ref.path,
-        data: doc.data()
-      });
-    });
-  } catch (error) {
-    console.log('No template data found');
-  }
-  
-  try {
-    const pairingSnapshot = await db.collection('rfid_pairing').get();
-    pairingSnapshot.forEach(doc => {
-      if (userIds.includes(doc.data().santriId)) {
-        relatedData.pairing.push({
-          id: doc.id,
-          path: doc.ref.path,
-          data: doc.data()
-        });
-      }
-    });
-  } catch (error) {
-    console.log('No pairing data found');
-  }
   
   return relatedData;
 }
@@ -165,30 +97,9 @@ async function showDryRun(deleteOptions) {
       console.log('  Tidak ada user firestore yang akan dihapus\n');
     } else {
       relatedData.users.forEach((user, index) => {
-        console.log(`  ${index + 1}. ${user.email} (${user.nama || 'No Name'})`);
+        console.log(`  ${index + 1}. ${user.email} (${user.name || 'No Name'})`);
       });
       console.log('');
-    }
-    
-    console.log(`💰 PAYMENT DATA (${relatedData.payments.length}):`);
-    if (relatedData.payments.length === 0) {
-      console.log('  Tidak ada data pembayaran yang akan dihapus\n');
-    } else {
-      console.log(`  ${relatedData.payments.length} records pembayaran akan dihapus\n`);
-    }
-    
-    console.log(`📋 TIMELINE TEMPLATES (${relatedData.templates.length}):`);
-    if (relatedData.templates.length === 0) {
-      console.log('  Tidak ada template yang akan dihapus\n');
-    } else {
-      console.log(`  ${relatedData.templates.length} templates akan dihapus\n`);
-    }
-    
-    console.log(`🏷️  RFID PAIRING (${relatedData.pairing.length}):`);
-    if (relatedData.pairing.length === 0) {
-      console.log('  Tidak ada data pairing yang akan dihapus\n');
-    } else {
-      console.log(`  ${relatedData.pairing.length} pairing records akan dihapus\n`);
     }
   }
   
@@ -241,24 +152,6 @@ async function deleteFirestoreData(relatedData) {
     deleteCount++;
   });
   
-  relatedData.payments.forEach(payment => {
-    const paymentRef = db.doc(payment.path);
-    batch.delete(paymentRef);
-    deleteCount++;
-  });
-  
-  relatedData.templates.forEach(template => {
-    const templateRef = db.doc(template.path);
-    batch.delete(templateRef);
-    deleteCount++;
-  });
-  
-  relatedData.pairing.forEach(pairing => {
-    const pairingRef = db.doc(pairing.path);
-    batch.delete(pairingRef);
-    deleteCount++;
-  });
-  
   try {
     await batch.commit();
     console.log(`✅ Berhasil menghapus ${deleteCount} dokumen dari Firestore`);
@@ -289,11 +182,7 @@ async function handleDeleteOperation(operation) {
   
   const { authUsers, relatedData } = await showDryRun(deleteOptions);
   
-  const totalItems = (authUsers?.length || 0) + 
-                   (relatedData?.users?.length || 0) + 
-                   (relatedData?.payments?.length || 0) + 
-                   (relatedData?.templates?.length || 0) + 
-                   (relatedData?.pairing?.length || 0);
+  const totalItems = (authUsers?.length || 0) + (relatedData?.users?.length || 0);
   
   if (totalItems === 0) {
     console.log('✅ Tidak ada data yang perlu dihapus.');

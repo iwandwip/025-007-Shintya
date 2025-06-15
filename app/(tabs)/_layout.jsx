@@ -38,9 +38,27 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Status Pembayaran",
+          title: "Beranda",
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>💰</Text>
+            <Text style={{ color, fontSize: size }}>🏠</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="list-resi"
+        options={{
+          title: "List Resi",
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>📋</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="kapasitas-paket"
+        options={{
+          title: "Kapasitas",
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>📦</Text>
           ),
         }}
       />
