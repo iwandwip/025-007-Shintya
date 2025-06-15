@@ -10,22 +10,13 @@ import { checkEmailExists } from './authService';
 
 class SeederService {
   constructor() {
-    this.namaSantriList = [
+    this.namaList = [
       'Ahmad Fauzi', 'Siti Aisyah', 'Muhammad Rizki', 'Fatimah Zahra', 'Ali Hassan',
       'Khadijah Nur', 'Umar Faruq', 'Zainab Salma', 'Yusuf Ibrahim', 'Maryam Sari',
       'Khalid Rahman', 'Aisha Dewi', 'Ibrahim Malik', 'Hafsa Putri', 'Salman Hakim',
       'Ruqayyah Indah', 'Hamza Wijaya', 'Sumayyah Lestari', 'Bilal Pratama', 'Ummu Kulthum',
       'Abdullah Surya', 'Safiyyah Wati', 'Uthman Bagus', 'Juwayriyah Sari', 'Mu\'adh Ramdan',
       'Zulaikha Fitri', 'Sa\'ad Permana', 'Rabiah Cantika', 'Zayd Pratomo', 'Ummu Salamah'
-    ];
-
-    this.namaWaliList = [
-      'Bapak Agus Santoso', 'Ibu Siti Rahayu', 'Bapak Joko Widodo', 'Ibu Fitri Handayani', 'Bapak Andi Susanto',
-      'Ibu Dewi Sartika', 'Bapak Bambang Hermawan', 'Ibu Rina Marlina', 'Bapak Dedi Kurniawan', 'Ibu Maya Sari',
-      'Bapak Hendra Gunawan', 'Ibu Lina Kartini', 'Bapak Rudi Hartono', 'Ibu Novi Anggraini', 'Bapak Irwan Setiawan',
-      'Ibu Tuti Wulandari', 'Bapak Budi Prasetyo', 'Ibu Eka Purwanti', 'Bapak Danu Wijaya', 'Ibu Sri Wahyuni',
-      'Bapak Fajar Ramadhan', 'Ibu Indah Permata', 'Bapak Gilang Pratama', 'Ibu Lia Kusuma', 'Bapak Yudi Setiawan',
-      'Ibu Ratna Dewi', 'Bapak Adi Nugroho', 'Ibu Vina Handayani', 'Bapak Reza Firmansyah', 'Ibu Diana Sari'
     ];
   }
 
@@ -140,9 +131,8 @@ class SeederService {
           const password = 'password123';
           
           const profileData = {
-            namaSantri: this.getRandomName(this.namaSantriList),
-            namaWali: this.getRandomName(this.namaWaliList),
-            noHpWali: this.generateRandomPhone(),
+            nama: this.getRandomName(this.namaList),
+            noTelp: this.generateRandomPhone(),
             rfidSantri: this.generateRandomRFID(),
             role: 'user'
           };
@@ -153,10 +143,9 @@ class SeederService {
             results.push({
               email,
               userNumber: emailResult.userNumber,
-              namaSantri: profileData.namaSantri,
-              namaWali: profileData.namaWali,
+              nama: profileData.nama,
               rfidSantri: profileData.rfidSantri,
-              noHpWali: profileData.noHpWali
+              noTelp: profileData.noTelp
             });
           } else {
             errors.push({

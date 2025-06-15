@@ -165,7 +165,7 @@ async function showDryRun(deleteOptions) {
       console.log('  Tidak ada user firestore yang akan dihapus\n');
     } else {
       relatedData.users.forEach((user, index) => {
-        console.log(`  ${index + 1}. ${user.email} (${user.namaSantri || 'No Name'})`);
+        console.log(`  ${index + 1}. ${user.email} (${user.nama || 'No Name'})`);
       });
       console.log('');
     }

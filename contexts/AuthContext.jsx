@@ -72,7 +72,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const { email, password, ...profileData } = userData;
-    const result = await signUpWithEmail(email, password, profileData);
+    // Set default role as 'user' for regular registration
+    const profileDataWithRole = {
+      ...profileData,
+      role: 'user'
+    };
+    const result = await signUpWithEmail(email, password, profileDataWithRole);
     if (!result.success) {
       throw new Error(result.error);
     }

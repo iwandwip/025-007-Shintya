@@ -36,9 +36,8 @@ export const createUserProfile = async (uid, profileData) => {
     };
 
     if (profileData.role === 'user') {
-      userProfile.namaSantri = profileData.namaSantri;
-      userProfile.namaWali = profileData.namaWali;
-      userProfile.noHpWali = profileData.noHpWali;
+      userProfile.nama = profileData.nama;
+      userProfile.noTelp = profileData.noTelp;
       userProfile.rfidSantri = profileData.rfidSantri || "";
     }
 
@@ -126,7 +125,7 @@ export const getAllSantri = async () => {
       });
     });
 
-    santriList.sort((a, b) => a.namaSantri.localeCompare(b.namaSantri));
+    santriList.sort((a, b) => a.nama.localeCompare(b.nama));
 
     return { success: true, data: santriList };
   } catch (error) {
