@@ -10,7 +10,10 @@
     "clear": "expo start --clear",
     "reset": "expo start --clear",
     "test": "node .\\testing\\esp32-simulator.js",
-    "cleanup": "node .\\firebase-cleanup\\cleanup.js"
+    "cleanup": "node .\\firebase-cleanup\\cleanup.js",
+
+    "clean": "rimraf node_modules package-lock.json",
+    "reinstall": "npm run clean && npm install"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.1.2",
@@ -42,7 +45,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "react-native-svg-transformer": "^1.5.1"
+    "react-native-svg-transformer": "^1.5.1",
+    "rimraf": "^6.0.1"
   },
   "private": true,
   "expo": {
