@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getWaliPaymentHistory } from './waliPaymentService';
-import { getAllUsersPaymentStatus } from './adminPaymentService';
 import { getActiveTimeline } from './timelineService';
 
 class PaymentStatusManager {
@@ -138,45 +137,9 @@ class PaymentStatusManager {
     }
   }
 
-  async updateAllUsersPaymentStatus(forceUpdate = false, source = 'manual') {
-    const key = this.getCacheKey('all_users_payments');
-    
-    if (!forceUpdate && this.shouldSkipUpdate('all_users_payments')) {
-      console.log('Skipping all users payment update due to throttling');
-      const cached = await this.getFromCache(key);
-      if (cached) return { success: true, data: cached, fromCache: true };
-    }
-
-    if (this.isUpdating.has(key)) {
-      console.log('All users update already in progress');
-      return { success: false, error: 'Update in progress' };
-    }
-
-    try {
-      this.isUpdating.add(key);
-      console.log(`Updating payment status for all users (source: ${source})`);
-
-      const result = await getAllUsersPaymentStatus();
-      
-      if (result.success) {
-        this.setCache(key, result);
-        this.markUpdateTime('all_users_payments');
-        
-        this.notifyListeners('all_users_updated', {
-          data: result,
-          source
-        });
-
-        return { success: true, data: result, source };
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error updating all users payment status:', error);
-      return { success: false, error: error.message };
-    } finally {
-      this.isUpdating.delete(key);
-    }
+  // Admin functionality removed - this method is no longer available
+  async updateAllUsersPaymentStatus() {
+    return { success: false, error: 'Admin functionality has been removed' };
   }
 
   checkForOverduePayments(payments) {

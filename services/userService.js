@@ -35,10 +35,7 @@ export const createUserProfile = async (uid, profileData) => {
       updatedAt: new Date()
     };
 
-    if (profileData.role === 'admin') {
-      userProfile.nama = profileData.nama;
-      userProfile.noHp = profileData.noHp;
-    } else if (profileData.role === 'user') {
+    if (profileData.role === 'user') {
       userProfile.namaSantri = profileData.namaSantri;
       userProfile.namaWali = profileData.namaWali;
       userProfile.noHpWali = profileData.noHpWali;

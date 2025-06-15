@@ -137,7 +137,7 @@ class SeederService {
           }
 
           const email = emailResult.email;
-          const password = 'admin123';
+          const password = 'password123';
           
           const profileData = {
             namaSantri: this.getRandomName(this.namaSantriList),

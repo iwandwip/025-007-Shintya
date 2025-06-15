@@ -23,8 +23,7 @@ const Input = ({
   numberOfLines,
   ...props
 }) => {
-  const { isAdmin } = useAuth();
-  const theme = getThemeByRole(isAdmin);
+  const theme = getThemeByRole(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 

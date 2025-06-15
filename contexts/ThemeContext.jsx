@@ -13,12 +13,10 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const { isAdmin } = useAuth();
-  const theme = getThemeByRole(isAdmin);
+  const theme = getThemeByRole(false);
 
   const value = {
     theme,
-    isAdmin,
   };
 
   return (

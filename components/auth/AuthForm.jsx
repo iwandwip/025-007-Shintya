@@ -28,7 +28,6 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
 
   const isRegister = type === "register";
   const isForgotPassword = type === "forgot-password";
-  const isAdminEmail = formData.email === "admin@gmail.com";
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -77,11 +76,7 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
 
   const handleNext = () => {
     if (validateStep1()) {
-      if (isAdminEmail) {
-        handleSubmit();
-      } else {
-        setStep(2);
-      }
+      setStep(2);
     }
   };
 
@@ -91,12 +86,12 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
   };
 
   const handleSubmit = () => {
-    if (isRegister && step === 1 && !isAdminEmail) {
+    if (isRegister && step === 1) {
       handleNext();
       return;
     }
 
-    if (isRegister && step === 2 && !isAdminEmail) {
+    if (isRegister && step === 2) {
       if (!validateStep2()) return;
     } else if (!isForgotPassword) {
       if (!validateStep1()) return;
@@ -108,7 +103,7 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
       data.password = formData.password;
     }
 
-    if (isRegister && !isAdminEmail) {
+    if (isRegister) {
       data.profileData = {
         name: formData.name,
         birthdate: formData.birthdate,

@@ -21,17 +21,16 @@ import { updateUserProfile } from "../../services/userService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
 export default function EditProfile() {
-  const { userProfile, refreshProfile, isAdmin } = useAuth();
+  const { userProfile, refreshProfile } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = getThemeByRole(isAdmin);
+  const colors = getThemeByRole(false);
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    namaWali: userProfile?.namaWali || "",
-    noHpWali: userProfile?.noHpWali || "",
-    namaSantri: userProfile?.namaSantri || "",
+    nama: userProfile?.nama || "",
+    noTelp: userProfile?.noTelp || "",
   });
   const [errors, setErrors] = useState({});
 
@@ -45,16 +44,14 @@ export default function EditProfile() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.namaWali.trim()) {
-      newErrors.namaWali = "Nama wali wajib diisi";
+    if (!formData.nama.trim()) {
+      newErrors.nama = "Nama lengkap wajib diisi";
     }
 
-    if (!formData.noHpWali.trim()) {
-      newErrors.noHpWali = "No HP wali wajib diisi";
-    }
-
-    if (!formData.namaSantri.trim()) {
-      newErrors.namaSantri = "Nama santri wajib diisi";
+    if (!formData.noTelp.trim()) {
+      newErrors.noTelp = "Nomor telepon wajib diisi";
+    } else if (!/^[0-9+\-\s]+$/.test(formData.noTelp)) {
+      newErrors.noTelp = "Format nomor telepon tidak valid";
     }
 
     setErrors(newErrors);
@@ -179,47 +176,29 @@ export default function EditProfile() {
                   { color: colors.gray900, borderBottomColor: colors.primary },
                 ]}
               >
-                Informasi Wali Santri
+                Informasi Pengguna
               </Text>
 
               <Input
-                label="Nama Wali"
-                placeholder="Masukkan nama lengkap wali"
-                value={formData.namaWali}
-                onChangeText={(value) => updateFormData("namaWali", value)}
+                label="Nama Lengkap"
+                placeholder="Masukkan nama lengkap Anda"
+                value={formData.nama}
+                onChangeText={(value) => updateFormData("nama", value)}
                 autoCapitalize="words"
-                error={errors.namaWali}
+                error={errors.nama}
               />
 
               <Input
-                label="No HP Wali"
-                placeholder="Masukkan nomor HP wali"
-                value={formData.noHpWali}
-                onChangeText={(value) => updateFormData("noHpWali", value)}
+                label="Nomor Telepon"
+                placeholder="Masukkan nomor telepon Anda"
+                value={formData.noTelp}
+                onChangeText={(value) => updateFormData("noTelp", value)}
                 keyboardType="phone-pad"
-                error={errors.noHpWali}
+                error={errors.noTelp}
               />
             </View>
 
             <View style={styles.section}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.gray900, borderBottomColor: colors.primary },
-                ]}
-              >
-                Informasi Santri
-              </Text>
-
-              <Input
-                label="Nama Santri"
-                placeholder="Masukkan nama lengkap santri"
-                value={formData.namaSantri}
-                onChangeText={(value) => updateFormData("namaSantri", value)}
-                autoCapitalize="words"
-                error={errors.namaSantri}
-              />
-
               <View
                 style={[
                   styles.infoBox,
@@ -227,7 +206,7 @@ export default function EditProfile() {
                 ]}
               >
                 <Text style={[styles.infoText, { color: colors.primary }]}>
-                  ℹ️ RFID santri hanya dapat diatur oleh admin TPQ
+                  ℹ️ Email tidak dapat diubah melalui form ini
                 </Text>
               </View>
             </View>

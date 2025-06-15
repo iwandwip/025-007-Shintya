@@ -17,12 +17,12 @@ import { signOutUser } from "../../services/authService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
 function Profile() {
-  const { currentUser, userProfile, isAdmin } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [loggingOut, setLoggingOut] = useState(false);
-  const colors = getThemeByRole(isAdmin);
+  const colors = getThemeByRole(false);
 
   const handleLogout = async () => {
     Alert.alert("Konfirmasi Logout", "Apakah Anda yakin ingin keluar?", [
@@ -34,7 +34,7 @@ function Profile() {
           setLoggingOut(true);
           const result = await signOutUser();
           if (result.success) {
-            router.replace("/role-selection");
+            router.replace("/(auth)/login");
           } else {
             Alert.alert("Gagal Logout", "Gagal keluar. Silakan coba lagi.");
           }
@@ -94,10 +94,10 @@ function Profile() {
               </Text>
             </View>
             <Text style={[styles.nameText, { color: colors.gray900 }]}>
-              {userProfile?.namaWali || "Nama Wali"}
+              {userProfile?.nama || "Nama User"}
             </Text>
             <Text style={[styles.roleText, { color: colors.gray600 }]}>
-              Wali Santri
+              User
             </Text>
           </View>
 
@@ -113,7 +113,7 @@ function Profile() {
                 ]}
               >
                 <Text style={[styles.cardTitle, { color: colors.gray900 }]}>
-                  Informasi Wali Santri
+                  Informasi Pengguna
                 </Text>
 
                 <View
@@ -123,10 +123,10 @@ function Profile() {
                   ]}
                 >
                   <Text style={[styles.label, { color: colors.gray600 }]}>
-                    Nama Wali:
+                    Nama Lengkap:
                   </Text>
                   <Text style={[styles.value, { color: colors.gray900 }]}>
-                    {userProfile.namaWali}
+                    {userProfile.nama}
                   </Text>
                 </View>
 
@@ -137,10 +137,10 @@ function Profile() {
                   ]}
                 >
                   <Text style={[styles.label, { color: colors.gray600 }]}>
-                    No HP:
+                    No Telepon:
                   </Text>
                   <Text style={[styles.value, { color: colors.gray900 }]}>
-                    {userProfile.noHpWali}
+                    {userProfile.noTelp}
                   </Text>
                 </View>
 
@@ -157,79 +157,6 @@ function Profile() {
                     {userProfile.email}
                   </Text>
                 </View>
-              </View>
-
-              <View
-                style={[
-                  styles.profileCard,
-                  {
-                    backgroundColor: colors.white,
-                    shadowColor: colors.shadow.color,
-                  },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: colors.gray900 }]}>
-                  Informasi Santri
-                </Text>
-
-                <View
-                  style={[
-                    styles.profileRow,
-                    { borderBottomColor: colors.gray100 },
-                  ]}
-                >
-                  <Text style={[styles.label, { color: colors.gray600 }]}>
-                    Nama Santri:
-                  </Text>
-                  <Text style={[styles.value, { color: colors.gray900 }]}>
-                    {userProfile.namaSantri}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.profileRow,
-                    { borderBottomColor: colors.gray100 },
-                  ]}
-                >
-                  <Text style={[styles.label, { color: colors.gray600 }]}>
-                    Status RFID:
-                  </Text>
-                  <Text
-                    style={[
-                      styles.value,
-                      {
-                        color: userProfile.rfidSantri
-                          ? colors.success
-                          : colors.error,
-                      },
-                    ]}
-                  >
-                    {userProfile.rfidSantri ? "Terpasang" : "Belum Terpasang"}
-                  </Text>
-                </View>
-
-                {userProfile.rfidSantri && (
-                  <View
-                    style={[
-                      styles.profileRow,
-                      { borderBottomColor: colors.gray100 },
-                    ]}
-                  >
-                    <Text style={[styles.label, { color: colors.gray600 }]}>
-                      Kode RFID:
-                    </Text>
-                    <Text
-                      style={[
-                        styles.value,
-                        styles.rfidCode,
-                        { color: colors.gray900 },
-                      ]}
-                    >
-                      {userProfile.rfidSantri}
-                    </Text>
-                  </View>
-                )}
               </View>
 
               <View

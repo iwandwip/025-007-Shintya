@@ -3,6 +3,7 @@ import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserProfile } from "../services/userService";
 import { paymentStatusManager } from "../services/paymentStatusManager";
+import { signInWithEmail, signUpWithEmail, signOutUser } from "../services/authService";
 
 const AuthContext = createContext({});
 
@@ -14,7 +15,6 @@ export const useAuth = () => {
       userProfile: null,
       loading: false,
       authInitialized: true,
-      isAdmin: false,
       refreshProfile: () => {},
     };
   }
@@ -26,88 +26,33 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authInitialized, setAuthInitialized] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  const checkAdminStatus = (user, profile) => {
-    return (
-      user?.email === "admin@gmail.com" ||
-      profile?.role === "admin" ||
-      profile?.isAdmin
-    );
-  };
 
   const loadUserProfile = async (user) => {
     if (!user) {
       setUserProfile(null);
-      setIsAdmin(false);
       return;
     }
 
     try {
       const result = await getUserProfile(user.uid);
       if (result.success) {
-        const adminStatus = checkAdminStatus(user, result.profile);
-        setIsAdmin(adminStatus);
         setUserProfile(result.profile);
 
-        if (!adminStatus && result.profile.role === "user") {
+        if (result.profile.role === "user") {
           try {
             await paymentStatusManager.handleUserLogin(user.uid);
           } catch (error) {
             console.warn("Error during payment status update on login:", error);
           }
-        } else if (adminStatus) {
-          try {
-            await paymentStatusManager.handleUserLogin(null);
-          } catch (error) {
-            console.warn(
-              "Error during admin payment status update on login:",
-              error
-            );
-          }
         }
       } else {
-        const adminStatus = checkAdminStatus(user, null);
-        setIsAdmin(adminStatus);
-
-        if (adminStatus) {
-          setUserProfile({
-            id: user.uid,
-            email: user.email,
-            name: "Admin",
-            role: "admin",
-            isAdmin: true,
-          });
-
-          try {
-            await paymentStatusManager.handleUserLogin(null);
-          } catch (error) {
-            console.warn(
-              "Error during admin payment status update on login:",
-              error
-            );
-          }
-        } else {
-          console.warn("Failed to load user profile:", result.error);
-          setUserProfile(null);
-        }
+        console.warn("Failed to load user profile:", result.error);
+        setUserProfile(null);
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
-      const adminStatus = checkAdminStatus(user, null);
-      setIsAdmin(adminStatus);
-
-      if (adminStatus) {
-        setUserProfile({
-          id: user.uid,
-          email: user.email,
-          name: "Admin",
-          role: "admin",
-          isAdmin: true,
-        });
-      } else {
-        setUserProfile(null);
-      }
+      setUserProfile(null);
     }
   };
 
@@ -115,6 +60,31 @@ export const AuthProvider = ({ children }) => {
     if (currentUser) {
       await loadUserProfile(currentUser);
     }
+  };
+
+  const login = async (email, password) => {
+    const result = await signInWithEmail(email, password);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    return result;
+  };
+
+  const register = async (userData) => {
+    const { email, password, ...profileData } = userData;
+    const result = await signUpWithEmail(email, password, profileData);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    return result;
+  };
+
+  const logout = async () => {
+    const result = await signOutUser();
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    return result;
   };
 
   useEffect(() => {
@@ -129,7 +99,6 @@ export const AuthProvider = ({ children }) => {
           setUserProfile(null);
           setLoading(false);
           setAuthInitialized(true);
-          setIsAdmin(false);
         }
         return;
       }
@@ -156,8 +125,7 @@ export const AuthProvider = ({ children }) => {
               setUserProfile(null);
               setLoading(false);
               setAuthInitialized(true);
-              setIsAdmin(false);
-            }
+                }
           }
         );
       } catch (error) {
@@ -167,7 +135,6 @@ export const AuthProvider = ({ children }) => {
           setUserProfile(null);
           setLoading(false);
           setAuthInitialized(true);
-          setIsAdmin(false);
         }
       }
     };
@@ -179,7 +146,6 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(null);
         setLoading(false);
         setAuthInitialized(true);
-        setIsAdmin(false);
       }
     }, 5000);
 
@@ -199,8 +165,10 @@ export const AuthProvider = ({ children }) => {
     userProfile,
     loading,
     authInitialized,
-    isAdmin,
     refreshProfile,
+    login,
+    register,
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

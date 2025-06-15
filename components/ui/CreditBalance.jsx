@@ -5,8 +5,7 @@ import { getColors, getThemeByRole } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 
 const CreditBalance = ({ creditBalance = 0, style }) => {
-  const { isAdmin } = useAuth();
-  const colors = getThemeByRole(isAdmin);
+  const colors = getThemeByRole(false);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {

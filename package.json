@@ -41,7 +41,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "react-native-svg-transformer": "^1.5.1"
   },
   "private": true,
   "expo": {

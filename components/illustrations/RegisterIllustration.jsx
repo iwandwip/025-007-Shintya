@@ -1,14 +1,11 @@
 import React from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import RegisterSvg from "../../assets/images/register-illustration.svg";
 
 const RegisterIllustration = ({ width = 280, height = 200, style }) => {
   return (
-    <View style={[styles.container, style, { width, height }]}>
-      <Image
-        source={require("../../assets/images/register.png")}
-        style={styles.image}
-        resizeMode="contain"
-      />
+    <View style={[styles.container, style]}>
+      <RegisterSvg width={width} height={height} />
     </View>
   );
 };

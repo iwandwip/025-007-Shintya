@@ -11,8 +11,7 @@ const Button = ({
   style,
   textStyle,
 }) => {
-  const { isAdmin } = useAuth();
-  const theme = getThemeByRole(isAdmin);
+  const theme = getThemeByRole(false);
   
   const getButtonStyle = () => {
     const baseStyle = {

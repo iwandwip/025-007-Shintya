@@ -1,14 +1,11 @@
 import React from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import ForgotPasswordSvg from "../../assets/images/forgot-password-illustration.svg";
 
 const ForgotPasswordIllustration = ({ width = 280, height = 200, style }) => {
   return (
-    <View style={[styles.container, style, { width, height }]}>
-      <Image
-        source={require("../../assets/images/forgot-password.png")}
-        style={styles.image}
-        resizeMode="contain"
-      />
+    <View style={[styles.container, style]}>
+      <ForgotPasswordSvg width={width} height={height} />
     </View>
   );
 };

@@ -1,6 +1,6 @@
 // Base theme colors
 export const lightTheme = {
-  primary: '#F50057',
+  primary: '#378e40',
   secondary: '#00f59e',
   background: '#ffffff',
   white: '#ffffff',
@@ -18,7 +18,7 @@ export const lightTheme = {
   gray800: '#1f2937',
   gray900: '#111827',
   
-  success: '#10b981',
+  success: '#378e40',
   warning: '#f59e0b',
   error: '#ef4444',
   
@@ -29,47 +29,14 @@ export const lightTheme = {
   },
 };
 
-// Admin theme (Blue)
-export const adminTheme = {
-  primary: '#2563eb',      // Blue 600
-  primaryLight: '#3b82f6', // Blue 500
-  primaryDark: '#1d4ed8',  // Blue 700
-  secondary: '#60a5fa',    // Blue 400
-  accent: '#dbeafe',       // Blue 100
-  background: '#ffffff',
-  white: '#ffffff',
-  black: '#000000',
-  
-  gray25: '#fcfcfd',
-  gray50: '#f9fafb',
-  gray100: '#f3f4f6',
-  gray200: '#e5e7eb',
-  gray300: '#d1d5db',
-  gray400: '#9ca3af',
-  gray500: '#6b7280',
-  gray600: '#4b5563',
-  gray700: '#374151',
-  gray800: '#1f2937',
-  gray900: '#111827',
-  
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  
-  border: '#e5e7eb',
-  
-  shadow: {
-    color: '#000000',
-  },
-};
 
 // Wali theme (Green)
 export const waliTheme = {
-  primary: '#059669',      // Green 600
-  primaryLight: '#10b981', // Green 500
-  primaryDark: '#047857',  // Green 700
-  secondary: '#34d399',    // Green 400
-  accent: '#d1fae5',       // Green 100
+  primary: '#378e40',      // Custom Green
+  primaryLight: '#4caf50', // Lighter Green
+  primaryDark: '#2e7d32',  // Darker Green
+  secondary: '#81c784',    // Light Green
+  accent: '#e8f5e8',       // Very Light Green
   background: '#ffffff',
   white: '#ffffff',
   black: '#000000',
@@ -86,7 +53,7 @@ export const waliTheme = {
   gray800: '#1f2937',
   gray900: '#111827',
   
-  success: '#10b981',
+  success: '#378e40',
   warning: '#f59e0b',
   error: '#ef4444',
   
@@ -98,7 +65,7 @@ export const waliTheme = {
 };
 
 export const darkTheme = {
-  primary: '#F50057',
+  primary: '#378e40',
   secondary: '#00f59e',
   background: '#111827',
   white: '#1f2937',
@@ -138,9 +105,6 @@ export const getColors = (theme) => {
 export const getThemeByRole = (isAdmin, isDark = false) => {
   if (isDark) {
     return darkTheme;
-  }
-  if (isAdmin) {
-    return adminTheme;
   }
   return waliTheme;
 };
