@@ -15,7 +15,7 @@ import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import { signInWithEmail } from "../../services/authService";
 
-export default function Login() {
+export default function WaliLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,9 +56,12 @@ export default function Login() {
 
         <View style={styles.content}>
           <View style={styles.titleSection}>
-            <Text style={styles.title}>Masuk</Text>
+            <Text style={styles.title}>Masuk Wali Santri</Text>
             <Text style={styles.subtitle}>
-              Masuk ke akun Anda
+              Masuk untuk memantau dan membayar bisyaroh
+            </Text>
+            <Text style={styles.infoText}>
+              Belum punya akun? Hubungi admin TPQ untuk pendaftaran
             </Text>
           </View>
 
@@ -86,20 +89,6 @@ export default function Login() {
               disabled={loading}
               style={styles.loginButton}
             />
-
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => router.push("/(auth)/forgot-password")}
-            >
-              <Text style={styles.linkText}>Lupa Password?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => router.push("/(auth)/register")}
-            >
-              <Text style={styles.linkText}>Belum punya akun? Daftar</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -164,14 +153,5 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: 8,
     backgroundColor: "#10b981",
-  },
-  linkButton: {
-    alignItems: "center",
-    marginTop: 16,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#10b981",
-    fontWeight: "500",
   },
 });

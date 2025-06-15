@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { Colors, getThemeByRole } from "../../constants/Colors";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Button = ({
   title,
@@ -10,73 +11,100 @@ const Button = ({
   style,
   textStyle,
 }) => {
+  const { isAdmin } = useAuth();
+  const theme = getThemeByRole(isAdmin);
+  
+  const getButtonStyle = () => {
+    const baseStyle = {
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 48,
+    };
+
+    if (disabled) {
+      return {
+        ...baseStyle,
+        backgroundColor: theme.gray300,
+      };
+    }
+
+    switch (variant) {
+      case "primary":
+        return {
+          ...baseStyle,
+          backgroundColor: theme.primary,
+        };
+      case "secondary":
+        return {
+          ...baseStyle,
+          backgroundColor: theme.secondary,
+          borderWidth: 1,
+          borderColor: theme.primary,
+        };
+      case "outline":
+        return {
+          ...baseStyle,
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: theme.primary,
+        };
+      default:
+        return {
+          ...baseStyle,
+          backgroundColor: theme.primary,
+        };
+    }
+  };
+
+  const getTextStyle = () => {
+    const baseStyle = {
+      fontSize: 16,
+      fontWeight: "600",
+    };
+
+    if (disabled) {
+      return {
+        ...baseStyle,
+        color: theme.gray500,
+      };
+    }
+
+    switch (variant) {
+      case "primary":
+        return {
+          ...baseStyle,
+          color: theme.white,
+        };
+      case "secondary":
+      case "outline":
+        return {
+          ...baseStyle,
+          color: theme.primary,
+        };
+      default:
+        return {
+          ...baseStyle,
+          color: theme.white,
+        };
+    }
+  };
+
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        styles[variant],
-        disabled && styles.disabled,
-        style,
-      ]}
+      style={[getButtonStyle(), style]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
     >
-      <Text
-        style={[
-          styles.text,
-          styles[`${variant}Text`],
-          disabled && styles.disabledText,
-          textStyle,
-        ]}
-      >
+      <Text style={[getTextStyle(), textStyle]}>
         {title}
       </Text>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-  },
-  primary: {
-    backgroundColor: Colors.primary,
-  },
-  secondary: {
-    backgroundColor: Colors.secondary,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  outline: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  disabled: {
-    backgroundColor: Colors.gray300,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  primaryText: {
-    color: Colors.white,
-  },
-  secondaryText: {
-    color: Colors.primary,
-  },
-  outlineText: {
-    color: Colors.primary,
-  },
-  disabledText: {
-    color: Colors.gray500,
-  },
-});
 
 export default Button;

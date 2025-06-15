@@ -29,13 +29,21 @@ export const createUserProfile = async (uid, profileData) => {
     const userProfile = {
       id: uid,
       email: profileData.email,
-      nama: profileData.nama,
-      noTelp: profileData.noTelp,
-      role: 'user',
+      role: profileData.role,
       deleted: false,
       createdAt: new Date(),
       updatedAt: new Date()
     };
+
+    if (profileData.role === 'admin') {
+      userProfile.nama = profileData.nama;
+      userProfile.noHp = profileData.noHp;
+    } else if (profileData.role === 'user') {
+      userProfile.namaSantri = profileData.namaSantri;
+      userProfile.namaWali = profileData.namaWali;
+      userProfile.noHpWali = profileData.noHpWali;
+      userProfile.rfidSantri = profileData.rfidSantri || "";
+    }
 
     await setDoc(doc(db, 'users', uid), userProfile);
     console.log('Profil user berhasil dibuat');

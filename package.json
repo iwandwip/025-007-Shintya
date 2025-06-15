@@ -13,12 +13,12 @@
     "cleanup": "node .\\firebase-cleanup\\cleanup.js"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^1.24.0",
-    "@react-native-community/datetimepicker": "^8.3.0",
-    "@react-navigation/native": "^7.1.10",
-    "expo": "~53.0.10",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "8.3.0",
+    "@react-navigation/native": "^7.1.6",
+    "expo": "53.0.11",
     "expo-constants": "~17.1.6",
-    "expo-crypto": "~14.1.1",
+    "expo-crypto": "~14.1.5",
     "expo-file-system": "~18.1.10",
     "expo-linking": "~7.1.5",
     "expo-router": "~5.1.0",
@@ -43,5 +43,22 @@
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-chart-kit",
+          "react-native-keyboard-aware-scroll-view",
+          "firebase",
+          "firebase-admin",
+          "inquirer",
+          "jspdf",
+          "jspdf-autotable",
+          "xlsx"
+        ],
+        "listUnknownPackages": false
+      }
+    }
+  }
 }

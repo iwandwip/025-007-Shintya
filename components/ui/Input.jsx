@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { Colors, getThemeByRole } from "../../constants/Colors";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Input = ({
   label,
@@ -22,6 +23,8 @@ const Input = ({
   numberOfLines,
   ...props
 }) => {
+  const { isAdmin } = useAuth();
+  const theme = getThemeByRole(isAdmin);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -29,19 +32,54 @@ const Input = ({
     setIsPasswordVisible(!isPasswordVisible);
   };
 
+  const getInputContainerStyle = () => {
+    const baseStyle = {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.gray300,
+      borderRadius: 8,
+      backgroundColor: theme.white,
+      minHeight: 48,
+    };
+
+    if (error) {
+      return { ...baseStyle, borderColor: theme.error };
+    }
+    if (isFocused) {
+      return { ...baseStyle, borderColor: theme.primary };
+    }
+    if (multiline) {
+      return { ...baseStyle, alignItems: "flex-start", minHeight: 80 };
+    }
+
+    return baseStyle;
+  };
+
   return (
-    <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View
-        style={[
-          styles.inputContainer,
-          isFocused && styles.inputContainerFocused,
-          error && styles.inputContainerError,
-          multiline && styles.inputContainerMultiline,
-        ]}
-      >
+    <View style={[{ marginBottom: 16 }, style]}>
+      {label && (
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "500",
+            color: theme.gray700,
+            marginBottom: 8,
+          }}
+        >
+          {label}
+        </Text>
+      )}
+      <View style={getInputContainerStyle()}>
         <TextInput
-          style={[styles.input, multiline && styles.inputMultiline]}
+          style={{
+            flex: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            fontSize: 16,
+            color: theme.gray900,
+            textAlignVertical: multiline ? "top" : "center",
+          }}
           placeholder={placeholder}
           value={value}
           onChangeText={onChangeText}
@@ -50,10 +88,9 @@ const Input = ({
           autoCapitalize={autoCapitalize}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholderTextColor={Colors.gray400}
+          placeholderTextColor={theme.gray400}
           multiline={multiline}
           numberOfLines={numberOfLines}
-          textAlignVertical={multiline ? "top" : "center"}
           blurOnSubmit={!multiline}
           returnKeyType={multiline ? "default" : "done"}
           autoCorrect={false}
@@ -62,74 +99,33 @@ const Input = ({
         />
         {secureTextEntry && (
           <TouchableOpacity
-            style={styles.eyeButton}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            }}
             onPress={togglePasswordVisibility}
             activeOpacity={0.7}
           >
-            <Text style={styles.eyeText}>
+            <Text style={{ fontSize: 16 }}>
               {isPasswordVisible ? "👁️" : "🙈"}
             </Text>
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text
+          style={{
+            fontSize: 12,
+            color: theme.error,
+            marginTop: 4,
+          }}
+        >
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: Colors.gray700,
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.gray300,
-    borderRadius: 8,
-    backgroundColor: Colors.white,
-    minHeight: 48,
-  },
-  inputContainerFocused: {
-    borderColor: Colors.primary,
-  },
-  inputContainerError: {
-    borderColor: Colors.error,
-  },
-  inputContainerMultiline: {
-    alignItems: "flex-start",
-    minHeight: 80,
-  },
-  input: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: Colors.gray900,
-  },
-  inputMultiline: {
-    paddingTop: 12,
-    paddingBottom: 12,
-    textAlignVertical: "top",
-  },
-  eyeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  eyeText: {
-    fontSize: 16,
-  },
-  errorText: {
-    fontSize: 12,
-    color: Colors.error,
-    marginTop: 4,
-  },
-});
 
 export default Input;

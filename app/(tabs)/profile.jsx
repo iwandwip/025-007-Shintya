@@ -14,15 +14,15 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import Button from "../../components/ui/Button";
 import { signOutUser } from "../../services/authService";
-import { getColors } from "../../constants/Colors";
+import { getColors, getThemeByRole } from "../../constants/Colors";
 
 function Profile() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, isAdmin } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [loggingOut, setLoggingOut] = useState(false);
-  const colors = getColors(theme);
+  const colors = getThemeByRole(isAdmin);
 
   const handleLogout = async () => {
     Alert.alert("Konfirmasi Logout", "Apakah Anda yakin ingin keluar?", [

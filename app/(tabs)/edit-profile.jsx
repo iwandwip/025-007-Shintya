@@ -18,14 +18,14 @@ import { useSettings } from "../../contexts/SettingsContext";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import { updateUserProfile } from "../../services/userService";
-import { getColors } from "../../constants/Colors";
+import { getColors, getThemeByRole } from "../../constants/Colors";
 
 export default function EditProfile() {
-  const { userProfile, refreshProfile } = useAuth();
+  const { userProfile, refreshProfile, isAdmin } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = getColors(theme);
+  const colors = getThemeByRole(isAdmin);
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

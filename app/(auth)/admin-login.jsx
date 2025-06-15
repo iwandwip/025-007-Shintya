@@ -9,35 +9,32 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
-import { resetPassword } from "../../services/authService";
+import { signInWithEmail } from "../../services/authService";
 
-export default function ForgotPassword() {
+export default function AdminLogin() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleResetPassword = async () => {
-    if (!email.trim()) {
-      Alert.alert("Error", "Mohon isi email Anda");
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Mohon isi email dan password");
       return;
     }
 
     setLoading(true);
-    const result = await resetPassword(email);
+    const result = await signInWithEmail(email, password);
 
     if (result.success) {
-      Alert.alert(
-        "Berhasil", 
-        "Link reset password telah dikirim ke email Anda",
-        [{ text: "OK", onPress: () => router.back() }]
-      );
+      router.replace("/(admin)");
     } else {
-      Alert.alert("Gagal", result.error);
+      Alert.alert("Masuk Gagal", result.error);
     }
     setLoading(false);
   };
@@ -59,35 +56,43 @@ export default function ForgotPassword() {
 
         <View style={styles.content}>
           <View style={styles.titleSection}>
-            <Text style={styles.title}>Lupa Password</Text>
+            <Text style={styles.title}>Masuk Admin</Text>
             <Text style={styles.subtitle}>
-              Masukkan email Anda untuk menerima link reset password
+              Masuk sebagai Administrator TPQ Ibadurrohman
             </Text>
           </View>
 
           <View style={styles.formSection}>
             <Input
               label="Email"
-              placeholder="Masukkan email Anda"
+              placeholder="Masukkan email admin"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
 
-            <Button
-              title={loading ? "Mengirim..." : "Kirim Link Reset"}
-              onPress={handleResetPassword}
-              disabled={loading}
-              style={styles.resetButton}
+            <Input
+              label="Password"
+              placeholder="Masukkan password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
             />
 
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => router.push("/(auth)/login")}
-            >
-              <Text style={styles.linkText}>Kembali ke Masuk</Text>
-            </TouchableOpacity>
+            <Button
+              title={loading ? "Sedang Masuk..." : "Masuk"}
+              onPress={handleLogin}
+              disabled={loading}
+              style={styles.loginButton}
+            />
+          </View>
+
+          <View style={styles.registerSection}>
+            <Text style={styles.registerText}>Belum memiliki akun admin?</Text>
+            <Link href="/(auth)/admin-register" style={styles.registerLink}>
+              Daftar Sekarang
+            </Link>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -98,7 +103,7 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0fdf4",
+    backgroundColor: "#f8fafc",
   },
   keyboardContainer: {
     flex: 1,
@@ -112,7 +117,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#10b981",
+    color: "#3b82f6",
     fontWeight: "500",
   },
   content: {
@@ -139,17 +144,20 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: 32,
   },
-  resetButton: {
+  loginButton: {
     marginTop: 8,
-    backgroundColor: "#10b981",
   },
-  linkButton: {
+  registerSection: {
     alignItems: "center",
-    marginTop: 16,
   },
-  linkText: {
+  registerText: {
     fontSize: 14,
-    color: "#10b981",
-    fontWeight: "500",
+    color: "#64748b",
+    marginBottom: 8,
+  },
+  registerLink: {
+    fontSize: 14,
+    color: "#3b82f6",
+    fontWeight: "600",
   },
 });
