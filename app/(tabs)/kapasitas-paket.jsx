@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,18 +9,15 @@ import {
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { getThemeByRole } from "../../constants/Colors";
-
-const kapasitasData = {
-  totalKapasitas: 100,
-  terpakai: 85,
-  tersisa: 15,
-  status: "Hampir Penuh",
-  pesan: "Segera ambil paket Anda",
-  statusColor: "#FF6B6B", // Red color for warning
-};
+import { 
+  getCapacityData, 
+  subscribeToCapacityUpdates, 
+  calculateCapacityStatus 
+} from "../../services/capacityService";
 
 function KapasitasPaket() {
   const { userProfile, refreshProfile } = useAuth();
@@ -28,10 +25,77 @@ function KapasitasPaket() {
   const insets = useSafeAreaInsets();
   const colors = getThemeByRole(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [kapasitasData, setKapasitasData] = useState({
+    height: 0,
+    maxHeight: 30,
+    percentage: 0,
+    status: "Kosong",
+    message: "Box kosong, siap menerima paket",
+    color: "#22C55E",
+    lastUpdated: null,
+    deviceId: null
+  });
+  const [loading, setLoading] = useState(true);
+
+  const loadKapasitas = async () => {
+    try {
+      const result = await getCapacityData();
+      if (result.success) {
+        const { height, maxHeight, lastUpdated, deviceId } = result.data;
+        const statusInfo = calculateCapacityStatus(height, maxHeight);
+        
+        setKapasitasData({
+          height,
+          maxHeight,
+          percentage: statusInfo.percentage,
+          status: statusInfo.status,
+          message: statusInfo.message,
+          color: statusInfo.color,
+          lastUpdated,
+          deviceId
+        });
+      }
+    } catch (error) {
+      console.error('Error loading kapasitas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadKapasitas();
+    
+    const unsubscribe = subscribeToCapacityUpdates((result) => {
+      if (result.success) {
+        const { height, maxHeight, lastUpdated, deviceId } = result.data;
+        const statusInfo = calculateCapacityStatus(height, maxHeight);
+        
+        setKapasitasData({
+          height,
+          maxHeight,
+          percentage: statusInfo.percentage,
+          status: statusInfo.status,
+          message: statusInfo.message,
+          color: statusInfo.color,
+          lastUpdated,
+          deviceId
+        });
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadKapasitas();
+    }, [])
+  );
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
+      await loadKapasitas();
       if (refreshProfile) {
         await refreshProfile();
       }
@@ -43,22 +107,37 @@ function KapasitasPaket() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Hampir Penuh":
-        return "⚠️";
       case "Penuh":
         return "🚫";
-      case "Tersedia":
+      case "Hampir Penuh":
+        return "⚠️";
+      case "Terisi Sebagian":
+        return "📦";
+      case "Kosong":
         return "✅";
       default:
-        return "📦";
+        return "📏";
     }
   };
 
-  const getProgressPercentage = () => {
-    return (kapasitasData.terpakai / kapasitasData.totalKapasitas) * 100;
+  const formatLastUpdated = (timestamp) => {
+    if (!timestamp) return 'Belum ada data';
+    
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Waktu tidak valid';
+    }
   };
 
-  if (settingsLoading) {
+  if (settingsLoading || loading) {
     return (
       <SafeAreaView
         style={[
@@ -104,7 +183,7 @@ function KapasitasPaket() {
             Kapasitas Paket
           </Text>
           <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>
-            Status kapasitas box penyimpanan
+            Monitoring ketinggian paket dengan sensor ultrasonik
           </Text>
         </View>
 
@@ -122,11 +201,11 @@ function KapasitasPaket() {
               {getStatusIcon(kapasitasData.status)}
             </Text>
             <View style={styles.statusInfo}>
-              <Text style={[styles.statusText, { color: kapasitasData.statusColor }]}>
+              <Text style={[styles.statusText, { color: kapasitasData.color }]}>
                 {kapasitasData.status}
               </Text>
               <Text style={[styles.statusMessage, { color: colors.gray600 }]}>
-                {kapasitasData.pesan}
+                {kapasitasData.message}
               </Text>
             </View>
           </View>
@@ -137,14 +216,14 @@ function KapasitasPaket() {
                 style={[
                   styles.progressFill,
                   {
-                    width: `${getProgressPercentage()}%`,
-                    backgroundColor: kapasitasData.statusColor,
+                    width: `${kapasitasData.percentage}%`,
+                    backgroundColor: kapasitasData.color,
                   },
                 ]}
               />
             </View>
             <Text style={[styles.progressText, { color: colors.gray600 }]}>
-              {getProgressPercentage().toFixed(1)}% terpakai
+              {kapasitasData.percentage.toFixed(1)}% terisi
             </Text>
           </View>
         </View>
@@ -165,37 +244,69 @@ function KapasitasPaket() {
           <View style={styles.detailGrid}>
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                Total Kapasitas
+                Ketinggian Saat Ini
+              </Text>
+              <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
+                {kapasitasData.height}
+              </Text>
+              <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
+                cm
+              </Text>
+            </View>
+
+            <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
+              <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
+                Batas Maksimal
               </Text>
               <Text style={[styles.detailValue, { color: colors.primary }]}>
-                {kapasitasData.totalKapasitas}
+                {kapasitasData.maxHeight}
               </Text>
               <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
-                paket
+                cm
               </Text>
             </View>
 
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                Terpakai
+                Persentase
               </Text>
-              <Text style={[styles.detailValue, { color: kapasitasData.statusColor }]}>
-                {kapasitasData.terpakai}
+              <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
+                {kapasitasData.percentage.toFixed(1)}
               </Text>
               <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
-                paket
+                %
               </Text>
             </View>
+          </View>
+        </View>
 
-            <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
-              <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                Tersisa
+        <View
+          style={[
+            styles.sensorCard,
+            {
+              backgroundColor: colors.white,
+              shadowColor: colors.shadow.color,
+            },
+          ]}
+        >
+          <Text style={[styles.cardTitle, { color: colors.gray900 }]}>
+            Informasi Sensor
+          </Text>
+          <View style={styles.sensorGrid}>
+            <View style={styles.sensorItem}>
+              <Text style={[styles.sensorLabel, { color: colors.gray600 }]}>
+                Device ID
               </Text>
-              <Text style={[styles.detailValue, { color: colors.success || colors.green600 }]}>
-                {kapasitasData.tersisa}
+              <Text style={[styles.sensorValue, { color: colors.gray900 }]}>
+                {kapasitasData.deviceId || 'Tidak terhubung'}
               </Text>
-              <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
-                paket
+            </View>
+            <View style={styles.sensorItem}>
+              <Text style={[styles.sensorLabel, { color: colors.gray600 }]}>
+                Update Terakhir
+              </Text>
+              <Text style={[styles.sensorValue, { color: colors.gray900 }]}>
+                {formatLastUpdated(kapasitasData.lastUpdated)}
               </Text>
             </View>
           </View>
@@ -214,15 +325,21 @@ function KapasitasPaket() {
             Informasi
           </Text>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
+            <Text style={styles.infoIcon}>📏</Text>
             <Text style={[styles.infoText, { color: colors.gray600 }]}>
-              Kapasitas box akan diperbarui secara otomatis setiap kali ada paket yang masuk atau keluar.
+              Sensor ultrasonik mengukur ketinggian paket secara real-time dan memperbarui data otomatis.
             </Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoIcon}>🔔</Text>
+            <Text style={styles.infoIcon}>🔄</Text>
             <Text style={[styles.infoText, { color: colors.gray600 }]}>
-              Anda akan mendapat notifikasi ketika kapasitas mencapai batas tertentu.
+              Data kapasitas diperbarui langsung oleh ESP32 setiap kali ada perubahan ketinggian paket.
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoIcon}>⚡</Text>
+            <Text style={[styles.infoText, { color: colors.gray600 }]}>
+              Sistem monitoring berjalan 24/7 untuk memastikan akurasi data kapasitas box.
             </Text>
           </View>
         </View>
@@ -347,6 +464,30 @@ const styles = StyleSheet.create({
   },
   detailUnit: {
     fontSize: 12,
+  },
+  sensorCard: {
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sensorGrid: {
+    gap: 12,
+  },
+  sensorItem: {
+    paddingVertical: 8,
+  },
+  sensorLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  sensorValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   infoCard: {
     borderRadius: 12,

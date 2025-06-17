@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import Button from "../../components/ui/Button";
+import QRCodeModal from "../../components/ui/QRCodeModal";
 import { signOutUser } from "../../services/authService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
@@ -24,7 +25,8 @@ function Profile() {
   const insets = useSafeAreaInsets();
   const [loggingOut, setLoggingOut] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const colors = getThemeByRole(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const colors = getThemeByRole(userProfile?.role === 'admin');
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -60,6 +62,10 @@ function Profile() {
 
   const handleEditProfile = () => {
     router.push("/(tabs)/edit-profile");
+  };
+
+  const handleShowQRCode = () => {
+    setQrModalVisible(true);
   };
 
   if (settingsLoading) {
@@ -119,7 +125,7 @@ function Profile() {
               {userProfile?.nama || "Nama User"}
             </Text>
             <Text style={[styles.roleText, { color: colors.gray600 }]}>
-              User
+              {userProfile?.role === 'admin' ? 'Administrator' : 'Pengguna'}
             </Text>
           </View>
 
@@ -224,9 +230,25 @@ function Profile() {
                     Role:
                   </Text>
                   <Text style={[styles.value, { color: colors.gray900 }]}>
-                    {userProfile.role}
+                    {userProfile.role === 'admin' ? 'Administrator' : 'Pengguna'}
                   </Text>
                 </View>
+
+                {userProfile.rfidSantri && (
+                  <View
+                    style={[
+                      styles.profileRow,
+                      { borderBottomColor: colors.gray100 },
+                    ]}
+                  >
+                    <Text style={[styles.label, { color: colors.gray600 }]}>
+                      Kode RFID:
+                    </Text>
+                    <Text style={[styles.value, styles.rfidCode, { color: colors.gray900 }]}>
+                      {userProfile.rfidSantri}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -239,15 +261,29 @@ function Profile() {
             />
 
             <Button
+              title="Kode Saya"
+              onPress={handleShowQRCode}
+              variant="outline"
+              style={[styles.qrButton, { borderColor: colors.primary }]}
+            />
+
+            <Button
               title={loggingOut ? "Sedang Keluar..." : "Keluar"}
               onPress={handleLogout}
               variant="outline"
-              style={[styles.logoutButton, { borderColor: colors.error }]}
+              style={[styles.logoutButton, { borderColor: colors.primary }]}
               disabled={loggingOut}
             />
           </View>
         </View>
       </ScrollView>
+
+      <QRCodeModal
+        visible={qrModalVisible}
+        onClose={() => setQrModalVisible(false)}
+        userEmail={userProfile?.email || ''}
+        isAdmin={userProfile?.role === 'admin'}
+      />
     </SafeAreaView>
   );
 }
@@ -348,6 +384,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   editButton: {
+    marginBottom: 8,
+  },
+  qrButton: {
     marginBottom: 8,
   },
   logoutButton: {

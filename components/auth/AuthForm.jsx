@@ -286,6 +286,7 @@ const AuthForm = ({ type = "login", onSubmit, loading = false }) => {
               title="Back"
               onPress={handleBack}
               variant="outline"
+              style={{ borderColor: "#378e40" }}
             />
           )}
 

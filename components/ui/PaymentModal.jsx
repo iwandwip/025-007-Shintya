@@ -455,7 +455,7 @@ const PaymentModal = ({ visible, payment, onClose, onPaymentSuccess, creditBalan
               title="Batal"
               onPress={handleClose}
               variant="outline"
-              style={[styles.cancelButton, { borderColor: colors.gray400 }]}
+              style={[styles.cancelButton, { borderColor: colors.primary }]}
               disabled={processing}
             />
             

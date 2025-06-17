@@ -32,8 +32,8 @@ export const lightTheme = {
 };
 
 
-// Wali theme (Green)
-export const waliTheme = {
+// User theme (Green)
+export const userTheme = {
   primary: '#378e40',      // Custom Green
   primaryLight: '#378e40', // Lighter Green
   primaryDark: '#378e40',  // Darker Green
@@ -112,7 +112,7 @@ export const getThemeByRole = (isAdmin, isDark = false) => {
   if (isDark) {
     return darkTheme;
   }
-  return waliTheme;
+  return userTheme;
 };
 
 export const Colors = lightTheme;
