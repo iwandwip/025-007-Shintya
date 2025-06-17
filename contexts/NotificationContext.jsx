@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { paymentStatusManager } from "../services/paymentStatusManager";
+import { packageStatusManager } from "../services/packageStatusManager";
 
 const NotificationContext = createContext();
 
@@ -76,45 +76,45 @@ export const NotificationProvider = ({ children }) => {
     setVisible(false);
   };
 
-  const showPaymentOverdueNotification = (payments) => {
+  const showPackageOverdueNotification = (packages) => {
     if (!isUserRole()) return;
 
-    const count = payments.length;
+    const count = packages.length;
     const message =
       count === 1
-        ? `Pembayaran ${payments[0].periodData?.label} sudah terlambat!`
-        : `${count} pembayaran sudah terlambat!`;
+        ? `Paket ${packages[0].periodData?.label} sudah dikembalikan!`
+        : `${count} paket sudah dikembalikan!`;
 
     return addNotification({
       type: "error",
-      title: "Pembayaran Terlambat",
+      title: "Paket Dikembalikan",
       message,
       icon: "⚠️",
       actions: [
         {
-          label: "Bayar Sekarang",
+          label: "Lihat Detail",
           primary: true,
           onPress: () => {
             // Navigation akan di-handle di komponen yang menggunakan
           },
         },
       ],
-      data: { payments, type: "overdue" },
+      data: { packages, type: "overdue" },
     });
   };
 
-  const showPaymentUpcomingNotification = (payments) => {
+  const showPackageUpcomingNotification = (packages) => {
     if (!isUserRole()) return;
 
-    const count = payments.length;
+    const count = packages.length;
     const message =
       count === 1
-        ? `Pembayaran ${payments[0].periodData?.label} akan jatuh tempo dalam 3 hari`
-        : `${count} pembayaran akan jatuh tempo dalam 3 hari`;
+        ? `Paket ${packages[0].periodData?.label} akan segera dikirim dalam 3 hari`
+        : `${count} paket akan segera dikirim dalam 3 hari`;
 
     return addNotification({
       type: "warning",
-      title: "Pembayaran Akan Jatuh Tempo",
+      title: "Paket Akan Dikirim",
       message,
       icon: "⏰",
       actions: [
@@ -126,20 +126,20 @@ export const NotificationProvider = ({ children }) => {
           },
         },
       ],
-      data: { payments, type: "upcoming" },
+      data: { packages, type: "upcoming" },
     });
   };
 
-  const showPaymentSuccessNotification = (payment) => {
+  const showPackageSuccessNotification = (packageData) => {
     if (!isUserRole()) return;
 
     return addNotification({
       type: "success",
-      title: "Pembayaran Berhasil",
-      message: `Pembayaran ${payment.periodData?.label} telah berhasil diproses`,
+      title: "Paket Berhasil Diambil",
+      message: `Paket ${packageData.periodData?.label} telah berhasil diambil`,
       icon: "✅",
       duration: 3000,
-      data: { payment, type: "success" },
+      data: { packageData, type: "success" },
     });
   };
 
@@ -166,70 +166,44 @@ export const NotificationProvider = ({ children }) => {
     });
   };
 
-  const showCreditAppliedNotification = (creditAmount, periodLabel) => {
+  const showPriorityAppliedNotification = (priorityLevel, periodLabel) => {
     if (!isUserRole()) return;
-
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-      }).format(amount);
-    };
 
     return addNotification({
       type: "success",
-      title: "Credit Digunakan",
-      message: `Credit ${formatCurrency(creditAmount)} berhasil diterapkan untuk ${periodLabel}`,
+      title: "Prioritas Diterapkan",
+      message: `Prioritas ${priorityLevel} berhasil diterapkan untuk ${periodLabel}`,
       icon: "💰",
       duration: 4000,
-      data: { creditAmount, periodLabel, type: "credit_applied" },
+      data: { priorityLevel, periodLabel, type: "priority_applied" },
     });
   };
 
-  const showCreditBalanceNotification = (newBalance) => {
+  const showPriorityStatusNotification = (newPriority) => {
     if (!isUserRole()) return;
-
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-      }).format(amount);
-    };
 
     return addNotification({
       type: "info",
-      title: "Saldo Credit Diperbarui",
-      message: `Saldo credit Anda sekarang: ${formatCurrency(newBalance)}`,
+      title: "Status Prioritas Diperbarui",
+      message: `Prioritas Anda sekarang: ${newPriority}`,
       icon: "💰",
       duration: 3000,
-      data: { newBalance, type: "credit_balance_updated" },
+      data: { newPriority, type: "priority_updated" },
     });
   };
 
-  const showPaymentWithCreditNotification = (payment, creditUsed, remainingAmount) => {
+  const showPackageAccessNotification = (packageData, accessMethod) => {
     if (!isUserRole()) return;
 
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-      }).format(amount);
-    };
-
-    const message = remainingAmount > 0 
-      ? `${payment.periodData?.label}: Credit ${formatCurrency(creditUsed)} diterapkan. Sisa ${formatCurrency(remainingAmount)}`
-      : `${payment.periodData?.label}: Lunas dengan credit ${formatCurrency(creditUsed)}`;
+    const message = `Paket ${packageData.periodData?.label} berhasil diakses via ${accessMethod}`;
 
     return addNotification({
       type: "success",
-      title: "Pembayaran dengan Credit",
+      title: "Akses Paket Berhasil",
       message,
       icon: "💳",
       duration: 4000,
-      data: { payment, creditUsed, remainingAmount, type: "payment_with_credit" },
+      data: { packageData, accessMethod, type: "package_access" },
     });
   };
 
@@ -253,26 +227,26 @@ export const NotificationProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = paymentStatusManager.addListener((type, data) => {
+    const unsubscribe = packageStatusManager.addListener((type, data) => {
       if (!isUserRole()) return;
 
       switch (type) {
-        case "payments_overdue":
+        case "packages_overdue":
           if (data.userId === userProfile?.id) {
-            showPaymentOverdueNotification(data.payments);
+            showPackageOverdueNotification(data.packages);
           }
           break;
 
-        case "payments_upcoming":
+        case "packages_upcoming":
           if (data.userId === userProfile?.id) {
-            showPaymentUpcomingNotification(data.payments);
+            showPackageUpcomingNotification(data.packages);
           }
           break;
 
-        case "user_payment_updated":
+        case "user_package_updated":
           if (data.userId === userProfile?.id && data.source !== "manual") {
             showUpdateNotification(
-              `Data pembayaran diperbarui (${data.source})`,
+              `Data paket diperbarui (${data.source})`,
               "success"
             );
           }
@@ -307,16 +281,16 @@ export const NotificationProvider = ({ children }) => {
     addNotification,
     removeNotification,
     clearAllNotifications,
-    showPaymentOverdueNotification,
-    showPaymentUpcomingNotification,
-    showPaymentSuccessNotification,
+    showPackageOverdueNotification,
+    showPackageUpcomingNotification,
+    showPackageSuccessNotification,
     showUpdateNotification,
     showErrorNotification,
     showGeneralNotification,
     showNotification,
-    showCreditAppliedNotification,
-    showCreditBalanceNotification,
-    showPaymentWithCreditNotification,
+    showPriorityAppliedNotification,
+    showPriorityStatusNotification,
+    showPackageAccessNotification,
   };
 
   return (

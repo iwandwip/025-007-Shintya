@@ -6,12 +6,12 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { updateSantriRFID } from './userService';
+import { updateUserRFID } from './userService';
 
 const PAIRING_COLLECTION = 'rfid_pairing';
 const PAIRING_DOC_ID = 'current_session';
 
-export const startPairing = async (santriId) => {
+export const startPairing = async (userId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
@@ -19,7 +19,7 @@ export const startPairing = async (santriId) => {
 
     const pairingData = {
       isActive: true,
-      santriId: santriId,
+      userId: userId,
       startTime: new Date().toISOString(),
       rfidCode: '',
       status: 'waiting',
@@ -32,7 +32,7 @@ export const startPairing = async (santriId) => {
     setTimeout(async () => {
       try {
         const currentDoc = await getDoc(doc(db, PAIRING_COLLECTION, PAIRING_DOC_ID));
-        if (currentDoc.exists() && currentDoc.data().santriId === santriId && currentDoc.data().isActive) {
+        if (currentDoc.exists() && currentDoc.data().userId === userId && currentDoc.data().isActive) {
           await cancelPairing();
         }
       } catch (error) {
@@ -57,7 +57,7 @@ export const cancelPairing = async () => {
     
     await setDoc(docRef, {
       isActive: false,
-      santriId: '',
+      userId: '',
       startTime: '',
       rfidCode: '',
       status: '',
@@ -106,17 +106,17 @@ export const listenToPairingData = (callback) => {
     const unsubscribe = onSnapshot(docRef, async (doc) => {
       if (doc.exists()) {
         const data = doc.data();
-        if (data.rfidCode && data.rfidCode !== '' && data.santriId && data.santriId !== '') {
+        if (data.rfidCode && data.rfidCode !== '' && data.userId && data.userId !== '') {
           try {
-            const result = await updateSantriRFID(data.santriId, data.rfidCode);
+            const result = await updateUserRFID(data.userId, data.rfidCode);
             if (result.success) {
               await cancelPairing();
-              callback({ success: true, rfidCode: data.rfidCode, santriId: data.santriId });
+              callback({ success: true, rfidCode: data.rfidCode, userId: data.userId });
             } else {
               callback({ success: false, error: result.error });
             }
           } catch (error) {
-            console.error('Error saving RFID to santri:', error);
+            console.error('Error saving RFID to user:', error);
             callback({ success: false, error: error.message });
           }
         }

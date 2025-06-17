@@ -38,7 +38,7 @@ export const createUserProfile = async (uid, profileData) => {
     if (profileData.role === 'user') {
       userProfile.nama = profileData.nama;
       userProfile.noTelp = profileData.noTelp;
-      userProfile.rfidSantri = profileData.rfidSantri || "";
+      userProfile.rfidCode = profileData.rfidCode || "";
     }
 
     await setDoc(doc(db, 'users', uid), userProfile);
@@ -102,7 +102,7 @@ export const updateUserProfile = async (uid, updates) => {
   }
 };
 
-export const getAllSantri = async () => {
+export const getAllUsers = async () => {
   try {
     if (!db) {
       console.warn('Firestore belum diinisialisasi, return empty array');
@@ -117,107 +117,107 @@ export const getAllSantri = async () => {
     );
     const querySnapshot = await getDocs(q);
     
-    const santriList = [];
+    const userList = [];
     querySnapshot.forEach((doc) => {
-      santriList.push({
+      userList.push({
         id: doc.id,
         ...doc.data()
       });
     });
 
-    santriList.sort((a, b) => a.nama.localeCompare(b.nama));
+    userList.sort((a, b) => a.nama.localeCompare(b.nama));
 
-    return { success: true, data: santriList };
+    return { success: true, data: userList };
   } catch (error) {
-    console.error('Error mengambil data santri:', error);
+    console.error('Error mengambil data user:', error);
     return { success: false, error: error.message, data: [] };
   }
 };
 
-export const updateSantriRFID = async (santriId, rfidCode) => {
+export const updateUserRFID = async (userId, rfidCode) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    const santriRef = doc(db, 'users', santriId);
-    await updateDoc(santriRef, {
-      rfidSantri: rfidCode,
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      rfidCode: rfidCode,
       updatedAt: new Date()
     });
 
-    console.log('RFID santri berhasil diupdate');
+    console.log('RFID user berhasil diupdate');
     return { success: true };
   } catch (error) {
-    console.error('Error update RFID santri:', error);
+    console.error('Error update RFID user:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const deleteSantriRFID = async (santriId) => {
+export const deleteUserRFID = async (userId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    const santriRef = doc(db, 'users', santriId);
-    await updateDoc(santriRef, {
-      rfidSantri: null,
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      rfidCode: null,
       updatedAt: new Date()
     });
 
-    console.log('RFID santri berhasil dihapus');
+    console.log('RFID user berhasil dihapus');
     return { success: true };
   } catch (error) {
-    console.error('Error menghapus RFID santri:', error);
+    console.error('Error menghapus RFID user:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const deleteSantri = async (santriId) => {
+export const deleteUser = async (userId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    const userRef = doc(db, 'users', santriId);
+    const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      throw new Error('Data santri tidak ditemukan');
+      throw new Error('Data user tidak ditemukan');
     }
 
     const userData = userDoc.data();
     
     if (userData.deleted) {
-      throw new Error('Santri sudah dihapus sebelumnya');
+      throw new Error('User sudah dihapus sebelumnya');
     }
 
     await deleteDoc(userRef);
 
-    console.log('Data santri berhasil dihapus dari Firestore');
+    console.log('Data user berhasil dihapus dari Firestore');
 
     return { 
       success: true, 
-      message: 'Data santri berhasil dihapus dari Firestore. Akun login tetap ada di sistem tapi tidak bisa digunakan.'
+      message: 'Data user berhasil dihapus dari Firestore. Akun login tetap ada di sistem tapi tidak bisa digunakan.'
     };
   } catch (error) {
-    console.error('Error menghapus santri:', error);
+    console.error('Error menghapus user:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const restoreSantri = async (santriId) => {
+export const restoreUser = async (userId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    const userRef = doc(db, 'users', santriId);
+    const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      throw new Error('Data santri tidak ditemukan');
+      throw new Error('Data user tidak ditemukan');
     }
 
     await updateDoc(userRef, {
@@ -229,15 +229,15 @@ export const restoreSantri = async (santriId) => {
       updatedAt: new Date()
     });
 
-    console.log('Data santri berhasil dipulihkan');
+    console.log('Data user berhasil dipulihkan');
     return { success: true };
   } catch (error) {
-    console.error('Error memulihkan santri:', error);
+    console.error('Error memulihkan user:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const getDeletedSantri = async () => {
+export const getDeletedUsers = async () => {
   try {
     if (!db) {
       return { success: true, data: [] };
@@ -251,21 +251,21 @@ export const getDeletedSantri = async () => {
     );
     const querySnapshot = await getDocs(q);
     
-    const deletedSantriList = [];
+    const deletedUserList = [];
     querySnapshot.forEach((doc) => {
-      deletedSantriList.push({
+      deletedUserList.push({
         id: doc.id,
         ...doc.data()
       });
     });
 
-    deletedSantriList.sort((a, b) => 
+    deletedUserList.sort((a, b) => 
       new Date(b.deletedAt) - new Date(a.deletedAt)
     );
 
-    return { success: true, data: deletedSantriList };
+    return { success: true, data: deletedUserList };
   } catch (error) {
-    console.error('Error mengambil data santri terhapus:', error);
+    console.error('Error mengambil data user terhapus:', error);
     return { success: false, error: error.message, data: [] };
   }
 };

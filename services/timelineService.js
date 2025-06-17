@@ -24,8 +24,8 @@ export const createTimelineTemplate = async (templateData) => {
       name: templateData.name,
       type: templateData.type,
       duration: templateData.duration,
-      baseAmount: templateData.baseAmount,
-      holidays: templateData.holidays || [],
+      baseWeight: templateData.baseWeight,
+      deliveryDays: templateData.deliveryDays || [],
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -153,7 +153,7 @@ export const updateTimelineSimulationDate = async (simulationDateTime) => {
   }
 };
 
-export const deleteActiveTimeline = async (deletePaymentData = false) => {
+export const deleteActiveTimeline = async (deletePackageData = false) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
@@ -167,38 +167,38 @@ export const deleteActiveTimeline = async (deletePaymentData = false) => {
     const timeline = timelineResult.timeline;
     const batch = writeBatch(db);
 
-    if (deletePaymentData) {
-      // Delete all payment data for this timeline including santri payments
+    if (deletePackageData) {
+      // Delete all package data for this timeline including user packages
       for (const periodKey of Object.keys(timeline.periods)) {
-        // Get all santri payments for this period
-        const santriPaymentsRef = collection(db, 'payments', timeline.id, 'periods', periodKey, 'santri_payments');
-        const santriSnapshot = await getDocs(santriPaymentsRef);
+        // Get all user packages for this period
+        const userPackagesRef = collection(db, 'packages', timeline.id, 'periods', periodKey, 'user_packages');
+        const userSnapshot = await getDocs(userPackagesRef);
         
-        // Delete each santri payment
-        santriSnapshot.docs.forEach(doc => {
+        // Delete each user package
+        userSnapshot.docs.forEach(doc => {
           batch.delete(doc.ref);
         });
         
         // Delete the period document
-        const periodRef = doc(db, 'payments', timeline.id, 'periods', periodKey);
+        const periodRef = doc(db, 'packages', timeline.id, 'periods', periodKey);
         batch.delete(periodRef);
       }
 
-      // Delete the main payments collection document
-      const paymentsRef = doc(db, 'payments', timeline.id);
-      batch.delete(paymentsRef);
+      // Delete the main packages collection document
+      const packagesRef = doc(db, 'packages', timeline.id);
+      batch.delete(packagesRef);
 
-      // Optional: Reset credit balance for all users
-      // Get all users to reset their credit balance
+      // Optional: Reset priority for all users
+      // Get all users to reset their priority
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
       
       usersSnapshot.docs.forEach(userDoc => {
         const userData = userDoc.data();
-        if (userData.creditBalance && userData.creditBalance > 0) {
-          // Reset credit balance to 0
+        if (userData.priority && userData.priority !== 'normal') {
+          // Reset priority to normal
           batch.update(userDoc.ref, { 
-            creditBalance: 0,
+            priority: 'normal',
             updatedAt: new Date()
           });
         }
@@ -213,9 +213,9 @@ export const deleteActiveTimeline = async (deletePaymentData = false) => {
     
     return { 
       success: true, 
-      message: deletePaymentData 
-        ? 'Timeline dan data pembayaran berhasil dihapus'
-        : 'Timeline berhasil dihapus, data pembayaran dipertahankan'
+      message: deletePackageData 
+        ? 'Timeline dan data paket berhasil dihapus'
+        : 'Timeline berhasil dihapus, data paket dipertahankan'
     };
   } catch (error) {
     console.error('Error deleting active timeline:', error);
@@ -223,7 +223,7 @@ export const deleteActiveTimeline = async (deletePaymentData = false) => {
   }
 };
 
-export const generatePaymentsForTimeline = async (timelineId) => {
+export const generatePackagesForTimeline = async (timelineId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
@@ -235,38 +235,40 @@ export const generatePaymentsForTimeline = async (timelineId) => {
     }
 
     const timeline = timelineResult.timeline;
-    const santriResult = await getAllSantri();
-    if (!santriResult.success) {
-      throw new Error('Gagal mengambil data santri');
+    const userResult = await getAllUsers();
+    if (!userResult.success) {
+      throw new Error('Gagal mengambil data user');
     }
 
     const batch = writeBatch(db);
-    const santriList = santriResult.data;
+    const userList = userResult.data;
 
     Object.keys(timeline.periods).forEach(periodKey => {
       const period = timeline.periods[periodKey];
       if (period.active) {
-        santriList.forEach(santri => {
-          const paymentId = `${santri.id}_${periodKey}`;
-          const paymentRef = doc(db, 'payments', timelineId, 'periods', periodKey, 'santri_payments', santri.id);
+        userList.forEach(user => {
+          const packageId = `${user.id}_${periodKey}`;
+          const packageRef = doc(db, 'packages', timelineId, 'periods', periodKey, 'user_packages', user.id);
           
-          const paymentData = {
-            id: paymentId,
-            santriId: santri.id,
-            santriName: santri.nama,
+          const packageData = {
+            id: packageId,
+            userId: user.id,
+            userName: user.nama,
             period: periodKey,
             periodLabel: period.label,
-            amount: period.amount,
-            dueDate: period.dueDate,
-            status: 'belum_bayar',
-            paymentDate: null,
-            paymentMethod: null,
+            packageId: `PKG${Date.now()}_${user.id}`,
+            deliveryDate: period.dueDate,
+            status: 'pending',
+            pickupDate: null,
+            accessMethod: null,
             notes: '',
+            weight: 0,
+            dimensions: '',
             createdAt: new Date(),
             updatedAt: new Date()
           };
 
-          batch.set(paymentRef, paymentData);
+          batch.set(packageRef, packageData);
         });
       }
     });
@@ -274,56 +276,56 @@ export const generatePaymentsForTimeline = async (timelineId) => {
     await batch.commit();
     return { success: true };
   } catch (error) {
-    console.error('Error generating payments:', error);
+    console.error('Error generating packages:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const getPaymentsByPeriod = async (timelineId, periodKey) => {
+export const getPackagesByPeriod = async (timelineId, periodKey) => {
   try {
     if (!db) {
-      return { success: true, payments: [] };
+      return { success: true, packages: [] };
     }
 
-    const paymentsRef = collection(db, 'payments', timelineId, 'periods', periodKey, 'santri_payments');
-    const querySnapshot = await getDocs(paymentsRef);
+    const packagesRef = collection(db, 'packages', timelineId, 'periods', periodKey, 'user_packages');
+    const querySnapshot = await getDocs(packagesRef);
     
-    const payments = [];
+    const packages = [];
     querySnapshot.forEach((doc) => {
-      payments.push({
+      packages.push({
         id: doc.id,
         ...doc.data()
       });
     });
 
-    return { success: true, payments };
+    return { success: true, packages };
   } catch (error) {
-    console.error('Error getting payments by period:', error);
-    return { success: false, error: error.message, payments: [] };
+    console.error('Error getting packages by period:', error);
+    return { success: false, error: error.message, packages: [] };
   }
 };
 
-export const updatePaymentStatus = async (timelineId, periodKey, santriId, updateData) => {
+export const updatePackageStatus = async (timelineId, periodKey, userId, updateData) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    const paymentRef = doc(db, 'payments', timelineId, 'periods', periodKey, 'santri_payments', santriId);
+    const packageRef = doc(db, 'packages', timelineId, 'periods', periodKey, 'user_packages', userId);
     const updatePayload = {
       ...updateData,
       updatedAt: new Date()
     };
 
-    await updateDoc(paymentRef, updatePayload);
+    await updateDoc(packageRef, updatePayload);
     return { success: true };
   } catch (error) {
-    console.error('Error updating payment status:', error);
+    console.error('Error updating package status:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const resetTimelinePayments = async (timelineId) => {
+export const resetTimelinePackages = async (timelineId) => {
   try {
     if (!db) {
       throw new Error('Firestore belum diinisialisasi');
@@ -338,31 +340,33 @@ export const resetTimelinePayments = async (timelineId) => {
     const batch = writeBatch(db);
 
     Object.keys(timeline.periods).forEach(periodKey => {
-      const periodRef = doc(db, 'payments', timelineId, 'periods', periodKey);
+      const periodRef = doc(db, 'packages', timelineId, 'periods', periodKey);
       batch.delete(periodRef);
     });
 
     await batch.commit();
     return { success: true };
   } catch (error) {
-    console.error('Error resetting timeline payments:', error);
+    console.error('Error resetting timeline packages:', error);
     return { success: false, error: error.message };
   }
 };
 
-export const calculatePaymentStatus = (payment, timeline) => {
-  if (!payment || !timeline) return payment?.status || 'belum_bayar';
+export const calculatePackageStatus = (packageData, timeline) => {
+  if (!packageData || !timeline) return packageData?.status || 'pending';
   
-  if (payment.status === 'lunas') return 'lunas';
+  if (packageData.status === 'delivered') return 'delivered';
+  if (packageData.status === 'picked_up') return 'picked_up';
+  if (packageData.status === 'returned') return 'returned';
   
   const currentDate = getCurrentDate(timeline);
-  const dueDate = new Date(payment.dueDate);
+  const dueDate = new Date(packageData.deliveryDate);
   
-  if (currentDate > dueDate) {
-    return 'terlambat';
+  if (currentDate > dueDate && packageData.status === 'pending') {
+    return 'overdue';
   }
   
-  return 'belum_bayar';
+  return 'pending';
 };
 
 const generatePeriods = (timelineData) => {
@@ -430,7 +434,7 @@ const calculateDueDate = (type, periodNumber, startDate) => {
   return dueDate.toISOString();
 };
 
-const getAllSantri = async () => {
+const getAllUsers = async () => {
   try {
     if (!db) {
       return { success: true, data: [] };
@@ -440,17 +444,17 @@ const getAllSantri = async () => {
     const q = query(usersRef, where('role', '==', 'user'));
     const querySnapshot = await getDocs(q);
     
-    const santriList = [];
+    const userList = [];
     querySnapshot.forEach((doc) => {
-      santriList.push({
+      userList.push({
         id: doc.id,
         ...doc.data()
       });
     });
 
-    return { success: true, data: santriList };
+    return { success: true, data: userList };
   } catch (error) {
-    console.error('Error getting santri data:', error);
+    console.error('Error getting user data:', error);
     return { success: false, error: error.message, data: [] };
   }
 };

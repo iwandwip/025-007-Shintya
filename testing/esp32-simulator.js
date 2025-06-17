@@ -63,7 +63,7 @@ const generateUserData = async () => {
         email: email,
         name: name,
         phone: phone,
-        role: 'wali',
+        role: 'user',
         createdAt: new Date(),
         updatedAt: new Date()
       });

@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getWaliPaymentHistory } from './waliPaymentService';
+import { getUserPackageHistory } from './userPackageService';
 import { getActiveTimeline } from './timelineService';
 
-class PaymentStatusManager {
+class PackageStatusManager {
   constructor() {
     this.cache = new Map();
     this.lastUpdateTimes = new Map();
@@ -74,13 +74,13 @@ class PaymentStatusManager {
     this.lastUpdateTimes.set(key, Date.now());
   }
 
-  async updateUserPaymentStatus(userId, forceUpdate = false, source = 'manual') {
+  async updateUserPackageStatus(userId, forceUpdate = false, source = 'manual') {
     if (!userId) return { success: false, error: 'User ID required' };
 
-    const key = this.getCacheKey('user_payments', userId);
+    const key = this.getCacheKey('user_packages', userId);
     
-    if (!forceUpdate && this.shouldSkipUpdate('user_payments', userId)) {
-      console.log(`Skipping user payment update for ${userId} due to throttling`);
+    if (!forceUpdate && this.shouldSkipUpdate('user_packages', userId)) {
+      console.log(`Skipping user package update for ${userId} due to throttling`);
       const cached = await this.getFromCache(key);
       if (cached) return { success: true, data: cached, fromCache: true };
     }
@@ -92,36 +92,36 @@ class PaymentStatusManager {
 
     try {
       this.isUpdating.add(key);
-      console.log(`Updating payment status for user ${userId} (source: ${source})`);
+      console.log(`Updating package status for user ${userId} (source: ${source})`);
 
-      const result = await getWaliPaymentHistory(userId);
+      const result = await getUserPackageHistory(userId);
       
       if (result.success) {
         this.setCache(key, result);
-        this.markUpdateTime('user_payments', userId);
+        this.markUpdateTime('user_packages', userId);
         
-        this.notifyListeners('user_payment_updated', {
+        this.notifyListeners('user_package_updated', {
           userId,
           data: result,
           source
         });
 
-        const overduePayments = this.checkForOverduePayments(result.payments || []);
-        const upcomingPayments = this.checkForUpcomingPayments(result.payments || []);
+        const overduePackages = this.checkForOverduePackages(result.packages || []);
+        const upcomingPackages = this.checkForUpcomingPackages(result.packages || []);
         
-        if (overduePayments.length > 0) {
-          this.notifyListeners('payments_overdue', {
+        if (overduePackages.length > 0) {
+          this.notifyListeners('packages_overdue', {
             userId,
-            payments: overduePayments,
-            count: overduePayments.length
+            packages: overduePackages,
+            count: overduePackages.length
           });
         }
 
-        if (upcomingPayments.length > 0) {
-          this.notifyListeners('payments_upcoming', {
+        if (upcomingPackages.length > 0) {
+          this.notifyListeners('packages_upcoming', {
             userId,
-            payments: upcomingPayments,
-            count: upcomingPayments.length
+            packages: upcomingPackages,
+            count: upcomingPackages.length
           });
         }
 
@@ -130,7 +130,7 @@ class PaymentStatusManager {
 
       return result;
     } catch (error) {
-      console.error('Error updating user payment status:', error);
+      console.error('Error updating user package status:', error);
       return { success: false, error: error.message };
     } finally {
       this.isUpdating.delete(key);
@@ -138,23 +138,23 @@ class PaymentStatusManager {
   }
 
   // Admin functionality removed - this method is no longer available
-  async updateAllUsersPaymentStatus() {
+  async updateAllUsersPackageStatus() {
     return { success: false, error: 'Admin functionality has been removed' };
   }
 
-  checkForOverduePayments(payments) {
-    return payments.filter(payment => payment.status === 'terlambat');
+  checkForOverduePackages(packages) {
+    return packages.filter(packageData => packageData.status === 'returned');
   }
 
-  checkForUpcomingPayments(payments) {
+  checkForUpcomingPackages(packages) {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
     
-    return payments.filter(payment => {
-      if (payment.status !== 'belum_bayar') return false;
+    return packages.filter(packageData => {
+      if (packageData.status !== 'pending') return false;
       
-      const dueDate = new Date(payment.dueDate);
-      return dueDate <= threeDaysFromNow && dueDate > now;
+      const deliveryDate = new Date(packageData.deliveryDate);
+      return deliveryDate <= threeDaysFromNow && deliveryDate > now;
     });
   }
 
@@ -164,12 +164,12 @@ class PaymentStatusManager {
       const timeSinceBackground = this.backgroundTime ? now - this.backgroundTime : 0;
       
       if (timeSinceBackground > this.throttleSettings.backgroundResume) {
-        console.log('App resumed after long background, updating payment status');
+        console.log('App resumed after long background, updating package status');
         
         if (userId) {
-          await this.updateUserPaymentStatus(userId, false, 'app_resume');
+          await this.updateUserPackageStatus(userId, false, 'app_resume');
         } else {
-          await this.updateAllUsersPaymentStatus(false, 'app_resume');
+          await this.updateAllUsersPackageStatus(false, 'app_resume');
         }
       }
     } else if (nextAppState === 'background') {
@@ -178,20 +178,20 @@ class PaymentStatusManager {
   }
 
   async handleUserLogin(userId) {
-    console.log('User logged in, updating payment status');
-    return await this.updateUserPaymentStatus(userId, true, 'login');
+    console.log('User logged in, updating package status');
+    return await this.updateUserPackageStatus(userId, true, 'login');
   }
 
   async handlePageNavigation(page, userId = null) {
-    const isPaymentPage = page.includes('payment') || page.includes('status');
+    const isPackagePage = page.includes('package') || page.includes('resi') || page.includes('status');
     
-    if (isPaymentPage) {
-      console.log(`Navigated to payment page: ${page}`);
+    if (isPackagePage) {
+      console.log(`Navigated to package page: ${page}`);
       
       if (userId) {
-        return await this.updateUserPaymentStatus(userId, false, 'page_navigation');
+        return await this.updateUserPackageStatus(userId, false, 'page_navigation');
       } else {
-        return await this.updateAllUsersPaymentStatus(false, 'page_navigation');
+        return await this.updateAllUsersPackageStatus(false, 'page_navigation');
       }
     }
     
@@ -200,7 +200,7 @@ class PaymentStatusManager {
 
   async clearUserCache(userId) {
     if (userId) {
-      const userKey = this.getCacheKey('user_payments', userId);
+      const userKey = this.getCacheKey('user_packages', userId);
       this.cache.delete(userKey);
       this.lastUpdateTimes.delete(userKey);
     }
@@ -222,4 +222,4 @@ class PaymentStatusManager {
   }
 }
 
-export const paymentStatusManager = new PaymentStatusManager();
+export const packageStatusManager = new PackageStatusManager();

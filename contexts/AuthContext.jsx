@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserProfile } from "../services/userService";
-import { paymentStatusManager } from "../services/paymentStatusManager";
+import { packageStatusManager } from "../services/packageStatusManager";
 import { signInWithEmail, signUpWithEmail, signOutUser } from "../services/authService";
 
 const AuthContext = createContext({});
@@ -41,9 +41,9 @@ export const AuthProvider = ({ children }) => {
 
         if (result.profile.role === "user") {
           try {
-            await paymentStatusManager.handleUserLogin(user.uid);
+            await packageStatusManager.handleUserLogin(user.uid);
           } catch (error) {
-            console.warn("Error during payment status update on login:", error);
+            console.warn("Error during package status update on login:", error);
           }
         }
       } else {

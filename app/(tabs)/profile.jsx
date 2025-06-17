@@ -234,7 +234,7 @@ function Profile() {
                   </Text>
                 </View>
 
-                {userProfile.rfidSantri && (
+                {userProfile.rfidCode && (
                   <View
                     style={[
                       styles.profileRow,
@@ -245,7 +245,7 @@ function Profile() {
                       Kode RFID:
                     </Text>
                     <Text style={[styles.value, styles.rfidCode, { color: colors.gray900 }]}>
-                      {userProfile.rfidSantri}
+                      {userProfile.rfidCode}
                     </Text>
                   </View>
                 )}

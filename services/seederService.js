@@ -133,7 +133,7 @@ class SeederService {
           const profileData = {
             nama: this.getRandomName(this.namaList),
             noTelp: this.generateRandomPhone(),
-            rfidSantri: this.generateRandomRFID(),
+            rfidCode: this.generateRandomRFID(),
             role: 'user'
           };
 
@@ -144,7 +144,7 @@ class SeederService {
               email,
               userNumber: emailResult.userNumber,
               nama: profileData.nama,
-              rfidSantri: profileData.rfidSantri,
+              rfidCode: profileData.rfidCode,
               noTelp: profileData.noTelp
             });
           } else {
