@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,14 +13,45 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from "../../contexts/SettingsContext";
 import { getThemeByRole } from "../../constants/Colors";
+import { resiService } from "../../services/resiService";
 
 export default function Home() {
-  const { userProfile, refreshProfile } = useAuth();
+  const { userProfile, refreshProfile, currentUser } = useAuth();
   const { theme } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = getThemeByRole(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [packageStats, setPackageStats] = useState({
+    total: 0,
+    cod: 0,
+    pending: 0
+  });
+
+  const fetchPackageStats = async () => {
+    if (currentUser?.uid) {
+      const result = await resiService.getUserPackageStats(currentUser.uid);
+      if (result.success) {
+        setPackageStats(result.stats);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    // Subscribe to real-time updates
+    const unsubscribe = resiService.subscribeToUserPackageStats(
+      currentUser.uid,
+      (result) => {
+        if (result.success) {
+          setPackageStats(result.stats);
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -28,11 +59,12 @@ export default function Home() {
       if (refreshProfile) {
         await refreshProfile();
       }
+      await fetchPackageStats();
     } catch (error) {
       console.error('Error refreshing:', error);
     }
     setRefreshing(false);
-  }, [refreshProfile]);
+  }, [refreshProfile, currentUser]);
 
   const quickActions = [
     {
@@ -59,9 +91,9 @@ export default function Home() {
   ];
 
   const statsData = [
-    { label: "Total Paket", value: "5", icon: "📦" },
-    { label: "Paket COD", value: "3", icon: "💰" },
-    { label: "Menunggu Diambil", value: "2", icon: "⏳" },
+    { label: "Total Paket", value: packageStats.total.toString(), icon: "📦" },
+    { label: "Paket COD", value: packageStats.cod.toString(), icon: "💰" },
+    { label: "Menunggu Diambil", value: packageStats.pending.toString(), icon: "⏳" },
   ];
 
   return (
@@ -122,25 +154,27 @@ export default function Home() {
         </View>
 
         {/* Notification Card */}
-        <View
-          style={[
-            styles.notificationCard,
-            {
-              backgroundColor: "#FFF4E6",
-              borderColor: "#FFB74D",
-            },
-          ]}
-        >
-          <Text style={styles.notificationIcon}>🔔</Text>
-          <View style={styles.notificationContent}>
-            <Text style={[styles.notificationTitle, { color: "#F57C00" }]}>
-              Pengingat
-            </Text>
-            <Text style={[styles.notificationText, { color: "#795548" }]}>
-              Anda memiliki 2 paket yang belum diambil. Segera ambil paket Anda.
-            </Text>
+        {packageStats.pending > 0 && (
+          <View
+            style={[
+              styles.notificationCard,
+              {
+                backgroundColor: "#FFF4E6",
+                borderColor: "#FFB74D",
+              },
+            ]}
+          >
+            <Text style={styles.notificationIcon}>🔔</Text>
+            <View style={styles.notificationContent}>
+              <Text style={[styles.notificationTitle, { color: "#F57C00" }]}>
+                Pengingat
+              </Text>
+              <Text style={[styles.notificationText, { color: "#795548" }]}>
+                Anda memiliki {packageStats.pending} paket yang belum diambil. Segera ambil paket Anda.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.sectionContainer}>

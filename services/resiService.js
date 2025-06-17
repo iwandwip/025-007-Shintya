@@ -21,6 +21,7 @@ export const resiService = {
     try {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
         ...resiData,
+        status: "Sedang Dikirim", // Default status untuk paket baru
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -60,6 +61,46 @@ export const resiService = {
       return { success: true, count: querySnapshot.size };
     } catch (error) {
       console.error("Error getting user resi count:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getUserPackageStats(userId) {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where("userId", "==", userId)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      let totalPackages = 0;
+      let codPackages = 0;
+      let pendingPackages = 0;
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        totalPackages++;
+        
+        if (data.tipePaket === "COD") {
+          codPackages++;
+        }
+        
+        // Count packages that are still in transit or arrived but not picked up
+        if (data.status === "Sedang Dikirim" || data.status === "Telah Tiba") {
+          pendingPackages++;
+        }
+      });
+      
+      return { 
+        success: true, 
+        stats: {
+          total: totalPackages,
+          cod: codPackages,
+          pending: pendingPackages
+        }
+      };
+    } catch (error) {
+      console.error("Error getting user package stats:", error);
       return { success: false, error: error.message };
     }
   },
@@ -105,6 +146,48 @@ export const resiService = {
       },
       (error) => {
         console.error("Error listening to resi changes:", error);
+        callback({ success: false, error: error.message });
+      }
+    );
+  },
+
+  subscribeToUserPackageStats(userId, callback) {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("userId", "==", userId)
+    );
+    
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        let totalPackages = 0;
+        let codPackages = 0;
+        let pendingPackages = 0;
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          totalPackages++;
+          
+          if (data.tipePaket === "COD") {
+            codPackages++;
+          }
+          
+          if (data.status === "Sedang Dikirim" || data.status === "Telah Tiba") {
+            pendingPackages++;
+          }
+        });
+        
+        callback({ 
+          success: true, 
+          stats: {
+            total: totalPackages,
+            cod: codPackages,
+            pending: pendingPackages
+          }
+        });
+      },
+      (error) => {
+        console.error("Error listening to user package stats:", error);
         callback({ success: false, error: error.message });
       }
     );

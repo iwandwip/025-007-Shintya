@@ -21,6 +21,8 @@ export const lightTheme = {
   success: '#378e40',
   warning: '#f59e0b',
   error: '#ef4444',
+  info: '#3b82f6',
+  danger: '#ef4444',
   
   border: '#e5e7eb',
   
@@ -56,6 +58,8 @@ export const waliTheme = {
   success: '#378e40',
   warning: '#f59e0b',
   error: '#ef4444',
+  info: '#3b82f6',
+  danger: '#ef4444',
   
   border: '#e5e7eb',
   
@@ -86,6 +90,8 @@ export const darkTheme = {
   success: '#378e40',
   warning: '#d97706',
   error: '#dc2626',
+  info: '#2563eb',
+  danger: '#dc2626',
   
   border: '#4b5563',
   

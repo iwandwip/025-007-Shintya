@@ -38,6 +38,20 @@ function ListResi() {
   const [editingResi, setEditingResi] = useState(false);
   const [selectedResi, setSelectedResi] = useState(null);
   const [userResiCount, setUserResiCount] = useState(0);
+  const [totalResiCount, setTotalResiCount] = useState(0);
+
+  const getStatusColor = (status, colors) => {
+    switch (status) {
+      case "Sedang Dikirim":
+        return { bg: colors.warning + "20", text: colors.warning };
+      case "Telah Tiba":
+        return { bg: colors.info + "20", text: colors.info };
+      case "Sudah Diambil":
+        return { bg: colors.success + "20", text: colors.success };
+      default:
+        return { bg: colors.gray100, text: colors.gray600 };
+    }
+  };
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -58,6 +72,7 @@ function ListResi() {
         setResiList(result.data);
         const userResis = result.data.filter(resi => resi.userId === currentUser?.uid);
         setUserResiCount(userResis.length);
+        setTotalResiCount(result.data.length);
       } else {
         showNotification("Gagal memuat data resi", "error");
       }
@@ -73,8 +88,8 @@ function ListResi() {
       return;
     }
 
-    if (userResiCount >= 5) {
-      showNotification("Anda sudah mencapai batas maksimal 5 resi", "error");
+    if (totalResiCount >= 5) {
+      showNotification("Sudah mencapai batas maksimal 5 resi untuk semua user", "error");
       return;
     }
 
@@ -217,6 +232,20 @@ function ListResi() {
         <Text style={[styles.noResiText, { color: colors.gray600 }]}>
           No. Resi: {item.noResi}
         </Text>
+        <View style={styles.statusContainer}>
+          <Text style={[styles.statusLabel, { color: colors.gray500 }]}>Status: </Text>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: getStatusColor(item.status, colors).bg }
+          ]}>
+            <Text style={[
+              styles.statusText,
+              { color: getStatusColor(item.status, colors).text }
+            ]}>
+              {item.status || "Sedang Dikirim"}
+            </Text>
+          </View>
+        </View>
       </View>
     );
   };
@@ -252,17 +281,17 @@ function ListResi() {
             List Resi
           </Text>
           <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>
-            Daftar resi paket ({userResiCount}/5 resi Anda)
+            Daftar resi paket ({totalResiCount}/5)
           </Text>
         </View>
         <TouchableOpacity
           style={[
             styles.addButton,
             { backgroundColor: colors.primary },
-            userResiCount >= 5 && styles.disabledButton,
+            totalResiCount >= 5 && styles.disabledButton,
           ]}
           onPress={() => setShowAddModal(true)}
-          disabled={userResiCount >= 5}
+          disabled={totalResiCount >= 5}
         >
           <Ionicons name="add" size={24} color={colors.white} />
         </TouchableOpacity>
@@ -406,6 +435,24 @@ const styles = StyleSheet.create({
   noResiText: {
     fontSize: 14,
     fontFamily: "monospace",
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  statusLabel: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   addButton: {
     width: 44,
