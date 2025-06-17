@@ -88,21 +88,21 @@ const PaymentModal = ({ visible, payment, onClose, onPaymentSuccess, creditBalan
       id: "bca",
       name: "Transfer BCA",
       icon: "🏦",
-      description: "Transfer ke rekening BCA TPQ",
-      details: "Rek: 1234567890 a.n. TPQ Ibadurrohman",
+      description: "Transfer ke rekening BCA Perusahaan",
+      details: "Rek: 1234567890 a.n. Layanan Paket Express",
     },
     {
       id: "mandiri",
       name: "Transfer Mandiri",
       icon: "🏦",
-      description: "Transfer ke rekening Mandiri TPQ",
-      details: "Rek: 0987654321 a.n. TPQ Ibadurrohman",
+      description: "Transfer ke rekening Mandiri Perusahaan",
+      details: "Rek: 0987654321 a.n. Layanan Paket Express",
     },
     {
       id: "qris",
       name: "QRIS",
       icon: "📱",
-      description: "Scan QRIS untuk pembayaran",
+      description: "Scan QRIS untuk pembayaran paket",
       details: "Scan QR Code dengan aplikasi mobile banking",
     },
     {
@@ -161,11 +161,11 @@ const PaymentModal = ({ visible, payment, onClose, onPaymentSuccess, creditBalan
 
     setTimeout(() => {
       const successMessage = (excessAmount || 0) > 0 
-        ? `Pembayaran ${payment.periodData?.label} berhasil! Kelebihan ${formatCurrency(willBecomeCredit || 0)} menjadi credit.`
-        : `Pembayaran ${payment.periodData?.label} sebesar ${formatCurrency(finalAmount || 0)} berhasil diproses.`;
+        ? `Pembayaran paket ${payment.periodData?.label} berhasil! Kelebihan ${formatCurrency(willBecomeCredit || 0)} menjadi credit.`
+        : `Pembayaran paket ${payment.periodData?.label} sebesar ${formatCurrency(finalAmount || 0)} berhasil diproses.`;
 
       Alert.alert(
-        "Pembayaran Berhasil! 🎉",
+        "Pembayaran Paket Berhasil! 🎉",
         successMessage,
         [
           {
@@ -212,7 +212,7 @@ const PaymentModal = ({ visible, payment, onClose, onPaymentSuccess, creditBalan
             style={[styles.modalHeader, { borderBottomColor: colors.gray200 }]}
           >
             <Text style={[styles.modalTitle, { color: colors.gray900 }]}>
-              Pilih Metode Pembayaran
+              Pembayaran Paket
             </Text>
             {!processing && (
               <TouchableOpacity

@@ -12,8 +12,14 @@ import { getThemeByRole } from "../../constants/Colors";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-function QRCodeModal({ visible, onClose, userEmail, isAdmin = false }) {
+function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = null }) {
   const colors = getThemeByRole(isAdmin);
+  
+  // Use resi number if provided, otherwise use userEmail
+  const qrValue = resiData?.noResi || userEmail;
+  const displayText = resiData?.noResi || userEmail;
+  const title = resiData ? "QR Code Resi" : "Kode QR Saya";
+  const description = resiData ? "Tunjukkan QR code ini untuk identifikasi resi" : "Tunjukkan kode QR ini untuk identifikasi";
 
   return (
     <Modal
@@ -26,7 +32,7 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false }) {
         <View style={[styles.modalContainer, { backgroundColor: colors.white }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.gray900 }]}>
-              Kode QR Saya
+              {title}
             </Text>
             <TouchableOpacity
               style={[styles.closeButton, { backgroundColor: colors.gray100 }]}
@@ -38,22 +44,39 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false }) {
             </TouchableOpacity>
           </View>
 
+          {resiData && (
+            <View style={styles.resiInfo}>
+              <Text style={[styles.resiInfoLabel, { color: colors.gray500 }]}>
+                Nama Penerima:
+              </Text>
+              <Text style={[styles.resiInfoValue, { color: colors.gray900 }]}>
+                {resiData.nama}
+              </Text>
+              <Text style={[styles.resiInfoLabel, { color: colors.gray500 }]}>
+                Status:
+              </Text>
+              <Text style={[styles.resiInfoValue, { color: colors.gray900 }]}>
+                {resiData.status || "Sedang Dikirim"}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.qrContainer}>
             <View style={[styles.qrWrapper, { backgroundColor: colors.white }]}>
               <QRCode
-                value={userEmail}
+                value={qrValue}
                 size={200}
                 color={colors.gray900}
                 backgroundColor={colors.white}
               />
             </View>
             <Text style={[styles.emailText, { color: colors.gray600 }]}>
-              {userEmail}
+              {displayText}
             </Text>
           </View>
 
           <Text style={[styles.description, { color: colors.gray500 }]}>
-            Tunjukkan kode QR ini untuk identifikasi
+            {description}
           </Text>
         </View>
       </View>
@@ -124,6 +147,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     lineHeight: 16,
+  },
+  resiInfo: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  resiInfoLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  resiInfoValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
   },
 });
 

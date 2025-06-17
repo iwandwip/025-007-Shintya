@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a React Native with Expo mobile application for managing payments at Islamic religious schools (TPQ). The system integrates with ESP32 firmware for RFID-based student identification and payment tracking.
+This is a React Native with Expo mobile application for managing package delivery and tracking system. The system integrates with ESP32 firmware for RFID-based package identification and tracking.
 
 ## Development Commands
 
@@ -29,7 +29,7 @@ npm run cleanup
 
 ### Multi-Role System
 - **Admin**: Complete management access via `app/(admin)/` routes
-- **User (Wali)**: Parent/guardian access via `app/(tabs)/` routes
+- **User**: Customer access via `app/(tabs)/` routes
 - Authentication handled through `contexts/AuthContext.jsx`
 
 ### Key Technologies
@@ -41,10 +41,10 @@ npm run cleanup
 ### Service Layer
 All business logic is separated into service files:
 - `authService.js` - Authentication operations
-- `userService.js` - Student/parent management
-- `*paymentService.js` - Payment processing (admin/wali specific)
-- `timelineService.js` - Payment schedule management
-- `pairingService.js` - RFID card-to-student mapping
+- `userService.js` - User management
+- `resiService.js` - Package receipt processing
+- `capacityService.js` - Package capacity management
+- `pairingService.js` - RFID card-to-package mapping
 
 ### State Management
 Global state via React Context:
@@ -56,13 +56,13 @@ Global state via React Context:
 
 ### ESP32 Firmware
 Located in `firmware/` with two versions (R0/R1):
-- **RFID reading** for student identification
-- **KNN algorithm** for payment pattern analysis
+- **RFID reading** for package identification
+- **KNN algorithm** for delivery pattern analysis
 - **WiFi connectivity** for real-time data sync
 - **Menu system** for device configuration
 
 ### Key Firmware Components
-- `KNN.ino` - Machine learning for payment predictions
+- `KNN.ino` - Machine learning for delivery predictions
 - `WiFi.ino` - Network connectivity and Firebase sync
 - `Menu.ino` - LCD interface and button controls
 - `USBComs.ino` - Serial communication
@@ -74,22 +74,22 @@ Located in `firmware/` with two versions (R0/R1):
 - Regular users authenticate with email/password via Firebase
 - Role-based routing enforced in `_layout.jsx` files
 
-### Payment System
-- Timeline-based payment schedules configurable by admin
+### Package System
+- Timeline-based delivery schedules configurable by admin
 - Real-time status updates via Firebase listeners
-- Payment status managed through `paymentStatusManager.js`
-- Complex validation logic in `utils/paymentStatusUtils.js`
+- Package status managed through package tracking system
+- Complex validation logic in `utils/validation.js`
 
 ### RFID Integration
-- Students paired with RFID cards via `pairingService.js`
-- Card scans trigger payment processing
+- Packages paired with RFID cards via `pairingService.js`
+- Card scans trigger package processing
 - Hardware communicates with app via Firebase real-time database
 
 ### Database Structure
 Firebase Firestore collections:
-- `users` - Student and parent accounts
-- `payments` - Payment records and history  
-- `timelines` - Payment schedule templates
+- `users` - User accounts
+- `packages` - Package records and history  
+- `timelines` - Delivery schedule templates
 - `settings` - System configuration
 
 ## Development Notes

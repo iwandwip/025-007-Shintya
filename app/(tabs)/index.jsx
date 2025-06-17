@@ -14,6 +14,30 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from "../../contexts/SettingsContext";
 import { getThemeByRole } from "../../constants/Colors";
 import { resiService } from "../../services/resiService";
+import { activityService } from "../../services/activityService";
+
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return '';
+  
+  const now = new Date();
+  const activityTime = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const diffInSeconds = Math.floor((now - activityTime) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return 'Baru saja';
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} menit yang lalu`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} jam yang lalu`;
+  } else if (diffInSeconds < 172800) {
+    return 'Kemarin';
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} hari yang lalu`;
+  }
+};
 
 export default function Home() {
   const { userProfile, refreshProfile, currentUser } = useAuth();
@@ -25,8 +49,10 @@ export default function Home() {
   const [packageStats, setPackageStats] = useState({
     total: 0,
     cod: 0,
-    pending: 0
+    pending: 0,
+    arrived: 0
   });
+  const [recentActivities, setRecentActivities] = useState([]);
 
   const fetchPackageStats = async () => {
     if (currentUser?.uid) {
@@ -40,8 +66,8 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    // Subscribe to real-time updates
-    const unsubscribe = resiService.subscribeToUserPackageStats(
+    // Subscribe to real-time updates for package stats
+    const unsubscribeStats = resiService.subscribeToUserPackageStats(
       currentUser.uid,
       (result) => {
         if (result.success) {
@@ -50,7 +76,20 @@ export default function Home() {
       }
     );
 
-    return () => unsubscribe();
+    // Subscribe to real-time updates for activities
+    const unsubscribeActivities = activityService.subscribeToUserActivities(
+      currentUser.uid,
+      (result) => {
+        if (result.success) {
+          setRecentActivities(result.data);
+        }
+      }
+    );
+
+    return () => {
+      unsubscribeStats();
+      unsubscribeActivities();
+    };
   }, [currentUser]);
 
   const onRefresh = React.useCallback(async () => {
@@ -93,7 +132,7 @@ export default function Home() {
   const statsData = [
     { label: "Total Paket", value: packageStats.total.toString(), icon: "📦" },
     { label: "Paket COD", value: packageStats.cod.toString(), icon: "💰" },
-    { label: "Menunggu Diambil", value: packageStats.pending.toString(), icon: "⏳" },
+    { label: "Siap Diambil", value: packageStats.arrived.toString(), icon: "📍" },
   ];
 
   return (
@@ -154,7 +193,7 @@ export default function Home() {
         </View>
 
         {/* Notification Card */}
-        {packageStats.pending > 0 && (
+        {packageStats.arrived > 0 && (
           <View
             style={[
               styles.notificationCard,
@@ -170,7 +209,7 @@ export default function Home() {
                 Pengingat
               </Text>
               <Text style={[styles.notificationText, { color: "#795548" }]}>
-                Anda memiliki {packageStats.pending} paket yang belum diambil. Segera ambil paket Anda.
+                Anda memiliki {packageStats.arrived} paket yang sudah tiba dan menunggu untuk diambil. Segera ambil paket Anda.
               </Text>
             </View>
           </View>
@@ -226,29 +265,38 @@ export default function Home() {
               },
             ]}
           >
-            <View style={styles.activityItem}>
-              <Text style={styles.activityIcon}>📦</Text>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: colors.gray900 }]}>
-                  Paket baru diterima
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.gray500 }]}>
-                  2 jam yang lalu • REX001234571
-                </Text>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity, index) => (
+                <React.Fragment key={activity.id}>
+                  <View style={styles.activityItem}>
+                    <Text style={styles.activityIcon}>{activity.icon}</Text>
+                    <View style={styles.activityContent}>
+                      <Text style={[styles.activityText, { color: colors.gray900 }]}>
+                        {activity.message}
+                      </Text>
+                      <Text style={[styles.activityTime, { color: colors.gray500 }]}>
+                        {formatTimeAgo(activity.createdAt)} • {activity.resiNumber}
+                      </Text>
+                    </View>
+                  </View>
+                  {index < recentActivities.length - 1 && (
+                    <View style={[styles.divider, { backgroundColor: colors.gray100 }]} />
+                  )}
+                </React.Fragment>
+              ))
+            ) : (
+              <View style={styles.activityItem}>
+                <Text style={styles.activityIcon}>📭</Text>
+                <View style={styles.activityContent}>
+                  <Text style={[styles.activityText, { color: colors.gray900 }]}>
+                    Belum ada aktivitas
+                  </Text>
+                  <Text style={[styles.activityTime, { color: colors.gray500 }]}>
+                    Aktivitas paket akan muncul di sini
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.gray100 }]} />
-            <View style={styles.activityItem}>
-              <Text style={styles.activityIcon}>✅</Text>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: colors.gray900 }]}>
-                  Paket diambil
-                </Text>
-                <Text style={[styles.activityTime, { color: colors.gray500 }]}>
-                  Kemarin • REX001234569
-                </Text>
-              </View>
-            </View>
+            )}
           </View>
         </View>
       </ScrollView>

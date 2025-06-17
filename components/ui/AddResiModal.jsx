@@ -19,6 +19,8 @@ export default function AddResiModal({
   onClose,
   onSubmit,
   loading = false,
+  codResiCount = 0,
+  capacityPercentage = 0,
 }) {
   const [noResi, setNoResi] = useState("");
   const [tipePaket, setTipePaket] = useState("COD");
@@ -96,9 +98,13 @@ export default function AddResiModal({
                       borderColor: colors.primary,
                       backgroundColor: colors.primary + "10",
                     },
+                    codResiCount >= 5 && { 
+                      opacity: 0.5,
+                      borderColor: colors.gray200,
+                    },
                   ]}
                   onPress={() => setTipePaket("COD")}
-                  disabled={loading}
+                  disabled={loading || codResiCount >= 5}
                 >
                   <View style={[
                     styles.radioCircle,
@@ -109,13 +115,21 @@ export default function AddResiModal({
                       <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />
                     )}
                   </View>
-                  <Text style={[
-                    styles.radioText,
-                    { color: colors.gray700 },
-                    tipePaket === "COD" && { color: colors.primary, fontWeight: "600" },
-                  ]}>
-                    COD (Bayar di Tempat)
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[
+                      styles.radioText,
+                      { color: colors.gray700 },
+                      tipePaket === "COD" && { color: colors.primary, fontWeight: "600" },
+                    ]}>
+                      COD (Bayar di Tempat)
+                    </Text>
+                    <Text style={[
+                      styles.radioSubtext,
+                      { color: colors.gray500 },
+                    ]}>
+                      Maks. 5 paket COD total ({codResiCount}/5)
+                    </Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -139,13 +153,21 @@ export default function AddResiModal({
                       <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />
                     )}
                   </View>
-                  <Text style={[
-                    styles.radioText,
-                    { color: colors.gray700 },
-                    tipePaket === "Non-COD" && { color: colors.primary, fontWeight: "600" },
-                  ]}>
-                    Non-COD (Sudah Dibayar)
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[
+                      styles.radioText,
+                      { color: colors.gray700 },
+                      tipePaket === "Non-COD" && { color: colors.primary, fontWeight: "600" },
+                    ]}>
+                      Non-COD (Sudah Dibayar)
+                    </Text>
+                    <Text style={[
+                      styles.radioSubtext,
+                      { color: colors.gray500 },
+                    ]}>
+                      Tidak terbatas jumlah, terbatas kapasitas box ({Math.round(capacityPercentage)}% terisi)
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -277,7 +299,10 @@ const styles = StyleSheet.create({
   },
   radioText: {
     fontSize: 14,
-    flex: 1,
+  },
+  radioSubtext: {
+    fontSize: 12,
+    marginTop: 2,
   },
   footer: {
     flexDirection: "row",

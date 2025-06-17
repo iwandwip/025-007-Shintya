@@ -67,6 +67,28 @@ export const updateCapacityHeight = async (height, deviceId = 'ESP32_001') => {
   }
 };
 
+export const updateMaxHeight = async (maxHeight, deviceId = 'ESP32_001') => {
+  try {
+    const docRef = doc(db, CAPACITY_COLLECTION, CAPACITY_DOC_ID);
+    await updateDoc(docRef, {
+      maxHeight: maxHeight,
+      lastUpdated: serverTimestamp(),
+      deviceId: deviceId
+    });
+    
+    return {
+      success: true,
+      message: 'Max height updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating max height:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 export const subscribeToCapacityUpdates = (callback) => {
   const docRef = doc(db, CAPACITY_COLLECTION, CAPACITY_DOC_ID);
   

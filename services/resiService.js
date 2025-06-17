@@ -13,6 +13,7 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
+import { activityService } from "./activityService";
 
 const COLLECTION_NAME = "receipts";
 
@@ -25,6 +26,13 @@ export const resiService = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      
+      // Track activity for new package
+      await activityService.trackPackageAdded(
+        resiData.userId,
+        resiData.noResi,
+        resiData.nama
+      );
       
       return { success: true, id: docRef.id };
     } catch (error) {
@@ -76,6 +84,7 @@ export const resiService = {
       let totalPackages = 0;
       let codPackages = 0;
       let pendingPackages = 0;
+      let arrivedPackages = 0;
       
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -89,6 +98,11 @@ export const resiService = {
         if (data.status === "Sedang Dikirim" || data.status === "Telah Tiba") {
           pendingPackages++;
         }
+        
+        // Count packages that have arrived but not picked up
+        if (data.status === "Telah Tiba") {
+          arrivedPackages++;
+        }
       });
       
       return { 
@@ -96,7 +110,8 @@ export const resiService = {
         stats: {
           total: totalPackages,
           cod: codPackages,
-          pending: pendingPackages
+          pending: pendingPackages,
+          arrived: arrivedPackages
         }
       };
     } catch (error) {
@@ -108,10 +123,27 @@ export const resiService = {
   async updateResi(resiId, resiData) {
     try {
       const resiRef = doc(db, COLLECTION_NAME, resiId);
+      
+      // Get current data to check for status changes
+      const currentDoc = await getDoc(resiRef);
+      const currentData = currentDoc.data();
+      
       await updateDoc(resiRef, {
         ...resiData,
         updatedAt: serverTimestamp(),
       });
+      
+      // Track status change if status was updated
+      if (resiData.status && currentData.status !== resiData.status) {
+        await activityService.trackStatusChange(
+          currentData.userId,
+          currentData.noResi,
+          currentData.status,
+          resiData.status,
+          currentData.nama
+        );
+      }
+      
       return { success: true };
     } catch (error) {
       console.error("Error updating resi:", error);
@@ -163,6 +195,7 @@ export const resiService = {
         let totalPackages = 0;
         let codPackages = 0;
         let pendingPackages = 0;
+        let arrivedPackages = 0;
         
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -175,6 +208,10 @@ export const resiService = {
           if (data.status === "Sedang Dikirim" || data.status === "Telah Tiba") {
             pendingPackages++;
           }
+          
+          if (data.status === "Telah Tiba") {
+            arrivedPackages++;
+          }
         });
         
         callback({ 
@@ -182,7 +219,8 @@ export const resiService = {
           stats: {
             total: totalPackages,
             cod: codPackages,
-            pending: pendingPackages
+            pending: pendingPackages,
+            arrived: arrivedPackages
           }
         });
       },
