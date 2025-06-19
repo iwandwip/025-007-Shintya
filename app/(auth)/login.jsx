@@ -62,7 +62,11 @@ export default function Login() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <Box flex={1} bg="$white" justifyContent="center" alignItems="center">
+        <LoadingSpinner />
+      </Box>
+    );
   }
 
   return (

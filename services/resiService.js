@@ -230,4 +230,55 @@ export const resiService = {
       }
     );
   },
+
+  async getOccupiedLokers() {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where("tipePaket", "==", "COD"),
+        where("status", "in", ["Sedang Dikirim", "Telah Tiba"])
+      );
+      const querySnapshot = await getDocs(q);
+      
+      const occupiedLokers = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.nomorLoker) {
+          occupiedLokers.push(data.nomorLoker);
+        }
+      });
+      
+      return { success: true, data: occupiedLokers };
+    } catch (error) {
+      console.error("Error getting occupied lokers:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  subscribeToOccupiedLokers(callback) {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("tipePaket", "==", "COD"),
+      where("status", "in", ["Sedang Dikirim", "Telah Tiba"])
+    );
+    
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const occupiedLokers = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.nomorLoker) {
+            occupiedLokers.push(data.nomorLoker);
+          }
+        });
+        
+        callback({ success: true, data: occupiedLokers });
+      },
+      (error) => {
+        console.error("Error listening to occupied lokers:", error);
+        callback({ success: false, error: error.message });
+      }
+    );
+  },
 };

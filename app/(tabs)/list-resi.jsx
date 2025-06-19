@@ -319,6 +319,17 @@ function ListResi() {
           <Text style={[styles.noResiText, { color: colors.gray600 }]}>
             No. Resi: {item.noResi}
           </Text>
+          
+          {/* Nomor Loker - Only show for COD packages */}
+          {item.tipePaket === 'COD' && item.nomorLoker && (
+            <View style={styles.lokerInfo}>
+              <Ionicons name="cube-outline" size={16} color={colors.primary} />
+              <Text style={[styles.lokerText, { color: colors.primary }]}>
+                Loker #{item.nomorLoker}
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.statusContainer}>
             <Text style={[styles.statusLabel, { color: colors.gray500 }]}>Status: </Text>
             <View style={[
@@ -694,6 +705,17 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     fontWeight: "700",
+  },
+  lokerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  lokerText: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 4,
   },
 });
 

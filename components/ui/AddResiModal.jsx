@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getThemeByRole } from "../../constants/Colors";
+import { resiService } from "../../services/resiService";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -24,6 +25,8 @@ export default function AddResiModal({
 }) {
   const [noResi, setNoResi] = useState("");
   const [tipePaket, setTipePaket] = useState("COD");
+  const [nomorLoker, setNomorLoker] = useState("");
+  const [occupiedLokers, setOccupiedLokers] = useState([]);
   const colors = getThemeByRole(false);
 
   const handleSubmit = () => {
@@ -31,12 +34,40 @@ export default function AddResiModal({
       alert("Mohon masukkan nomor resi");
       return;
     }
-    onSubmit({ noResi: noResi.trim(), tipePaket });
+    if (tipePaket === "COD" && !nomorLoker) {
+      alert("Mohon pilih nomor loker untuk paket COD");
+      return;
+    }
+    
+    const submitData = { 
+      noResi: noResi.trim(), 
+      tipePaket 
+    };
+    
+    if (tipePaket === "COD") {
+      submitData.nomorLoker = parseInt(nomorLoker);
+    }
+    
+    onSubmit(submitData);
   };
+
+  // Subscribe to occupied lokers when modal is visible
+  useEffect(() => {
+    if (visible) {
+      const unsubscribe = resiService.subscribeToOccupiedLokers((result) => {
+        if (result.success) {
+          setOccupiedLokers(result.data);
+        }
+      });
+      
+      return () => unsubscribe();
+    }
+  }, [visible]);
 
   const handleClose = () => {
     setNoResi("");
     setTipePaket("COD");
+    setNomorLoker("");
     onClose();
   };
 
@@ -103,7 +134,10 @@ export default function AddResiModal({
                       borderColor: colors.gray200,
                     },
                   ]}
-                  onPress={() => setTipePaket("COD")}
+                  onPress={() => {
+                    setTipePaket("COD");
+                    setNomorLoker(""); // Reset nomor loker when switching to COD
+                  }}
                   disabled={loading || codResiCount >= 5}
                 >
                   <View style={[
@@ -141,7 +175,10 @@ export default function AddResiModal({
                       backgroundColor: colors.primary + "10",
                     },
                   ]}
-                  onPress={() => setTipePaket("Non-COD")}
+                  onPress={() => {
+                    setTipePaket("Non-COD");
+                    setNomorLoker(""); // Reset nomor loker when switching to Non-COD
+                  }}
                   disabled={loading}
                 >
                   <View style={[
@@ -171,6 +208,64 @@ export default function AddResiModal({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Nomor Loker - Only show for COD */}
+            {tipePaket === "COD" && (
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.gray700 }]}>
+                  Nomor Loker *
+                </Text>
+                <View style={styles.lokerContainer}>
+                  {[1, 2, 3, 4, 5].map((loker) => {
+                    const isOccupied = occupiedLokers.includes(loker);
+                    const isSelected = nomorLoker === loker.toString();
+                    
+                    return (
+                      <TouchableOpacity
+                        key={loker}
+                        style={[
+                          styles.lokerOption,
+                          { borderColor: colors.gray300 },
+                          isSelected && { 
+                            borderColor: colors.primary,
+                            backgroundColor: colors.primary + "10",
+                          },
+                          isOccupied && {
+                            backgroundColor: colors.gray100,
+                            borderColor: colors.gray200,
+                            opacity: 0.5,
+                          },
+                        ]}
+                        onPress={() => setNomorLoker(loker.toString())}
+                        disabled={loading || isOccupied}
+                      >
+                        <Text style={[
+                          styles.lokerText,
+                          { color: colors.gray700 },
+                          isSelected && { 
+                            color: colors.primary,
+                            fontWeight: "600",
+                          },
+                          isOccupied && {
+                            color: colors.gray400,
+                          },
+                        ]}>
+                          {loker}
+                        </Text>
+                        {isOccupied && (
+                          <View style={styles.occupiedBadge}>
+                            <Ionicons name="lock-closed" size={12} color={colors.gray400} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={[styles.helperText, { color: colors.gray500 }]}>
+                  Pilih nomor loker yang tersedia (1-5)
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Footer */}
@@ -194,12 +289,12 @@ export default function AddResiModal({
                 styles.button,
                 styles.submitButton,
                 { backgroundColor: colors.primary },
-                (!noResi.trim() || loading) && { 
+                (!noResi.trim() || loading || (tipePaket === "COD" && !nomorLoker)) && { 
                   backgroundColor: colors.gray300,
                 },
               ]}
               onPress={handleSubmit}
-              disabled={!noResi.trim() || loading}
+              disabled={!noResi.trim() || loading || (tipePaket === "COD" && !nomorLoker)}
             >
               {loading ? (
                 <ActivityIndicator size="small" color={colors.white} />
@@ -326,5 +421,34 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  lokerContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  lokerOption: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lokerText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 8,
+  },
+  occupiedBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 2,
   },
 });

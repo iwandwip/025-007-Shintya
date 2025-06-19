@@ -86,6 +86,7 @@ All business logic is separated into service files:
 #### Supporting Services
 - `activityService.js` - User activity logging and tracking
 - `seederService.js` - Test data generation for development
+- `lokerControlService.js` - Hardware loker control (buka/tutup)
 
 ### State Management
 Global state via React Context:
@@ -217,6 +218,18 @@ packages/{timelineId}/periods/{periodKey}/user_packages/{userId}
 }
 ```
 
+#### lokerControl (Hardware Control)
+```javascript
+lokerControl/{loker_1 to loker_5}
+{
+  buka: number,            // 1 = open command, 0 = no command
+  tutup: number,           // 1 = close command, 0 = no command
+  timestamp: timestamp,    // Last command timestamp
+  lastCommand: string,     // "buka", "tutup", "reset", "none"
+  nomorLoker: number       // Loker number (1-5)
+}
+```
+
 ### Realtime Database Structure
 ```
 systemStatus/
@@ -252,6 +265,7 @@ Located in `firmware/` with two versions (R0/R1):
 1. **RFID Pairing**: App initiates → ESP32 generates code → User confirms
 2. **Package Access**: RFID scan → Firebase lookup → Access granted/denied
 3. **Capacity Monitoring**: Ultrasonic readings → Firebase update → Real-time UI
+4. **Loker Control**: App sends command → Firebase → ESP32 reads → Hardware action → Auto-reset
 
 ## Important Implementation Details
 
@@ -264,7 +278,9 @@ Located in `firmware/` with two versions (R0/R1):
 ### Package Management Features
 - **Receipt Tracking**: Unique tracking numbers for each package
 - **Status Management**: Real-time status updates (pending, delivered, picked up, returned)
-- **COD Support**: Cash-on-delivery option with amount tracking
+- **COD Support**: Cash-on-delivery option with amount tracking and loker assignment
+- **Loker Management**: Automatic loker assignment for COD packages (1-5)
+- **Loker Control**: Remote buka/tutup loker via QR code modal (COD only)
 - **Capacity Monitoring**: Real-time box fill level with visual indicators
 - **QR Code Generation**: Unique QR codes for each package
 - **Activity Logging**: Complete audit trail of all package operations
