@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/icon-packet.png",
         "backgroundColor": "#F50057"
       },
-      "package": "com.haikal.haikalapp"
+      "package": "com.shintya.shintyaapp"
     },
     "web": {
       "favicon": "./assets/icon-packet.png",
