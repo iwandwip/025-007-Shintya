@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a React Native + Expo mobile application for a comprehensive package delivery and tracking system. The system integrates with ESP32 hardware for RFID-based package identification, real-time capacity monitoring, and secure package access management.
+This is a React Native + Expo mobile application for a comprehensive package delivery and tracking system. The system integrates with ESP32 hardware featuring RFID-based package identification, real-time ultrasonic capacity monitoring, and secure multi-loker package access management with COD support.
 
 ## Development Commands
 
@@ -26,106 +26,114 @@ npm run cleanup
 
 # Generate test data
 npm run seed
+
+# Build commands (see BUILD_APK.md for details)
+eas build --platform android --profile development
+eas build --platform android --profile preview
+eas build --platform android --profile production
 ```
 
 ## Architecture
 
 ### Multi-Role System
-- **Admin**: Complete management access via `app/(admin)/` routes (not yet implemented)
-- **User**: Customer access via `app/(tabs)/` routes
+- **Admin**: Complete management access via `app/(admin)/` routes (referenced but not implemented)
+- **User**: Customer access via `app/(tabs)/` routes with full package management
 - Authentication handled through `contexts/AuthContext.jsx`
 - Role-based routing enforced in `_layout.jsx` files
+- Special development admin account: `admin@gmail.com` (accepts any password)
 
 ### Key Technologies
 - **React Native + Expo SDK 53**
 - **Firebase** (Authentication + Firestore + Realtime Database)
-- **Expo Router** for file-based navigation
-- **ESP32 Arduino firmware** with RFID and ultrasonic sensor integration
-- **React Native SVG** for custom illustrations
-- **Async Storage** for local data persistence
+- **Expo Router** for file-based navigation with nested route groups
+- **ESP32 Arduino firmware** with RFID RC522, ultrasonic sensor, and LCD display
+- **React Native SVG** for custom vector illustrations
+- **Async Storage** for local data persistence and caching
+- **EAS (Expo Application Services)** for cloud builds and distribution
 
 ## Application Structure
 
 ### Navigation Flow
 ```
 app/
-├── index.jsx                 # Root redirect logic
-├── _layout.jsx              # Main app layout with providers
-├── (auth)/                  # Authentication screens
-│   ├── _layout.jsx         # Auth layout wrapper
-│   ├── login.jsx           # Login screen
-│   ├── register.jsx        # Registration screen
-│   └── forgot-password.jsx # Password recovery
-└── (tabs)/                  # Main app screens (authenticated users)
-    ├── _layout.jsx         # Tab navigation setup
-    ├── index.jsx           # Home/Dashboard
-    ├── list-resi.jsx       # Package list management
-    ├── kapasitas-paket.jsx # Real-time capacity monitoring
-    ├── edit-profile.jsx    # User profile editing
-    └── profile.jsx         # User profile display
+├── index.jsx                 # Root entry point with auth routing logic
+├── _layout.jsx              # Main app layout with context providers
+├── (auth)/                  # Authentication screens (public access)
+│   ├── _layout.jsx         # Auth layout wrapper with background
+│   ├── login.jsx           # Login screen with RFID pairing option
+│   ├── register.jsx        # Registration screen with form validation
+│   └── forgot-password.jsx # Password recovery with email reset
+└── (tabs)/                  # Main app screens (authenticated users only)
+    ├── _layout.jsx         # Tab navigation setup with 4 visible tabs
+    ├── index.jsx           # Home/Dashboard with capacity and recent packages
+    ├── list-resi.jsx       # Complete package list management with CRUD
+    ├── kapasitas-paket.jsx # Real-time capacity monitoring with visual indicators
+    ├── edit-profile.jsx    # User profile editing (hidden tab, accessed via profile)
+    └── profile.jsx         # User profile display with RFID management
 ```
 
-### Service Layer
-All business logic is separated into service files:
+### Service Layer Architecture
+Comprehensive service layer with 12 specialized services providing clear separation of concerns:
 
 #### Core Services
-- `authService.js` - Authentication operations (login, register, password reset)
-- `userService.js` - User profile management and RFID operations
-- `firebase.js` - Firebase initialization and configuration
+- `firebase.js` - Firebase initialization, configuration, and connection management
+- `authService.js` - Complete authentication operations (login, register, password reset, session management)
+- `userService.js` - User profile management, RFID operations, and account settings
 
-#### Package Management
-- `resiService.js` - Package receipt (resi) CRUD operations
-- `userPackageService.js` - User-specific package history and status
-- `packageStatusManager.js` - Real-time package status monitoring and caching
+#### Package Management Services
+- `resiService.js` - Package receipt CRUD operations, COD support, automatic loker assignment (1-5)
+- `userPackageService.js` - User-specific package history, timeline-based tracking, and status management
+- `packageStatusManager.js` - Smart caching system with TTL, request throttling, and background sync optimization
 
-#### Hardware Integration
-- `capacityService.js` - Box capacity monitoring via ultrasonic sensor
-- `pairingService.js` - RFID card pairing for packages
-- `timelineService.js` - Delivery timeline management
+#### Hardware Integration Services
+- `capacityService.js` - Ultrasonic sensor data processing for real-time box capacity monitoring (0-30cm range)
+- `pairingService.js` - RFID card pairing with 30-second timeout sessions and random 8-char hex code generation
+- `lokerControlService.js` - Remote loker control (buka/tutup) with automatic reset after 10 seconds
 
 #### Supporting Services
-- `activityService.js` - User activity logging and tracking
-- `seederService.js` - Test data generation for development
-- `lokerControlService.js` - Hardware loker control (buka/tutup)
+- `activityService.js` - Comprehensive user activity logging and audit trail system
+- `timelineService.js` - Delivery timeline and period management for package scheduling
+- `seederService.js` - Comprehensive test data generation for development and testing
 
 ### State Management
-Global state via React Context:
-- `AuthContext` - User authentication, profile, and session management
-- `SettingsContext` - App settings and configuration
-- `NotificationContext` - Toast notifications and alerts
-- `ThemeContext` - Theme management (light/dark mode)
+Global state management via React Context with optimized performance:
+- `AuthContext` - User authentication, profile data, session persistence, and RFID management
+- `SettingsContext` - App settings, configuration, and user preferences
+- `NotificationContext` - Toast notifications, alerts, and user feedback system
+- `ThemeContext` - Theme management (light/dark mode support)
 
-### UI Components
+### UI Component Architecture
+Comprehensive component system with 25+ reusable components:
 
-#### Core Components
-- `AuthGuard` - Route protection for authenticated users
-- `ErrorBoundary` - Global error handling
+#### Core Application Components
+- `AuthGuard` - Route protection for authenticated users with redirect logic
+- `ErrorBoundary` - Global error handling with fallback UI and error reporting
 
-#### Form Components
-- `AuthForm` - Reusable authentication form
-- `Input` - Custom text input with validation
-- `Button` - Themed button component
-- `DatePicker` - Date selection component
-- `TimelinePicker` - Timeline selection for packages
+#### Form & Input Components
+- `AuthForm` - Reusable authentication form with validation and loading states
+- `Input` - Custom text input with validation states, error handling, and theming
+- `Button` - Themed button component with loading states and multiple variants
+- `DatePicker` - Native date selection component with Indonesian locale
+- `TimelinePicker` - Timeline selection for package delivery scheduling
 
-#### Modal Components
-- `AddResiModal` - Add new package receipt
-- `EditResiModal` - Edit existing package
-- `PaymentModal` - Package payment interface
-- `QRCodeModal` - QR code display for packages
-- `HelpModal` - User assistance
+#### Modal Components (Feature-Rich)
+- `AddResiModal` - Add new package with COD support, automatic loker assignment, and validation
+- `EditResiModal` - Edit existing package details with real-time updates
+- `PaymentModal` - Package payment interface (structure exists, payment gateway not implemented)
+- `QRCodeModal` - QR code display with integrated loker control for COD packages (buka/tutup functionality)
+- `HelpModal` - User assistance with documentation and troubleshooting
 
-#### Display Components
-- `DataTable` - Tabular data display
-- `LoadingSpinner` - Loading states
-- `ToastNotification` - Alert messages
-- `CreditBalance` - User priority display
-- `IllustrationContainer` - SVG illustration wrapper
+#### Display & Data Components
+- `DataTable` - Responsive tabular data display with sorting and filtering
+- `LoadingSpinner` - Loading states with customizable text and theming
+- `ToastNotification` - Non-intrusive alert messages with auto-dismiss
+- `CreditBalance` - User priority/credit display with visual indicators
+- `IllustrationContainer` - SVG illustration wrapper with responsive sizing
 
-#### Custom Illustrations
-- `LoginIllustration` - Login screen graphic
-- `RegisterIllustration` - Registration screen graphic
-- `ForgotPasswordIllustration` - Password recovery graphic
+#### Custom SVG Illustrations
+- `LoginIllustration` - Custom vector graphic for login screen
+- `RegisterIllustration` - Custom vector graphic for registration screen
+- `ForgotPasswordIllustration` - Custom vector graphic for password recovery
 
 ## Database Structure
 
@@ -151,16 +159,18 @@ Global state via React Context:
 ```javascript
 {
   id: string,              // Auto-generated ID
-  noResi: string,          // Receipt/tracking number
+  noResi: string,          // Receipt/tracking number (unique)
   nama: string,            // Recipient name
   alamat: string,          // Delivery address
   noHp: string,            // Phone number
   jenisBarang: string,     // Package type
   beratBarang: number,     // Weight (kg)
-  biayaKirim: number,      // Shipping cost
+  biayaKirim: number,      // Shipping cost (IDR)
   isCod: boolean,          // Cash on delivery flag
-  nominalCod: number,      // COD amount
-  status: string,          // Package status
+  nominalCod: number,      // COD amount (IDR)
+  tipePaket: string,       // Package type classification
+  nomorLoker: number,      // Assigned loker number (1-5 for COD, null for regular)
+  status: string,          // Package status (Sedang Dikirim → Telah Tiba → Sudah Diambil)
   userId: string,          // Owner user ID
   createdAt: timestamp,
   updatedAt: timestamp
@@ -262,10 +272,11 @@ Located in `firmware/` with two versions (R0/R1):
 - `RFID.ino` - RFID card reading and writing
 
 ### Hardware Communication Flow
-1. **RFID Pairing**: App initiates → ESP32 generates code → User confirms
-2. **Package Access**: RFID scan → Firebase lookup → Access granted/denied
-3. **Capacity Monitoring**: Ultrasonic readings → Firebase update → Real-time UI
-4. **Loker Control**: App sends command → Firebase → ESP32 reads → Hardware action → Auto-reset
+1. **RFID Pairing**: App initiates session → ESP32 generates 8-char hex code → User confirms within 30s → RFID saved to user profile
+2. **Package Access**: RFID scan → Firebase realtime lookup → Access granted/denied → Activity logged → LCD feedback
+3. **Capacity Monitoring**: Ultrasonic sensor readings (0-30cm) → Firebase update → Real-time UI with percentage and visual indicators
+4. **Loker Control**: App sends buka/tutup command → Firebase lokerControl collection → ESP32 reads → Hardware action → Auto-reset after 10 seconds
+5. **System Status**: ESP32 reports hardware status → Firebase Realtime Database → App displays system health
 
 ## Important Implementation Details
 
@@ -276,14 +287,16 @@ Located in `firmware/` with two versions (R0/R1):
 - Session persistence with automatic re-authentication
 
 ### Package Management Features
-- **Receipt Tracking**: Unique tracking numbers for each package
-- **Status Management**: Real-time status updates (pending, delivered, picked up, returned)
-- **COD Support**: Cash-on-delivery option with amount tracking and loker assignment
-- **Loker Management**: Automatic loker assignment for COD packages (1-5)
-- **Loker Control**: Remote buka/tutup loker via QR code modal (COD only)
-- **Capacity Monitoring**: Real-time box fill level with visual indicators
-- **QR Code Generation**: Unique QR codes for each package
-- **Activity Logging**: Complete audit trail of all package operations
+- **Receipt Tracking**: Auto-generated unique tracking numbers with search functionality
+- **Status Management**: Real-time status updates (Sedang Dikirim → Telah Tiba → Sudah Diambil)
+- **COD Support**: Cash-on-delivery with amount tracking, automatic loker assignment, and payment validation
+- **Loker Management**: Smart loker assignment system (1-5) with maximum 5 active COD packages system-wide
+- **Loker Control**: Remote buka/tutup functionality via QR code modal (COD packages only) with 10-second auto-reset
+- **Capacity Monitoring**: Real-time ultrasonic sensor data with visual indicators (Kosong → Terisi Sebagian → Hampir Penuh → Penuh)
+- **QR Code Generation**: Dynamic QR codes for each package with embedded package information
+- **Activity Logging**: Comprehensive audit trail with user actions, timestamps, and metadata tracking
+- **Package Types**: Categorization system with weight and dimension tracking
+- **Real-time Sync**: Live updates across all screens with optimized data fetching
 
 ### RFID Integration Features
 - **Secure Pairing**: 30-second timeout for pairing sessions
@@ -300,11 +313,14 @@ Located in `firmware/` with two versions (R0/R1):
 - **Error Handling**: User-friendly error messages
 
 ### Performance Optimizations
-- **Data Caching**: Smart caching with TTL management
-- **Throttling**: Request throttling to prevent API spam
-- **Lazy Loading**: Components loaded on demand
-- **Image Optimization**: SVG illustrations for small size
-- **Background Sync**: Intelligent data refresh on app resume
+- **Smart Caching**: TTL-based caching system with automatic invalidation and memory management
+- **Request Throttling**: API call throttling to prevent spam and reduce Firebase costs
+- **Lazy Loading**: On-demand component loading and code splitting
+- **Image Optimization**: Custom SVG illustrations for minimal bundle size and crisp display
+- **Background Sync**: Intelligent data refresh on app resume with connectivity detection
+- **Real-time Optimization**: Selective Firebase listeners to reduce bandwidth usage
+- **Data Pagination**: Efficient data loading for large package lists
+- **Memory Management**: Proper cleanup of listeners and subscriptions
 
 ## Development Guidelines
 
@@ -338,12 +354,45 @@ Located in `firmware/` with two versions (R0/R1):
 - Date/time in Indonesian format
 - Currency in IDR format
 
-## Future Enhancements
-- [ ] Admin dashboard implementation
-- [ ] Push notifications
-- [ ] Barcode scanning
-- [ ] Multiple box support
-- [ ] Delivery route optimization
-- [ ] Analytics dashboard
-- [ ] Export functionality
-- [ ] Multi-language support
+## Development Tools & Testing
+
+### Built-in Development Tools
+- **ESP32 Simulator** (`testing/esp32-simulator.js`) - Node.js based hardware simulator for development
+- **Seeder Service** - Comprehensive test data generation with realistic package data
+- **Firebase Cleanup Tool** (`firebase-cleanup/cleanup.js`) - Automated data cleanup utility
+- **Build System** - EAS build configuration with multiple profiles (dev, preview, production)
+
+### Testing Approach
+- Test with multiple user accounts and roles
+- Verify complete RFID pairing flow (30-second timeout)
+- Validate real-time capacity monitoring and visual updates
+- Test COD loker assignment and control functionality
+- Check offline functionality and graceful degradation
+- Validate cross-device real-time synchronization
+- Test hardware communication via ESP32 simulator
+
+## Current Limitations & Known Issues
+
+### Implemented but Limited
+1. **COD Loker System**: Maximum 5 active COD packages (hardware constraint)
+2. **Single Box Support**: Currently supports one main package box only
+3. **Payment Processing**: PaymentModal UI exists but no actual payment gateway integration
+4. **Admin Dashboard**: Routes referenced but implementation not complete
+
+### Development Account
+- Special admin account: `admin@gmail.com` (accepts any password for testing)
+- Email verification disabled for faster development iteration
+- Comprehensive logging for debugging hardware communication
+
+## Future Enhancements Roadmap
+- [ ] Complete admin dashboard implementation (`app/(admin)/` routes)
+- [ ] Push notification system integration
+- [ ] Barcode scanning capability addition
+- [ ] Multiple box support with individual capacity monitoring
+- [ ] Delivery route optimization algorithms
+- [ ] Comprehensive analytics dashboard with usage metrics
+- [ ] Data export functionality (CSV, Excel formats)
+- [ ] Multi-language support (English, other languages)
+- [ ] Payment gateway integration (Midtrans, DANA, etc.)
+- [ ] Advanced RFID features (bulk package access)
+- [ ] Machine learning delivery prediction (KNN.ino expansion)
