@@ -262,12 +262,16 @@ function ListResi() {
 
   const renderResiItem = ({ item }) => {
     const isOwner = item.userId === currentUser?.uid;
+    const isCODPackage = item.tipePaket === 'COD';
+    const isClickable = isOwner && isCODPackage;
+    
+    const CardComponent = isClickable ? TouchableOpacity : View;
     
     return (
-      <TouchableOpacity 
+      <CardComponent 
         style={[styles.resiCard, { backgroundColor: colors.white, shadowColor: colors.shadow.color }]}
-        onPress={() => handleShowQRCode(item)}
-        activeOpacity={0.7}
+        onPress={isClickable ? () => handleShowQRCode(item) : undefined}
+        activeOpacity={isClickable ? 0.7 : 1}
       >
         <View style={styles.resiHeader}>
           <View style={styles.resiInfo}>
@@ -277,12 +281,15 @@ function ListResi() {
             )}
           </View>
           <View style={styles.rightSection}>
-            <TouchableOpacity
-              onPress={() => handleShowQRCode(item)}
-              style={styles.qrButton}
-            >
-              <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
-            </TouchableOpacity>
+            {/* QR Button - Only show for COD packages */}
+            {isCODPackage && isOwner && (
+              <TouchableOpacity
+                onPress={() => handleShowQRCode(item)}
+                style={styles.qrButton}
+              >
+                <Ionicons name="cube-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
             <View style={[
               styles.tipePaketBadge, 
               { backgroundColor: item.tipePaket === 'COD' ? colors.primary : colors.gray200 }
@@ -312,10 +319,7 @@ function ListResi() {
             )}
           </View>
         </View>
-        <TouchableOpacity 
-          onPress={() => handleShowQRCode(item)}
-          style={styles.resiContent}
-        >
+        <View style={styles.resiContent}>
           <Text style={[styles.noResiText, { color: colors.gray600 }]}>
             No. Resi: {item.noResi}
           </Text>
@@ -344,14 +348,17 @@ function ListResi() {
               </Text>
             </View>
           </View>
-          <View style={styles.qrHint}>
-            <Ionicons name="qr-code-outline" size={16} color={colors.gray400} />
-            <Text style={[styles.qrHintText, { color: colors.gray400 }]}>
-              Tap untuk melihat QR Code
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+          {/* Hint text - Only for COD packages */}
+          {isCODPackage && isOwner && (
+            <View style={styles.qrHint}>
+              <Ionicons name="cube-outline" size={16} color={colors.gray400} />
+              <Text style={[styles.qrHintText, { color: colors.gray400 }]}>
+                Tap untuk kontrol loker
+              </Text>
+            </View>
+          )}
+        </View>
+      </CardComponent>
     );
   };
 

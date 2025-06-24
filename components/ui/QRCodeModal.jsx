@@ -26,8 +26,8 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = 
   // Use resi number if provided, otherwise use userEmail
   const qrValue = resiData?.noResi || userEmail;
   const displayText = resiData?.noResi || userEmail;
-  const title = resiData ? "QR Code Resi" : "Kode QR Saya";
-  const description = resiData ? "Tunjukkan QR code ini untuk identifikasi resi" : "Tunjukkan kode QR ini untuk identifikasi";
+  const title = resiData ? "Kontrol Loker" : "Kode QR Saya";
+  const description = resiData ? "Kontrol loker untuk paket COD Anda" : "Tunjukkan kode QR ini untuk identifikasi";
   
   const isCODPackage = resiData?.tipePaket === "COD" && resiData?.nomorLoker;
 
@@ -162,27 +162,32 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = 
             </View>
           )}
 
-          <View style={styles.qrContainer}>
-            <View style={[styles.qrWrapper, { backgroundColor: colors.white }]}>
-              <QRCode
-                value={qrValue}
-                size={200}
-                color={colors.gray900}
-                backgroundColor={colors.white}
-              />
-            </View>
-            <Text style={[styles.emailText, { color: colors.gray600 }]}>
-              {displayText}
-            </Text>
-          </View>
+          {/* Only show QR Code for non-COD packages */}
+          {!isCODPackage && (
+            <>
+              <View style={styles.qrContainer}>
+                <View style={[styles.qrWrapper, { backgroundColor: colors.white }]}>
+                  <QRCode
+                    value={qrValue}
+                    size={200}
+                    color={colors.gray900}
+                    backgroundColor={colors.white}
+                  />
+                </View>
+                <Text style={[styles.emailText, { color: colors.gray600 }]}>
+                  {displayText}
+                </Text>
+              </View>
 
-          <Text style={[styles.description, { color: colors.gray500 }]}>
-            {description}
-          </Text>
+              <Text style={[styles.description, { color: colors.gray500 }]}>
+                {description}
+              </Text>
+            </>
+          )}
 
           {/* Loker Control Buttons - Only for COD packages */}
           {isCODPackage && (
-            <View style={styles.lokerControlContainer}>
+            <View style={[styles.lokerControlContainer, { borderTopWidth: 0, paddingTop: 0, marginTop: 0 }]}>
               <Text style={[styles.lokerControlTitle, { color: colors.gray900 }]}>
                 Kontrol Loker #{resiData.nomorLoker}
               </Text>
