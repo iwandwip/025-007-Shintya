@@ -1,3 +1,29 @@
+/**
+ * Kapasitas Paket Screen - Halaman monitoring real-time kapasitas box paket
+ * 
+ * Halaman ini menampilkan:
+ * - Status kapasitas box secara real-time dari sensor ESP32
+ * - Progress bar visual dengan indikator warna
+ * - Detail ketinggian, batas maksimal, dan persentase
+ * - Informasi sensor (Device ID dan update terakhir)
+ * - Auto-refresh ketika screen difokuskan
+ * 
+ * Features:
+ * - Real-time monitoring menggunakan Firebase listeners
+ * - Sensor ultrasonik ESP32 untuk pengukuran ketinggian
+ * - Status dinamis (Kosong → Terisi Sebagian → Hampir Penuh → Penuh)
+ * - Pull-to-refresh untuk update manual
+ * - Visual feedback dengan warna berdasarkan status
+ * 
+ * Technical Details:
+ * - Range sensor: 0-30cm (0cm = kosong, 30cm = penuh)
+ * - Update otomatis dari ESP32 via Firebase Realtime Database
+ * - Thresholds: <25% Kosong, 25-70% Terisi Sebagian, 70-90% Hampir Penuh, >90% Penuh
+ * 
+ * @component KapasitasPaket
+ * @returns {JSX.Element} Halaman monitoring kapasitas
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -19,38 +45,56 @@ import {
   calculateCapacityStatus 
 } from "../../services/capacityService";
 
+/**
+ * Komponen utama halaman Kapasitas Paket
+ * Mengelola state dan logika untuk monitoring kapasitas box
+ */
 function KapasitasPaket() {
+  // Context dan hooks untuk autentikasi, tema, dan safe area
   const { userProfile, refreshProfile } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const insets = useSafeAreaInsets();
-  const colors = getThemeByRole(false);
+  const colors = getThemeByRole(false); // Selalu menggunakan tema user
+  
+  // State untuk pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
+  
+  // State untuk data kapasitas dengan nilai default
   const [kapasitasData, setKapasitasData] = useState({
-    height: 0,
-    maxHeight: 30,
-    percentage: 0,
-    status: "Kosong",
-    message: "Box kosong, siap menerima paket",
-    color: "#22C55E",
-    lastUpdated: null,
-    deviceId: null
+    height: 0,           // Ketinggian saat ini dari sensor (cm)
+    maxHeight: 30,       // Batas maksimal box (cm)
+    percentage: 0,       // Persentase terisi (dihitung otomatis)
+    status: "Kosong",    // Status kapasitas (Kosong/Terisi Sebagian/Hampir Penuh/Penuh)
+    message: "Box kosong, siap menerima paket", // Pesan deskriptif
+    color: "#22C55E",    // Warna indikator (hijau untuk kosong)
+    lastUpdated: null,   // Timestamp update terakhir dari sensor
+    deviceId: null       // ID device ESP32
   });
+  
+  // State untuk loading inisialisasi
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Memuat data kapasitas dari Firebase
+   * Dipanggil manual saat refresh atau inisialisasi
+   */
   const loadKapasitas = async () => {
     try {
+      // Ambil data kapasitas dari service
       const result = await getCapacityData();
       if (result.success) {
         const { height, maxHeight, lastUpdated, deviceId } = result.data;
+        // Hitung status berdasarkan ketinggian dan batas maksimal
         const statusInfo = calculateCapacityStatus(height, maxHeight);
         
+        // Update state dengan data terbaru dan status yang dihitung
         setKapasitasData({
           height,
           maxHeight,
-          percentage: statusInfo.percentage,
-          status: statusInfo.status,
-          message: statusInfo.message,
-          color: statusInfo.color,
+          percentage: statusInfo.percentage,  // Persentase terisi (0-100%)
+          status: statusInfo.status,          // Status dalam bahasa Indonesia
+          message: statusInfo.message,        // Pesan deskriptif
+          color: statusInfo.color,            // Warna untuk UI
           lastUpdated,
           deviceId
         });
@@ -62,14 +106,22 @@ function KapasitasPaket() {
     }
   };
 
+  /**
+   * Effect untuk setup real-time listener dan load data awal
+   * Mengatur subscription untuk update kapasitas otomatis dari ESP32
+   */
   useEffect(() => {
+    // Load data kapasitas saat component mount
     loadKapasitas();
     
+    // Setup real-time listener untuk update otomatis dari sensor ESP32
     const unsubscribe = subscribeToCapacityUpdates((result) => {
       if (result.success) {
         const { height, maxHeight, lastUpdated, deviceId } = result.data;
+        // Hitung ulang status setiap kali ada update dari sensor
         const statusInfo = calculateCapacityStatus(height, maxHeight);
         
+        // Update state dengan data real-time dari ESP32
         setKapasitasData({
           height,
           maxHeight,
@@ -83,19 +135,30 @@ function KapasitasPaket() {
       }
     });
     
+    // Cleanup subscription saat component unmount
     return () => unsubscribe();
   }, []);
 
+  /**
+   * Effect untuk reload data saat screen difokuskan
+   * Memastikan data selalu terbaru ketika user kembali ke halaman ini
+   */
   useFocusEffect(
     React.useCallback(() => {
       loadKapasitas();
     }, [])
   );
 
+  /**
+   * Handler untuk pull-to-refresh
+   * Memperbarui data kapasitas dan profil pengguna
+   */
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
+      // Refresh data kapasitas dari sensor
       await loadKapasitas();
+      // Refresh profil pengguna jika tersedia
       if (refreshProfile) {
         await refreshProfile();
       }
@@ -105,26 +168,40 @@ function KapasitasPaket() {
     setRefreshing(false);
   }, [refreshProfile]);
 
+  /**
+   * Mendapatkan emoji icon berdasarkan status kapasitas
+   * 
+   * @param {string} status - Status kapasitas ("Kosong", "Terisi Sebagian", "Hampir Penuh", "Penuh")
+   * @returns {string} Emoji yang sesuai dengan status
+   */
   const getStatusIcon = (status) => {
     switch (status) {
       case "Penuh":
-        return "🚫";
+        return "🚫";      // Tanda dilarang - box penuh
       case "Hampir Penuh":
-        return "⚠️";
+        return "⚠️";      // Warning - hampir penuh
       case "Terisi Sebagian":
-        return "📦";
+        return "📦";      // Paket - ada isi tapi belum penuh
       case "Kosong":
-        return "✅";
+        return "✅";      // Centang - kosong dan siap
       default:
-        return "📏";
+        return "📏";      // Penggaris - status tidak diketahui
     }
   };
 
+  /**
+   * Memformat timestamp menjadi format tanggal dan waktu Indonesia
+   * 
+   * @param {Date|Timestamp} timestamp - Timestamp Firebase atau Date object
+   * @returns {string} String tanggal yang diformat (DD/MM/YYYY HH:MM)
+   */
   const formatLastUpdated = (timestamp) => {
     if (!timestamp) return 'Belum ada data';
     
     try {
+      // Handle Firebase Timestamp dan Date object
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      // Format dengan locale Indonesia
       return date.toLocaleString('id-ID', {
         day: '2-digit',
         month: '2-digit', 
@@ -178,6 +255,7 @@ function KapasitasPaket() {
           />
         }
       >
+        {/* Header dengan judul dan deskripsi */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.gray900 }]}>
             Kapasitas Paket
@@ -187,6 +265,7 @@ function KapasitasPaket() {
           </Text>
         </View>
 
+        {/* Kartu Status Utama - Menampilkan status kapasitas dengan visual */}
         <View
           style={[
             styles.statusCard,
@@ -196,38 +275,45 @@ function KapasitasPaket() {
             },
           ]}
         >
+          {/* Header status dengan icon dan info */}
           <View style={styles.statusHeader}>
             <Text style={styles.statusIcon}>
               {getStatusIcon(kapasitasData.status)}
             </Text>
             <View style={styles.statusInfo}>
+              {/* Status dengan warna dinamis */}
               <Text style={[styles.statusText, { color: kapasitasData.color }]}>
                 {kapasitasData.status}
               </Text>
+              {/* Pesan deskriptif status */}
               <Text style={[styles.statusMessage, { color: colors.gray600 }]}>
                 {kapasitasData.message}
               </Text>
             </View>
           </View>
 
+          {/* Progress bar visual */}
           <View style={styles.progressContainer}>
             <View style={[styles.progressBar, { backgroundColor: colors.gray200 }]}>
+              {/* Fill progress dengan lebar dinamis berdasarkan persentase */}
               <View
                 style={[
                   styles.progressFill,
                   {
                     width: `${kapasitasData.percentage}%`,
-                    backgroundColor: kapasitasData.color,
+                    backgroundColor: kapasitasData.color, // Warna berdasarkan status
                   },
                 ]}
               />
             </View>
+            {/* Text persentase */}
             <Text style={[styles.progressText, { color: colors.gray600 }]}>
               {kapasitasData.percentage.toFixed(1)}% terisi
             </Text>
           </View>
         </View>
 
+        {/* Kartu Detail Kapasitas - Menampilkan angka detail */}
         <View
           style={[
             styles.detailCard,
@@ -241,7 +327,9 @@ function KapasitasPaket() {
             Detail Kapasitas
           </Text>
 
+          {/* Grid 3 kolom untuk detail angka */}
           <View style={styles.detailGrid}>
+            {/* Ketinggian saat ini dari sensor ultrasonik */}
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
                 Ketinggian Saat Ini
@@ -254,6 +342,7 @@ function KapasitasPaket() {
               </Text>
             </View>
 
+            {/* Batas maksimal box (biasanya 30cm) */}
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
                 Batas Maksimal
@@ -266,6 +355,7 @@ function KapasitasPaket() {
               </Text>
             </View>
 
+            {/* Persentase terisi (dihitung dari ketinggian/maxHeight) */}
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
                 Persentase
@@ -280,6 +370,7 @@ function KapasitasPaket() {
           </View>
         </View>
 
+        {/* Kartu Informasi Sensor - Detail teknis ESP32 */}
         <View
           style={[
             styles.sensorCard,
@@ -293,6 +384,7 @@ function KapasitasPaket() {
             Informasi Sensor
           </Text>
           <View style={styles.sensorGrid}>
+            {/* ID device ESP32 */}
             <View style={styles.sensorItem}>
               <Text style={[styles.sensorLabel, { color: colors.gray600 }]}>
                 Device ID
@@ -301,6 +393,7 @@ function KapasitasPaket() {
                 {kapasitasData.deviceId || 'Tidak terhubung'}
               </Text>
             </View>
+            {/* Waktu update terakhir dari sensor */}
             <View style={styles.sensorItem}>
               <Text style={[styles.sensorLabel, { color: colors.gray600 }]}>
                 Update Terakhir
@@ -312,6 +405,7 @@ function KapasitasPaket() {
           </View>
         </View>
 
+        {/* Kartu Informasi - Penjelasan cara kerja sistem */}
         <View
           style={[
             styles.infoCard,
@@ -324,18 +418,21 @@ function KapasitasPaket() {
           <Text style={[styles.cardTitle, { color: colors.gray900 }]}>
             Informasi
           </Text>
+          {/* Info tentang sensor ultrasonik */}
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>📏</Text>
             <Text style={[styles.infoText, { color: colors.gray600 }]}>
               Sensor ultrasonik mengukur ketinggian paket secara real-time dan memperbarui data otomatis.
             </Text>
           </View>
+          {/* Info tentang update otomatis */}
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>🔄</Text>
             <Text style={[styles.infoText, { color: colors.gray600 }]}>
               Data kapasitas diperbarui langsung oleh ESP32 setiap kali ada perubahan ketinggian paket.
             </Text>
           </View>
+          {/* Info tentang monitoring 24/7 */}
           <View style={styles.infoItem}>
             <Text style={styles.infoIcon}>⚡</Text>
             <Text style={[styles.infoText, { color: colors.gray600 }]}>

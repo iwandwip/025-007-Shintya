@@ -1,3 +1,28 @@
+/**
+ * Edit Profile Screen - Halaman edit profil pengguna
+ * 
+ * Halaman ini memungkinkan pengguna untuk:
+ * - Mengedit nama lengkap
+ * - Mengedit nomor telepon
+ * - Melihat informasi yang tidak bisa diubah (email)
+ * - Menyimpan perubahan dengan validasi
+ * 
+ * Features:
+ * - Validasi form real-time
+ * - Keyboard avoiding untuk mobile UX
+ * - Pull-to-refresh untuk data terbaru
+ * - Loading states untuk feedback visual
+ * - Alert konfirmasi setelah berhasil update
+ * 
+ * Security:
+ * - Hanya data yang diizinkan yang bisa diubah
+ * - Email tidak bisa diubah melalui form ini
+ * - Validasi ownership melalui autentikasi
+ * 
+ * @component EditProfile
+ * @returns {JSX.Element} Halaman edit profil
+ */
+
 import React, { useState } from "react";
 import {
   View,
@@ -21,26 +46,42 @@ import Button from "../../components/ui/Button";
 import { updateUserProfile } from "../../services/userService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
+/**
+ * Komponen utama halaman Edit Profile
+ * Mengelola state dan logika untuk edit profil pengguna
+ */
 export default function EditProfile() {
+  // Context dan hooks untuk autentikasi, tema, dan navigasi
   const { userProfile, refreshProfile } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = getThemeByRole(false);
+  const colors = getThemeByRole(false); // Selalu menggunakan tema user
 
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  // State untuk loading dan refresh
+  const [loading, setLoading] = useState(false);        // Loading saat menyimpan
+  const [refreshing, setRefreshing] = useState(false);  // Loading saat pull-to-refresh
+  
+  // State untuk data form dengan nilai default dari profil
   const [formData, setFormData] = useState({
-    nama: userProfile?.nama || "",
-    noTelp: userProfile?.noTelp || "",
+    nama: userProfile?.nama || "",     // Nama lengkap pengguna
+    noTelp: userProfile?.noTelp || "", // Nomor telepon pengguna
   });
+  
+  // State untuk error validasi form
   const [errors, setErrors] = useState({});
 
+  /**
+   * Handler untuk pull-to-refresh
+   * Memperbarui profil pengguna dan reset form data
+   */
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
       if (refreshProfile) {
+        // Refresh profil dari server
         await refreshProfile();
+        // Reset form dengan data terbaru
         setFormData({
           nama: userProfile?.nama || "",
           noTelp: userProfile?.noTelp || "",
@@ -52,23 +93,39 @@ export default function EditProfile() {
     setRefreshing(false);
   }, [refreshProfile, userProfile]);
 
+  /**
+   * Memperbarui data form dan menghapus error jika ada
+   * 
+   * @param {string} field - Nama field yang diupdate
+   * @param {string} value - Nilai baru untuk field
+   */
   const updateFormData = (field, value) => {
+    // Update nilai field
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Hapus error untuk field ini jika ada
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
+  /**
+   * Validasi form sebelum submit
+   * 
+   * @returns {boolean} True jika form valid, false jika ada error
+   */
   const validateForm = () => {
     const newErrors = {};
 
+    // Validasi nama lengkap (wajib diisi)
     if (!formData.nama.trim()) {
       newErrors.nama = "Nama lengkap wajib diisi";
     }
 
+    // Validasi nomor telepon (wajib diisi dan format valid)
     if (!formData.noTelp.trim()) {
       newErrors.noTelp = "Nomor telepon wajib diisi";
     } else if (!/^[0-9+\-\s]+$/.test(formData.noTelp)) {
+      // Regex untuk format nomor telepon (angka, +, -, spasi)
       newErrors.noTelp = "Format nomor telepon tidak valid";
     }
 
@@ -76,23 +133,32 @@ export default function EditProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handler untuk menyimpan perubahan profil
+   * Melakukan validasi, update ke server, dan refresh data
+   */
   const handleSave = async () => {
+    // Validasi form terlebih dahulu
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
+      // Update profil melalui service
       const result = await updateUserProfile(userProfile.id, formData);
 
       if (result.success) {
+        // Refresh profil untuk mendapat data terbaru
         await refreshProfile();
+        
+        // Tampilkan alert sukses dan kembali ke halaman sebelumnya
         Alert.alert(
           "Profil Berhasil Diperbarui",
           "Perubahan profil telah disimpan!",
           [
             {
               text: "OK",
-              onPress: () => router.back(),
+              onPress: () => router.back(), // Kembali ke halaman profil
             },
           ]
         );
@@ -205,21 +271,23 @@ export default function EditProfile() {
                 Informasi Pengguna
               </Text>
 
+              {/* Input nama lengkap dengan validasi */}
               <Input
                 label="Nama Lengkap"
                 placeholder="Masukkan nama lengkap Anda"
                 value={formData.nama}
                 onChangeText={(value) => updateFormData("nama", value)}
-                autoCapitalize="words"
+                autoCapitalize="words" // Kapitalisasi otomatis untuk nama
                 error={errors.nama}
               />
 
+              {/* Input nomor telepon dengan keyboard khusus dan validasi */}
               <Input
                 label="Nomor Telepon"
                 placeholder="Masukkan nomor telepon Anda"
                 value={formData.noTelp}
                 onChangeText={(value) => updateFormData("noTelp", value)}
-                keyboardType="phone-pad"
+                keyboardType="phone-pad" // Keyboard khusus untuk nomor telepon
                 error={errors.noTelp}
               />
             </View>
@@ -231,6 +299,7 @@ export default function EditProfile() {
                   { backgroundColor: colors.primary + "20" },
                 ]}
               >
+                {/* Info tentang batasan edit email */}
                 <Text style={[styles.infoText, { color: colors.primary }]}>
                   ℹ️ Email tidak dapat diubah melalui form ini
                 </Text>
@@ -238,18 +307,20 @@ export default function EditProfile() {
             </View>
 
             <View style={styles.buttonSection}>
+              {/* Tombol batal dengan outline style */}
               <Button
                 title="Batal"
                 onPress={() => router.back()}
                 variant="outline"
                 style={[styles.cancelButton, { borderColor: colors.primary }]}
-                disabled={loading}
+                disabled={loading} // Disable saat sedang menyimpan
               />
 
+              {/* Tombol simpan dengan loading state */}
               <Button
                 title={loading ? "Menyimpan..." : "Simpan Perubahan"}
                 onPress={handleSave}
-                disabled={loading}
+                disabled={loading} // Disable saat sedang menyimpan
                 style={[styles.saveButton, { backgroundColor: colors.success }]}
               />
             </View>

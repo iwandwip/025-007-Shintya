@@ -1,3 +1,29 @@
+/**
+ * Profile Screen - Halaman profil pengguna
+ * 
+ * Halaman ini menampilkan:
+ * - Informasi profil pengguna (nama, telepon, email)
+ * - Informasi akun (User ID, role, kode RFID)
+ * - Aksi pengguna (edit profil, lihat QR code, logout)
+ * - Avatar dan badge role
+ * 
+ * Features:
+ * - Display profil lengkap dengan role-based theming
+ * - QR Code modal untuk identifikasi pengguna
+ * - Edit profil dengan navigasi ke halaman edit
+ * - Logout dengan konfirmasi
+ * - Pull-to-refresh untuk data terbaru
+ * - RFID code display untuk pairing hardware
+ * 
+ * Security:
+ * - Display informasi sensitif hanya untuk pemilik
+ * - Logout aman dengan pembersihan session
+ * - Role-based color theming
+ * 
+ * @component Profile
+ * @returns {JSX.Element} Halaman profil pengguna
+ */
+
 import React, { useState } from "react";
 import {
   View,
@@ -18,21 +44,34 @@ import QRCodeModal from "../../components/ui/QRCodeModal";
 import { signOutUser } from "../../services/authService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
+/**
+ * Komponen utama halaman Profile
+ * Mengelola state dan logika untuk tampilan profil pengguna
+ */
 function Profile() {
+  // Context dan hooks untuk autentikasi, tema, dan navigasi
   const { currentUser, userProfile, refreshProfile } = useAuth();
   const { theme, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [qrModalVisible, setQrModalVisible] = useState(false);
+  
+  // State untuk loading dan modal
+  const [loggingOut, setLoggingOut] = useState(false);      // Loading saat logout
+  const [refreshing, setRefreshing] = useState(false);      // Loading saat pull-to-refresh
+  const [qrModalVisible, setQrModalVisible] = useState(false); // Visibility modal QR code
+  
+  // Warna berdasarkan role pengguna (admin atau user)
   const colors = getThemeByRole(userProfile?.role === 'admin');
 
+  /**
+   * Handler untuk pull-to-refresh
+   * Memperbarui data profil pengguna dari server
+   */
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
       if (refreshProfile) {
-        await refreshProfile();
+        await refreshProfile(); // Refresh profil dari Firebase
       }
     } catch (error) {
       console.error('Error refreshing profile:', error);
@@ -40,6 +79,10 @@ function Profile() {
     setRefreshing(false);
   }, [refreshProfile]);
 
+  /**
+   * Handler untuk logout dengan konfirmasi
+   * Menampilkan alert konfirmasi sebelum logout
+   */
   const handleLogout = async () => {
     Alert.alert("Konfirmasi Logout", "Apakah Anda yakin ingin keluar?", [
       { text: "Batal", style: "cancel" },
@@ -48,8 +91,10 @@ function Profile() {
         style: "destructive",
         onPress: async () => {
           setLoggingOut(true);
+          // Proses logout melalui auth service
           const result = await signOutUser();
           if (result.success) {
+            // Redirect ke halaman login setelah logout berhasil
             router.replace("/(auth)/login");
           } else {
             Alert.alert("Gagal Logout", "Gagal keluar. Silakan coba lagi.");
@@ -60,10 +105,17 @@ function Profile() {
     ]);
   };
 
+  /**
+   * Handler untuk navigasi ke halaman edit profil
+   */
   const handleEditProfile = () => {
-    router.push("/(tabs)/edit-profile");
+    router.push("/(tabs)/edit-profile"); // Navigasi ke halaman edit (tab tersembunyi)
   };
 
+  /**
+   * Handler untuk menampilkan modal QR Code
+   * QR Code berisi informasi pengguna untuk identifikasi
+   */
   const handleShowQRCode = () => {
     setQrModalVisible(true);
   };
@@ -110,20 +162,24 @@ function Profile() {
         }
       >
         <View style={styles.content}>
+          {/* Seksi profil dengan avatar dan info dasar */}
           <View style={styles.profileSection}>
+            {/* Avatar dengan background warna sesuai role */}
             <View
               style={[
                 styles.avatarContainer,
-                { backgroundColor: colors.primary },
+                { backgroundColor: colors.primary }, // Warna berbeda untuk admin/user
               ]}
             >
               <Text style={[styles.avatarText, { color: colors.white }]}>
                 👤
               </Text>
             </View>
+            {/* Nama pengguna */}
             <Text style={[styles.nameText, { color: colors.gray900 }]}>
               {userProfile?.nama || "Nama User"}
             </Text>
+            {/* Badge role pengguna */}
             <Text style={[styles.roleText, { color: colors.gray600 }]}>
               {userProfile?.role === 'admin' ? 'Administrator' : 'Pengguna'}
             </Text>
@@ -131,6 +187,7 @@ function Profile() {
 
           {userProfile && (
             <View style={styles.profileContainer}>
+              {/* Kartu Informasi Pengguna */}
               <View
                 style={[
                   styles.profileCard,
@@ -144,6 +201,7 @@ function Profile() {
                   Informasi Pengguna
                 </Text>
 
+                {/* Baris nama lengkap */}
                 <View
                   style={[
                     styles.profileRow,
@@ -158,6 +216,7 @@ function Profile() {
                   </Text>
                 </View>
 
+                {/* Baris nomor telepon */}
                 <View
                   style={[
                     styles.profileRow,
@@ -172,6 +231,7 @@ function Profile() {
                   </Text>
                 </View>
 
+                {/* Baris email (tidak bisa diubah) */}
                 <View
                   style={[
                     styles.profileRow,
@@ -187,6 +247,7 @@ function Profile() {
                 </View>
               </View>
 
+              {/* Kartu Informasi Akun */}
               <View
                 style={[
                   styles.profileCard,
@@ -200,6 +261,7 @@ function Profile() {
                   Informasi Akun
                 </Text>
 
+                {/* Baris User ID untuk debugging dan support */}
                 <View
                   style={[
                     styles.profileRow,
@@ -212,7 +274,7 @@ function Profile() {
                   <Text
                     style={[
                       styles.value,
-                      styles.userId,
+                      styles.userId, // Font monospace untuk ID
                       { color: colors.gray900 },
                     ]}
                   >
@@ -220,6 +282,7 @@ function Profile() {
                   </Text>
                 </View>
 
+                {/* Baris role pengguna */}
                 <View
                   style={[
                     styles.profileRow,
@@ -234,6 +297,7 @@ function Profile() {
                   </Text>
                 </View>
 
+                {/* Baris kode RFID (hanya tampil jika ada) */}
                 {userProfile.rfidCode && (
                   <View
                     style={[
@@ -253,13 +317,16 @@ function Profile() {
             </View>
           )}
 
+          {/* Container aksi pengguna */}
           <View style={styles.actionsContainer}>
+            {/* Tombol edit profil */}
             <Button
               title="Edit Profil"
               onPress={handleEditProfile}
               style={styles.editButton}
             />
 
+            {/* Tombol lihat QR code untuk identifikasi */}
             <Button
               title="Kode Saya"
               onPress={handleShowQRCode}
@@ -267,22 +334,24 @@ function Profile() {
               style={[styles.qrButton, { borderColor: colors.primary }]}
             />
 
+            {/* Tombol logout dengan loading state */}
             <Button
               title={loggingOut ? "Sedang Keluar..." : "Keluar"}
               onPress={handleLogout}
               variant="outline"
               style={[styles.logoutButton, { borderColor: colors.primary }]}
-              disabled={loggingOut}
+              disabled={loggingOut} // Disable saat sedang logout
             />
           </View>
         </View>
       </ScrollView>
 
+      {/* Modal QR Code untuk identifikasi pengguna */}
       <QRCodeModal
         visible={qrModalVisible}
         onClose={() => setQrModalVisible(false)}
-        userEmail={userProfile?.email || ''}
-        isAdmin={userProfile?.role === 'admin'}
+        userEmail={userProfile?.email || ''} // Email sebagai identifier
+        isAdmin={userProfile?.role === 'admin'} // Informasi role untuk styling
       />
     </SafeAreaView>
   );

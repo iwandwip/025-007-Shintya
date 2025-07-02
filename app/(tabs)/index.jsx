@@ -1,3 +1,24 @@
+/**
+ * Home Screen (Dashboard) - Halaman beranda aplikasi manajemen paket
+ * 
+ * Halaman ini menampilkan:
+ * - Sambutan personal untuk pengguna
+ * - Statistik paket real-time (total, COD, siap diambil)
+ * - Notifikasi paket yang sudah tiba
+ * - Menu cepat untuk navigasi ke fitur utama
+ * - Aktivitas terakhir dengan tracking real-time
+ * 
+ * Features:
+ * - Real-time updates menggunakan Firebase listeners
+ * - Pull-to-refresh untuk update manual
+ * - Statistik paket yang update otomatis
+ * - Notifikasi smart untuk paket yang perlu diambil
+ * - Quick actions untuk akses cepat ke fitur utama
+ * 
+ * @component Home
+ * @returns {JSX.Element} Halaman dashboard utama
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,13 +37,21 @@ import { getThemeByRole } from "../../constants/Colors";
 import { resiService } from "../../services/resiService";
 import { activityService } from "../../services/activityService";
 
+/**
+ * Mengformat timestamp menjadi format "waktu yang lalu" dalam bahasa Indonesia
+ * 
+ * @param {Date|Timestamp} timestamp - Timestamp Firebase atau Date object
+ * @returns {string} String waktu yang diformat (contoh: "5 menit yang lalu")
+ */
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return '';
   
   const now = new Date();
+  // Handle Firebase Timestamp dan Date object
   const activityTime = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   const diffInSeconds = Math.floor((now - activityTime) / 1000);
   
+  // Format berdasarkan selisih waktu
   if (diffInSeconds < 60) {
     return 'Baru saja';
   } else if (diffInSeconds < 3600) {
@@ -39,21 +68,36 @@ const formatTimeAgo = (timestamp) => {
   }
 };
 
+/**
+ * Komponen utama halaman beranda
+ * Mengelola state dan logika untuk dashboard utama
+ */
 export default function Home() {
+  // Context dan hooks untuk autentikasi, tema, dan navigasi
   const { userProfile, refreshProfile, currentUser } = useAuth();
   const { theme } = useSettings();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = getThemeByRole(false);
+  const colors = getThemeByRole(false); // Selalu menggunakan tema user (bukan admin)
+  
+  // State untuk pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
+  
+  // State untuk statistik paket real-time
   const [packageStats, setPackageStats] = useState({
-    total: 0,
-    cod: 0,
-    pending: 0,
-    arrived: 0
+    total: 0,      // Total semua paket
+    cod: 0,        // Total paket COD
+    pending: 0,    // Paket yang sedang dikirim
+    arrived: 0     // Paket yang sudah tiba dan siap diambil
   });
+  
+  // State untuk aktivitas terbaru pengguna
   const [recentActivities, setRecentActivities] = useState([]);
 
+  /**
+   * Mengambil statistik paket untuk pengguna saat ini
+   * Dipanggil manual saat refresh atau inisialisasi
+   */
   const fetchPackageStats = async () => {
     if (currentUser?.uid) {
       const result = await resiService.getUserPackageStats(currentUser.uid);
@@ -63,10 +107,15 @@ export default function Home() {
     }
   };
 
+  /**
+   * Effect untuk setup real-time listeners
+   * Mengatur subscription untuk statistik paket dan aktivitas pengguna
+   */
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    // Subscribe to real-time updates for package stats
+    // Subscribe ke update real-time untuk statistik paket
+    // Akan otomatis update ketika ada perubahan data paket
     const unsubscribeStats = resiService.subscribeToUserPackageStats(
       currentUser.uid,
       (result) => {
@@ -76,7 +125,8 @@ export default function Home() {
       }
     );
 
-    // Subscribe to real-time updates for activities
+    // Subscribe ke update real-time untuk aktivitas pengguna
+    // Menampilkan aktivitas terbaru seperti update status paket
     const unsubscribeActivities = activityService.subscribeToUserActivities(
       currentUser.uid,
       (result) => {
@@ -86,18 +136,25 @@ export default function Home() {
       }
     );
 
+    // Cleanup function - unsubscribe saat component unmount
     return () => {
       unsubscribeStats();
       unsubscribeActivities();
     };
   }, [currentUser]);
 
+  /**
+   * Handler untuk pull-to-refresh
+   * Memperbarui profil pengguna dan statistik paket
+   */
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
+      // Refresh profil pengguna jika fungsi tersedia
       if (refreshProfile) {
         await refreshProfile();
       }
+      // Refresh statistik paket manual
       await fetchPackageStats();
     } catch (error) {
       console.error('Error refreshing:', error);
@@ -105,34 +162,36 @@ export default function Home() {
     setRefreshing(false);
   }, [refreshProfile, currentUser]);
 
+  // Konfigurasi menu cepat untuk navigasi ke fitur utama
   const quickActions = [
     {
       id: 1,
       title: "List Resi",
       icon: "📋",
-      route: "/(tabs)/list-resi",
+      route: "/(tabs)/list-resi", // Navigasi ke halaman manajemen paket
       color: colors.primary,
     },
     {
       id: 2,
       title: "Kapasitas",
       icon: "📦",
-      route: "/(tabs)/kapasitas-paket",
+      route: "/(tabs)/kapasitas-paket", // Navigasi ke monitoring kapasitas
       color: "#FF6B6B",
     },
     {
       id: 3,
       title: "Profil",
       icon: "👤",
-      route: "/(tabs)/profile",
+      route: "/(tabs)/profile", // Navigasi ke profil pengguna
       color: colors.gray600,
     },
   ];
 
+  // Data statistik untuk ditampilkan di cards
   const statsData = [
     { label: "Total Paket", value: packageStats.total.toString(), icon: "📦" },
-    { label: "Paket COD", value: packageStats.cod.toString(), icon: "💰" },
-    { label: "Siap Diambil", value: packageStats.arrived.toString(), icon: "📍" },
+    { label: "Paket COD", value: packageStats.cod.toString(), icon: "💰" }, // Cash on Delivery
+    { label: "Siap Diambil", value: packageStats.arrived.toString(), icon: "📍" }, // Paket yang sudah tiba
   ];
 
   return (
@@ -158,7 +217,7 @@ export default function Home() {
           />
         }
       >
-        {/* Header */}
+        {/* Header dengan sambutan personal */}
         <View style={styles.header}>
           <Text style={[styles.greeting, { color: colors.gray600 }]}>
             Selamat datang,
@@ -168,7 +227,7 @@ export default function Home() {
           </Text>
         </View>
 
-        {/* Stats Cards */}
+        {/* Kartu Statistik - Menampilkan total paket, COD, dan siap diambil */}
         <View style={styles.statsContainer}>
           {statsData.map((stat, index) => (
             <View
@@ -192,14 +251,14 @@ export default function Home() {
           ))}
         </View>
 
-        {/* Notification Card */}
+        {/* Kartu Notifikasi - Hanya muncul jika ada paket yang siap diambil */}
         {packageStats.arrived > 0 && (
           <View
             style={[
               styles.notificationCard,
               {
-                backgroundColor: "#FFF4E6",
-                borderColor: "#FFB74D",
+                backgroundColor: "#FFF4E6", // Background kuning muda
+                borderColor: "#FFB74D", // Border orange
               },
             ]}
           >
@@ -215,7 +274,7 @@ export default function Home() {
           </View>
         )}
 
-        {/* Quick Actions */}
+        {/* Menu Cepat - Akses cepat ke fitur utama aplikasi */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
             Menu Cepat
@@ -231,12 +290,12 @@ export default function Home() {
                     shadowColor: colors.shadow.color,
                   },
                 ]}
-                onPress={() => router.push(action.route)}
+                onPress={() => router.push(action.route)} // Navigasi ke halaman terkait
               >
                 <View
                   style={[
                     styles.quickActionIconContainer,
-                    { backgroundColor: `${action.color}15` },
+                    { backgroundColor: `${action.color}15` }, // Transparansi 15% untuk background icon
                   ]}
                 >
                   <Text style={styles.quickActionIcon}>{action.icon}</Text>
@@ -251,7 +310,7 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Recent Activity */}
+        {/* Aktivitas Terakhir - Menampilkan riwayat aktivitas real-time */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
             Aktivitas Terakhir
@@ -271,20 +330,24 @@ export default function Home() {
                   <View style={styles.activityItem}>
                     <Text style={styles.activityIcon}>{activity.icon}</Text>
                     <View style={styles.activityContent}>
+                      {/* Pesan aktivitas dari sistem */}
                       <Text style={[styles.activityText, { color: colors.gray900 }]}>
                         {activity.message}
                       </Text>
+                      {/* Waktu dan nomor resi aktivitas */}
                       <Text style={[styles.activityTime, { color: colors.gray500 }]}>
                         {formatTimeAgo(activity.createdAt)} • {activity.resiNumber}
                       </Text>
                     </View>
                   </View>
+                  {/* Divider antar aktivitas */}
                   {index < recentActivities.length - 1 && (
                     <View style={[styles.divider, { backgroundColor: colors.gray100 }]} />
                   )}
                 </React.Fragment>
               ))
             ) : (
+              // State kosong ketika belum ada aktivitas
               <View style={styles.activityItem}>
                 <Text style={styles.activityIcon}>📭</Text>
                 <View style={styles.activityContent}>
