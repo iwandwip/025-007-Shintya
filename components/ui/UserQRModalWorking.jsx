@@ -17,7 +17,7 @@ import {
 import QRCode from "react-native-qrcode-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { getThemeByRole } from "../../constants/Colors";
-import { encryptUserProfile } from "../../services/encryptionService";
+import { encryptUserProfile, decryptQRCode } from "../../services/encryptionService";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -29,6 +29,7 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
   const [qrMetadata, setQrMetadata] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationCount, setGenerationCount] = useState(0);
+  const [decryptedData, setDecryptedData] = useState(null);
   
   // Safe theme
   const colors = getThemeByRole(userProfile?.role === 'admin');
@@ -52,6 +53,25 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
         setQrMetadata(result.metadata);
         setGenerationCount(prev => prev + 1);
         console.log('generateQR: QR set successfully');
+        
+        // Test dekripsi untuk verifikasi menggunakan real decryption
+        try {
+          console.log('Testing decryption of QR code...');
+          console.log('QR Code length:', result.qrCode.length);
+          console.log('QR Code first 100 chars:', result.qrCode.substring(0, 100));
+          
+          const decryptResult = await decryptQRCode(result.qrCode, 'user_profile');
+          if (decryptResult.success) {
+            setDecryptedData(decryptResult.data);
+            console.log('Dekripsi berhasil:', decryptResult.data);
+          } else {
+            console.error('Dekripsi gagal:', decryptResult.error);
+            setDecryptedData({ error: decryptResult.error });
+          }
+        } catch (decryptError) {
+          console.error('Dekripsi exception:', decryptError);
+          setDecryptedData({ error: decryptError.message });
+        }
       } else {
         Alert.alert('Error', result.error || 'Gagal membuat QR Code');
       }
@@ -70,6 +90,7 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
       // Reset state first
       setQrCode('');
       setQrMetadata(null);
+      setDecryptedData(null);
       setGenerationCount(0);
       // Generate new QR
       generateQR();
@@ -127,14 +148,47 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                 </View>
                 
                 <View style={styles.qrInfo}>
-                  <Text style={[styles.qrInfoText, { color: colors.gray600 }]}>
-                    QR #{generationCount} • {new Date().toLocaleTimeString('id-ID')}
-                  </Text>
-                  
-                  {qrCode && (
-                    <Text style={[styles.qrInfoText, { color: colors.gray500 }]}>
-                      {qrCode.substring(0, 30)}...
+                  {/* Input Enkripsi */}
+                  <View style={styles.encryptionStep}>
+                    <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                      Input Enkripsi:
                     </Text>
+                    <Text style={[styles.stepValue, { color: colors.gray600 }]}>
+                      {JSON.stringify({
+                        email: userProfile?.email,
+                        nama: userProfile?.nama,
+                        role: userProfile?.role
+                      }, null, 0)}
+                    </Text>
+                  </View>
+                  
+                  {/* Hasil Enkripsi */}
+                  {qrCode && (
+                    <View style={styles.encryptionStep}>
+                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                        Hasil Enkripsi:
+                      </Text>
+                      <Text style={[styles.stepValue, { color: colors.gray600 }]}>
+                        {qrCode.substring(0, 50)}...
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {/* Hasil Dekripsi */}
+                  {decryptedData && (
+                    <View style={styles.encryptionStep}>
+                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                        Hasil Dekripsi:
+                      </Text>
+                      <Text style={[styles.stepValue, { 
+                        color: decryptedData.error ? '#DC2626' : colors.gray600 
+                      }]}>
+                        {decryptedData.error ? 
+                          `Error: ${decryptedData.error}` : 
+                          JSON.stringify(decryptedData, null, 0)
+                        }
+                      </Text>
+                    </View>
                   )}
                 </View>
               </View>
@@ -245,12 +299,31 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   qrInfo: {
-    alignItems: "center",
+    alignItems: "stretch",
+    width: "100%",
   },
   qrInfoText: {
     fontSize: 12,
     textAlign: "center",
     marginBottom: 2,
+  },
+  encryptionStep: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#3B82F6",
+  },
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  stepValue: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: "monospace",
   },
   loadingContainer: {
     alignItems: "center",

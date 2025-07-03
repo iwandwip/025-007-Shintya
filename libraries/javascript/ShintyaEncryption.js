@@ -336,7 +336,12 @@ class ShintyaEncryption {
    * @returns {string} Base64 encoded string
    */
   _base64Encode(input) {
-    // Convert string to base64 manually untuk cross-platform compatibility
+    // Use built-in Buffer for reliable Base64 encoding
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(input, 'binary').toString('base64');
+    }
+    
+    // Fallback for environments without Buffer
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
     let i = 0;
@@ -369,6 +374,12 @@ class ShintyaEncryption {
    * @returns {string} Decoded string
    */
   _base64Decode(input) {
+    // Use built-in Buffer for reliable Base64 decoding
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(input, 'base64').toString('binary');
+    }
+    
+    // Fallback for environments without Buffer
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
     let i = 0;
@@ -379,14 +390,14 @@ class ShintyaEncryption {
     while (i < input.length) {
       const encoded1 = chars.indexOf(input.charAt(i++));
       const encoded2 = chars.indexOf(input.charAt(i++));
-      const encoded3 = chars.indexOf(input.charAt(i++));
-      const encoded4 = chars.indexOf(input.charAt(i++));
+      const encoded3 = i < input.length ? chars.indexOf(input.charAt(i++)) : -1;
+      const encoded4 = i < input.length ? chars.indexOf(input.charAt(i++)) : -1;
       
-      const combined = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
+      const combined = (encoded1 << 18) | (encoded2 << 12) | ((encoded3 >= 0 ? encoded3 : 0) << 6) | (encoded4 >= 0 ? encoded4 : 0);
       
       result += String.fromCharCode((combined >> 16) & 255);
-      if (encoded3 !== 64) result += String.fromCharCode((combined >> 8) & 255);
-      if (encoded4 !== 64) result += String.fromCharCode(combined & 255);
+      if (encoded3 >= 0) result += String.fromCharCode((combined >> 8) & 255);
+      if (encoded4 >= 0) result += String.fromCharCode(combined & 255);
     }
     
     return result;
