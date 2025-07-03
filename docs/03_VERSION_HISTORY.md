@@ -337,83 +337,31 @@ ESP32 DevKit v1
 
 ## 3.5 Planning & Future Development
 
-### **🎯 v1.8.0 - Admin Dashboard Enhancement (Q2 2025)**
+### **🚧 Coming Soon**
 
-#### 📊 **Complete Admin Dashboard**
-- **User Management**: Complete user CRUD operations
-- **Package Analytics**: Advanced package statistics dan reports
-- **System Monitoring**: Real-time system health dashboard
-- **Configuration Management**: System settings dan thresholds
+Future development planning untuk Shintya App sedang dalam tahap perencanaan dan akan diupdate seiring dengan kebutuhan project dan feedback dari stakeholders.
 
-#### 🛠️ **Enhanced Tools**
-- **Bulk Operations**: Bulk package status updates
-- **Data Export**: Advanced export options (Excel, JSON)
-- **Backup & Restore**: Database backup dan restore functionality
-- **API Documentation**: Complete API documentation
+```
+   +=============================================================================+
+                        🔮 FUTURE DEVELOPMENT PLANNING                        |
+                                                                           |
+   |                           Coming Soon...                              |
+   |                                                                       |
+   |  📋 Planning Phase: Evaluating requirements dan priorities            |
+   |  🎯 Roadmap Creation: Detailed roadmap akan ditambahkan               |
+   |  📊 Feature Analysis: User feedback dan business needs assessment     |
+   +=============================================================================+
+```
 
----
+### **💡 Contribution Ideas**
 
-### **💳 v1.9.0 - Payment Gateway Integration (Q3 2025)**
+Jika Anda memiliki ide atau saran untuk pengembangan fitur selanjutnya, silakan:
 
-#### 💰 **Payment Processing**
-- **Midtrans Integration**: Indonesian payment gateway support
-- **Multiple Payment Methods**: Bank transfer, e-wallet, virtual account
-- **Payment Verification**: Automatic payment confirmation
-- **Transaction History**: Complete payment tracking
-
-#### 🔐 **Security Enhancements**
-- **Payment Security**: PCI DSS compliance
-- **Transaction Encryption**: End-to-end encryption
-- **Fraud Detection**: Basic fraud detection mechanisms
-- **Audit Logging**: Enhanced financial audit trail
+- **Submit Feature Request**: Gunakan template feature request di bawah
+- **Discussion**: Diskusi dengan team development
+- **Feedback**: Berikan feedback dari penggunaan aplikasi saat ini
 
 ---
-
-### **📦 v2.0.0 - Multi-box Support (Q4 2025)**
-
-#### 🏗️ **Architecture Overhaul**
-- **Multi-box System**: Support untuk multiple package boxes
-- **Distributed Monitoring**: Individual capacity monitoring per box
-- **Advanced Routing**: Smart package routing untuk optimal box utilization
-- **Scalable Hardware**: Support untuk additional ESP32 devices
-
-#### 📊 **Advanced Features**
-- **Machine Learning**: Package size prediction dan optimization
-- **Route Optimization**: Delivery route optimization algorithms
-- **Predictive Analytics**: Capacity planning dan demand forecasting
-- **IoT Integration**: Integration dengan additional IoT sensors
-
----
-
-### **🌍 v2.1.0 - Multi-language Support (Q1 2026)**
-
-#### 🗣️ **Internationalization**
-- **English Support**: Complete English translation
-- **Multi-language Framework**: I18n framework implementation
-- **Regional Settings**: Currency dan date format localization
-- **RTL Support**: Right-to-left language support
-
-#### 🌐 **Global Features**
-- **Multi-currency**: Support untuk multiple currencies
-- **Timezone Support**: Automatic timezone detection dan conversion
-- **Regional APIs**: Integration dengan regional delivery services
-- **Compliance**: International shipping compliance features
-
----
-
-### **🚀 v2.2.0 - Cloud Migration (Q2 2026)**
-
-#### ☁️ **Cloud Infrastructure**
-- **Microservices Architecture**: Service decomposition untuk better scalability
-- **Container Deployment**: Docker containerization
-- **Load Balancing**: Horizontal scaling support
-- **CDN Integration**: Global content delivery network
-
-#### 📈 **Enterprise Features**
-- **Multi-tenant Support**: Multiple organization support
-- **Advanced Analytics**: Business intelligence dashboard
-- **API Gateway**: RESTful API dengan rate limiting
-- **Enterprise Security**: Advanced security features
 
 ---
 
