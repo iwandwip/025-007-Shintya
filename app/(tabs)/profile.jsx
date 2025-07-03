@@ -41,6 +41,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import Button from "../../components/ui/Button";
 import QRCodeModal from "../../components/ui/QRCodeModal";
+import UserQRModal from "../../components/ui/UserQRModal";
 import { signOutUser } from "../../services/authService";
 import { getColors, getThemeByRole } from "../../constants/Colors";
 
@@ -58,7 +59,8 @@ function Profile() {
   // State untuk loading dan modal
   const [loggingOut, setLoggingOut] = useState(false);      // Loading saat logout
   const [refreshing, setRefreshing] = useState(false);      // Loading saat pull-to-refresh
-  const [qrModalVisible, setQrModalVisible] = useState(false); // Visibility modal QR code
+  const [qrModalVisible, setQrModalVisible] = useState(false); // Visibility modal QR code (legacy)
+  const [userQrModalVisible, setUserQrModalVisible] = useState(false); // Visibility modal User QR (new)
   
   // Warna berdasarkan role pengguna (admin atau user)
   const colors = getThemeByRole(userProfile?.role === 'admin');
@@ -113,11 +115,19 @@ function Profile() {
   };
 
   /**
-   * Handler untuk menampilkan modal QR Code
+   * Handler untuk menampilkan modal QR Code (legacy)
    * QR Code berisi informasi pengguna untuk identifikasi
    */
   const handleShowQRCode = () => {
     setQrModalVisible(true);
+  };
+
+  /**
+   * Handler untuk menampilkan modal User QR Code (new dynamic encrypted)
+   * QR Code dengan enkripsi dynamic untuk security enhancement
+   */
+  const handleShowUserQRCode = () => {
+    setUserQrModalVisible(true);
   };
 
   if (settingsLoading) {
@@ -326,12 +336,20 @@ function Profile() {
               style={styles.editButton}
             />
 
-            {/* Tombol lihat QR code untuk identifikasi */}
+            {/* Tombol lihat QR code untuk identifikasi (new encrypted version) */}
             <Button
-              title="Kode Saya"
-              onPress={handleShowQRCode}
+              title="QR Code Saya"
+              onPress={handleShowUserQRCode}
               variant="outline"
               style={[styles.qrButton, { borderColor: colors.primary }]}
+            />
+
+            {/* Tombol legacy QR code (for backward compatibility) */}
+            <Button
+              title="Kode Saya (Legacy)"
+              onPress={handleShowQRCode}
+              variant="outline"
+              style={[styles.legacyQrButton, { borderColor: colors.gray400 }]}
             />
 
             {/* Tombol logout dengan loading state */}
@@ -346,12 +364,18 @@ function Profile() {
         </View>
       </ScrollView>
 
-      {/* Modal QR Code untuk identifikasi pengguna */}
+      {/* Modal QR Code untuk identifikasi pengguna (legacy) */}
       <QRCodeModal
         visible={qrModalVisible}
         onClose={() => setQrModalVisible(false)}
         userEmail={userProfile?.email || ''} // Email sebagai identifier
         isAdmin={userProfile?.role === 'admin'} // Informasi role untuk styling
+      />
+
+      {/* Modal User QR Code dengan dynamic encryption */}
+      <UserQRModal
+        visible={userQrModalVisible}
+        onClose={() => setUserQrModalVisible(false)}
       />
     </SafeAreaView>
   );
@@ -457,6 +481,10 @@ const styles = StyleSheet.create({
   },
   qrButton: {
     marginBottom: 8,
+  },
+  legacyQrButton: {
+    marginBottom: 8,
+    opacity: 0.7,
   },
   logoutButton: {
     marginBottom: 8,
