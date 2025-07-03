@@ -63,13 +63,18 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
     setIsGenerating(false);
   };
   
-  // Auto-generate on first render ONLY - no useEffect
+  // Auto-generate EVERY TIME modal opens - fresh QR every time
   React.useEffect(() => {
-    if (visible && userProfile?.email && !qrCode && !isGenerating) {
-      console.log('Auto-generating QR...');
+    if (visible && userProfile?.email) {
+      console.log('Auto-generating fresh QR on modal open...');
+      // Reset state first
+      setQrCode('');
+      setQrMetadata(null);
+      setGenerationCount(0);
+      // Generate new QR
       generateQR();
     }
-  }, [visible]); // Only depend on visible
+  }, [visible]); // Every time modal opens
   
   return (
     <Modal
@@ -126,9 +131,9 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                     QR #{generationCount} • {new Date().toLocaleTimeString('id-ID')}
                   </Text>
                   
-                  {qrMetadata && (
+                  {qrCode && (
                     <Text style={[styles.qrInfoText, { color: colors.gray500 }]}>
-                      {qrMetadata.encryptionVersion} • {qrMetadata.algorithm}
+                      {qrCode.substring(0, 30)}...
                     </Text>
                   )}
                 </View>
@@ -142,27 +147,13 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
               </View>
             )}
 
-            {/* Generate Button */}
-            <TouchableOpacity
-              style={[
-                styles.generateButton,
-                { backgroundColor: colors.primary },
-                isGenerating && { opacity: 0.7 }
-              ]}
-              onPress={generateQR}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <ActivityIndicator size="small" color={colors.white} />
-              ) : (
-                <>
-                  <Ionicons name="refresh-outline" size={20} color={colors.white} />
-                  <Text style={[styles.buttonText, { color: colors.white }]}>
-                    Generate QR Baru
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {/* Info: QR auto-refreshes */}
+            <View style={styles.autoRefreshInfo}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.gray500} />
+              <Text style={[styles.autoRefreshText, { color: colors.gray500 }]}>
+                QR Code otomatis diperbaharui setiap kali dibuka untuk keamanan
+              </Text>
+            </View>
 
             {/* Instructions */}
             <View style={styles.instructionsContainer}>
@@ -270,19 +261,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
   },
-  generateButton: {
+  autoRefreshInfo: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    backgroundColor: "#F0F9FF",
     borderRadius: 8,
-    gap: 8,
     marginBottom: 20,
+    gap: 8,
   },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "600",
+  autoRefreshText: {
+    fontSize: 12,
+    textAlign: "center",
+    flex: 1,
+    lineHeight: 16,
   },
   instructionsContainer: {
     backgroundColor: "#f0f9ff",

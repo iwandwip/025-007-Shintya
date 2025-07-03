@@ -84,15 +84,16 @@ export const AuthProvider = ({ children }) => {
 
 
   /**
-   * Memuat profil pengguna dari Firestore dan menginisialisasi paket status
+   * Memuat profil pengguna dari Firestore dengan retry mechanism
    * 
    * Function ini dipanggil setiap kali ada perubahan auth state.
    * Untuk pengguna dengan role 'user', akan otomatis memicu sinkronisasi
    * status paket melalui packageStatusManager.
    * 
    * @param {Object|null} user - Firebase User object atau null jika logout
+   * @param {number} retryCount - Retry attempt counter (default: 0)
    */
-  const loadUserProfile = async (user) => {
+  const loadUserProfile = async (user, retryCount = 0) => {
     // Jika user null (logout), clear profile data
     if (!user) {
       setUserProfile(null);
@@ -104,6 +105,7 @@ export const AuthProvider = ({ children }) => {
       const result = await getUserProfile(user.uid);
       
       if (result.success) {
+        console.log("User profile loaded successfully:", result.profile.email);
         setUserProfile(result.profile);
 
         // Untuk pengguna dengan role 'user', jalankan sinkronisasi paket
@@ -116,12 +118,24 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } else {
-        console.warn("Failed to load user profile:", result.error);
-        setUserProfile(null);
+        // ✅ Retry mechanism untuk profile loading
+        if (retryCount === 0) {
+          console.log("Retrying profile load in 2 seconds...");
+          setTimeout(() => loadUserProfile(user, 1), 2000);
+        } else {
+          console.warn("Failed to load user profile after retry:", result.error);
+          setUserProfile(null);
+        }
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
-      setUserProfile(null);
+      // ✅ Retry on network error
+      if (retryCount === 0) {
+        console.log("Retrying profile load due to error in 2 seconds...");
+        setTimeout(() => loadUserProfile(user, 1), 2000);
+      } else {
+        setUserProfile(null);
+      }
     }
   };
 
@@ -207,9 +221,11 @@ export const AuthProvider = ({ children }) => {
   /**
    * useEffect untuk inisialisasi autentikasi Firebase
    * 
-   * Menyiapkan listener untuk perubahan auth state dan menangani timeout
-   * untuk mencegah loading yang terlalu lama. Menggunakan pattern mounted
-   * untuk mencegah memory leak.
+   * Implements robust auth initialization based on troubleshooting guide:
+   * - Check existing user first before setting up listener
+   * - Extended timeout (10 seconds)
+   * - Preserve user state on timeout
+   * - Retry mechanism for profile loading
    * 
    * Dependencies: [] (hanya dijalankan sekali saat mount)
    */
@@ -218,10 +234,9 @@ export const AuthProvider = ({ children }) => {
     let mounted = true; // Flag untuk mencegah state update setelah unmount
 
     /**
-     * Inisialisasi Firebase Auth listener
-     * Menangani fallback jika Firebase Auth tidak tersedia
+     * Inisialisasi Firebase Auth dengan robust error handling
      */
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       // Fallback jika Firebase Auth tidak tersedia
       if (!auth) {
         console.warn("Firebase Auth not available, using fallback");
@@ -235,7 +250,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // Setup listener untuk perubahan auth state
+        // ✅ Check existing user FIRST sebelum setup listener
+        const currentUser = auth.currentUser;
+        if (currentUser && mounted) {
+          console.log("Found existing authenticated user:", currentUser.email);
+          setCurrentUser(currentUser);
+          await loadUserProfile(currentUser);
+          setLoading(false);
+          setAuthInitialized(true);
+        }
+
+        // Setup listener untuk future auth state changes
         unsubscribe = onAuthStateChanged(
           auth,
           async (user) => {
@@ -243,7 +268,7 @@ export const AuthProvider = ({ children }) => {
             if (mounted) {
               console.log(
                 "Auth state changed:",
-                user ? "User logged in" : "User logged out"
+                user ? `User: ${user.email}` : "Logged out"
               );
               
               // Update currentUser state
@@ -261,8 +286,8 @@ export const AuthProvider = ({ children }) => {
             // Error handler untuk auth state change
             console.error("Auth state change error:", error);
             if (mounted) {
-              setCurrentUser(null);
-              setUserProfile(null);
+              // ❌ JANGAN: setCurrentUser(null) - preserve existing user
+              // ✅ LAKUKAN: Just mark as initialized
               setLoading(false);
               setAuthInitialized(true);
             }
@@ -272,24 +297,24 @@ export const AuthProvider = ({ children }) => {
         // Error handler untuk setup listener
         console.error("Failed to initialize auth listener:", error);
         if (mounted) {
-          setCurrentUser(null);
-          setUserProfile(null);
+          // ❌ JANGAN: Clear user on error
+          // ✅ LAKUKAN: Just mark as initialized
           setLoading(false);
           setAuthInitialized(true);
         }
       }
     };
 
-    // Timeout fallback untuk mencegah loading terlalu lama (5 detik)
+    // ✅ Extended timeout ke 10 detik dengan user preservation
     const timeoutId = setTimeout(() => {
       if (mounted && loading && !authInitialized) {
         console.warn("Auth initialization timeout, proceeding anyway");
-        setCurrentUser(null);
-        setUserProfile(null);
+        // ❌ JANGAN: setCurrentUser(null);
+        // ✅ LAKUKAN: Preserve user state, just stop loading
         setLoading(false);
         setAuthInitialized(true);
       }
-    }, 5000);
+    }, 10000); // Increased to 10 seconds
 
     // Jalankan inisialisasi auth
     initializeAuth();
