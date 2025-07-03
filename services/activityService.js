@@ -456,3 +456,11 @@ export const activityService = {
     return await this.addActivity(activity);
   }
 };
+
+/**
+ * Named export untuk backward compatibility dengan service lain
+ * yang mengimport logActivity sebagai named export
+ */
+export const logActivity = async (activityData) => {
+  return await activityService.addActivity(activityData);
+};

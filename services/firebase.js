@@ -18,6 +18,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
@@ -35,6 +36,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 const firebaseConfig = {
   apiKey: "AIzaSyA5Lsxqplxa4eQ9H8Zap3e95R_-SFGe2yU",
   authDomain: "alien-outrider-453003-g8.firebaseapp.com",
+  databaseURL: "https://alien-outrider-453003-g8-default-rtdb.firebaseio.com",
   projectId: "alien-outrider-453003-g8",
   storageBucket: "alien-outrider-453003-g8.firebasestorage.app",
   messagingSenderId: "398044917472",
@@ -43,9 +45,10 @@ const firebaseConfig = {
 };
 
 // Instance global Firebase untuk digunakan di seluruh aplikasi
-let app;    // Firebase App instance utama
-let auth;   // Firebase Authentication instance
-let db;     // Firestore Database instance
+let app;        // Firebase App instance utama
+let auth;       // Firebase Authentication instance
+let db;         // Firestore Database instance
+let realtimeDb; // Firebase Realtime Database instance
 
 /**
  * Inisialisasi Firebase dengan error handling yang robust
@@ -104,12 +107,29 @@ try {
     // Set null jika Firestore gagal diinisialisasi
     db = null;
   }
+
+  /**
+   * Inisialisasi Firebase Realtime Database
+   * 
+   * Database real-time untuk komunikasi dengan ESP32:
+   * - Scanner mode management
+   * - Hardware status monitoring
+   * - Real-time control commands
+   */
+  try {
+    realtimeDb = getDatabase(app);
+  } catch (error) {
+    console.error('Realtime Database initialization error:', error);
+    // Set null jika Realtime Database gagal diinisialisasi
+    realtimeDb = null;
+  }
 } catch (error) {
   // Fallback global jika seluruh proses inisialisasi gagal
   console.error('Firebase initialization error:', error);
   app = null;
   auth = null;
   db = null;
+  realtimeDb = null;
 }
 
 /**
@@ -117,9 +137,10 @@ try {
  * 
  * @exports {Object} auth - Firebase Authentication instance
  * @exports {Object} db - Firestore Database instance  
+ * @exports {Object} realtimeDb - Firebase Realtime Database instance
  * @exports {Object} app - Firebase App instance utama
  * 
  * Semua service lain akan mengimport instance ini untuk
  * operasi database dan authentication.
  */
-export { auth, db, app };
+export { auth, db, realtimeDb, app };
