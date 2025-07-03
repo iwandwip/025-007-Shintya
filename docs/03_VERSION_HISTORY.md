@@ -337,21 +337,436 @@ ESP32 DevKit v1
 
 ## 3.5 Planning & Future Development
 
-### **🚧 Coming Soon**
+### **🚧 v1.8.0 - Dynamic Encrypted User QR System (Planned)**
 
-Future development planning untuk Shintya App sedang dalam tahap perencanaan dan akan diupdate seiring dengan kebutuhan project dan feedback dari stakeholders.
+#### **🔐 Dynamic User QR Code Enhancement**
+
+**📋 Requirement Background:**
+Berdasarkan feedback dosen untuk meningkatkan security user authentication melalui QR code system yang lebih secure dan dynamic.
+
+#### **✨ Planned Features**
+
+##### **1. Custom Encryption Algorithm**
+- **Simple XOR + Caesar Cipher**: Implementasi enkripsi ringan tanpa external dependencies
+- **ESP32 Compatible**: Algorithm yang bisa jalan di kedua platform (Mobile + ESP32)
+- **No External Libraries**: Pure JavaScript dan C++ implementation
+
+```javascript
+// Mobile Side - Custom Encryption
+const encryptUserData = (email) => {
+  const payload = {
+    email: email,
+    timestamp: Date.now(),
+    nonce: generateRandomNonce(), // 8-char random
+    sessionId: generateSessionId(),
+    checksum: calculateChecksum(email)
+  };
+  
+  // XOR + Caesar + Base64 encoding
+  return customEncrypt(payload);
+};
+```
+
+##### **2. Dynamic QR Generation**
+- **Always Different Content**: QR code berubah setiap kali di-generate
+- **Static Data Output**: Setelah decrypt, data tetap sama (email user)
+- **Security Elements**: Timestamp, nonce, checksum untuk validation
+
+**Flow:**
+```
+User Email (static) + Timestamp (dynamic) + Nonce (random)
+↓
+Custom Encryption (XOR + Caesar)
+↓
+Base64 Encoding
+↓
+QR Code (unique setiap generate)
+```
+
+##### **3. Scanner Mode Management**
+- **State-based Scanning**: ESP32 switch mode antara "resi" dan "user_qr"
+- **Firebase RTDB Control**: Real-time mode switching via Firebase
+- **Context Awareness**: ESP32 tau kapan harus decrypt dan kapan tidak
+
+```javascript
+// Scanner Mode States
+{
+  mode: "resi" | "user_qr",
+  isActive: boolean,
+  initiatedBy: userId,
+  expiresAt: timestamp
+}
+```
+
+##### **4. Mobile App Enhancement**
+
+**User QR Modal:**
+- **Generate Button**: User tap "QR Code Saya" untuk activate
+- **Dynamic Display**: QR berubah setiap kali di-generate
+- **Auto-refresh Option**: Optional auto-refresh setiap X menit
+- **Scanner Status**: Show current ESP32 scanner mode
+
+**Profile Integration:**
+```javascript
+// components/ui/UserQRModal.jsx
+const UserQRModal = () => {
+  const [qrCode, setQrCode] = useState('');
+  const [refreshCount, setRefreshCount] = useState(0);
+  
+  const generateNewQR = () => {
+    const newQR = encryptUserData(userProfile.email);
+    setQrCode(newQR); // Content selalu beda
+    setRefreshCount(count => count + 1);
+  };
+  
+  return (
+    <Modal>
+      <QRCode value={qrCode} />
+      <Button title="Generate QR Baru" onPress={generateNewQR} />
+      <Text>QR #{refreshCount}</Text>
+    </Modal>
+  );
+};
+```
+
+#### **🔧 Technical Implementation**
+
+##### **📚 Custom Encryption Library Design**
+
+**Library Concept:**
+- **Reusable Encryption Library**: Standalone class yang bisa dipakai untuk berbagai kebutuhan
+- **Cross-platform Compatibility**: JavaScript (Mobile) dan Arduino C++ (ESP32) versions
+- **Consistent API**: Interface yang sama di kedua platform untuk easy maintenance
+
+**Library Structure:**
+```
+libraries/
+├── javascript/
+│   └── ShintyaEncryption.js     // Mobile App version
+└── arduino/
+    ├── ShintyaEncryption.h      // ESP32 header file
+    └── ShintyaEncryption.cpp    // ESP32 implementation
+```
+
+**JavaScript Version (Mobile App):**
+```javascript
+// libraries/javascript/ShintyaEncryption.js
+class ShintyaEncryption {
+  constructor(secretKey = "SHINTYA_2024_SECRET", caesarShift = 7) {
+    this.secretKey = secretKey;
+    this.caesarShift = caesarShift;
+    this.version = "1.0.0";
+  }
+
+  // Main encryption method
+  encrypt(data) { /* implementation */ }
+  
+  // Main decryption method  
+  decrypt(encryptedData) { /* implementation */ }
+  
+  // Utility methods
+  generateNonce(length = 8) { /* implementation */ }
+  generateChecksum(input) { /* implementation */ }
+  validateTimestamp(timestamp, maxAge = 300000) { /* implementation */ }
+  
+  // Library info
+  getVersion() { return this.version; }
+  getAlgorithmInfo() { return "XOR + Caesar + Base64"; }
+}
+
+export default ShintyaEncryption;
+```
+
+**Arduino C++ Version (ESP32):**
+```cpp
+// libraries/arduino/ShintyaEncryption.h
+#ifndef SHINTYA_ENCRYPTION_H
+#define SHINTYA_ENCRYPTION_H
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+class ShintyaEncryption {
+private:
+  String secretKey;
+  int caesarShift;
+  String version;
+  
+public:
+  // Constructor
+  ShintyaEncryption(String key = "SHINTYA_2024_SECRET", int shift = 7);
+  
+  // Main methods
+  String encrypt(String jsonData);
+  String decrypt(String encryptedData);
+  
+  // Utility methods
+  String generateNonce(int length = 8);
+  int generateChecksum(String input);
+  bool validateTimestamp(unsigned long timestamp, unsigned long maxAge = 300000);
+  
+  // Base64 operations
+  String base64Encode(String input);
+  String base64Decode(String input);
+  
+  // Library info
+  String getVersion();
+  String getAlgorithmInfo();
+  
+  // Validation helpers
+  bool isValidEncryptedData(String data);
+  String extractField(String jsonString, String fieldName);
+};
+
+#endif
+```
+
+**Usage Examples:**
+
+*Mobile App Usage:*
+```javascript
+// Import library
+import ShintyaEncryption from '../libraries/javascript/ShintyaEncryption';
+
+// Initialize
+const encryption = new ShintyaEncryption();
+
+// Encrypt user data
+const userData = {
+  email: "user@gmail.com",
+  type: "user_profile"
+};
+const encrypted = encryption.encrypt(userData);
+
+// Use in QR Code
+<QRCode value={encrypted} />
+```
+
+*ESP32 Usage:*
+```cpp
+// Include library
+#include "libraries/arduino/ShintyaEncryption.h"
+
+// Initialize
+ShintyaEncryption encryption;
+
+// Decrypt QR data
+String qrData = getScannedQRData();
+String decrypted = encryption.decrypt(qrData);
+
+// Extract email
+String email = encryption.extractField(decrypted, "email");
+```
+
+##### **🔄 Library Versioning & Compatibility**
+
+**Version Management:**
+- **Semantic Versioning**: v1.0.0, v1.1.0, etc.
+- **Cross-platform Sync**: Kedua library version harus sync
+- **Backward Compatibility**: Support untuk data yang di-encrypt dengan version lama
+
+**Compatibility Matrix:**
+```
+JavaScript v1.0.0 ↔ Arduino v1.0.0 ✅
+JavaScript v1.1.0 ↔ Arduino v1.0.0 ⚠️ (with fallback)
+JavaScript v1.0.0 ↔ Arduino v1.1.0 ⚠️ (with fallback)
+```
+
+##### **📦 Library Distribution**
+
+**Mobile App Integration:**
+```javascript
+// services/encryptionService.js
+import ShintyaEncryption from '../libraries/javascript/ShintyaEncryption';
+
+export const userQREncryption = new ShintyaEncryption();
+export const packageEncryption = new ShintyaEncryption("PACKAGE_KEY", 5);
+```
+
+**ESP32 Integration:**
+```cpp
+// ESP32 main project
+#include "libraries/arduino/ShintyaEncryption.h"
+
+ShintyaEncryption userQREncryption;
+ShintyaEncryption packageEncryption("PACKAGE_KEY", 5);
+```
+
+##### **🧪 Library Testing Framework**
+
+**Unit Tests untuk JavaScript:**
+```javascript
+// tests/ShintyaEncryption.test.js
+import ShintyaEncryption from '../libraries/javascript/ShintyaEncryption';
+
+describe('ShintyaEncryption', () => {
+  test('encrypt then decrypt returns original data', () => {
+    const encryption = new ShintyaEncryption();
+    const original = { email: "test@test.com" };
+    
+    const encrypted = encryption.encrypt(original);
+    const decrypted = encryption.decrypt(encrypted);
+    
+    expect(decrypted.email).toBe(original.email);
+  });
+  
+  test('different encryptions of same data are unique', () => {
+    const encryption = new ShintyaEncryption();
+    const data = { email: "test@test.com" };
+    
+    const encrypted1 = encryption.encrypt(data);
+    const encrypted2 = encryption.encrypt(data);
+    
+    expect(encrypted1).not.toBe(encrypted2);
+  });
+});
+```
+
+**Compatibility Tests:**
+```javascript
+// tests/CrossPlatformCompatibility.test.js
+// Test that JavaScript encrypted data can be decrypted by ESP32
+// Using mock ESP32 decryption function
+```
+
+##### **📖 Library Documentation**
+
+**API Documentation:**
+```markdown
+# ShintyaEncryption Library Documentation
+
+## Installation
+### JavaScript
+```javascript
+import ShintyaEncryption from './ShintyaEncryption';
+```
+
+### Arduino
+```cpp
+#include "ShintyaEncryption.h"
+```
+
+## Basic Usage
+### Encryption
+```javascript
+const encrypted = encryption.encrypt(data);
+```
+
+### Decryption  
+```javascript
+const decrypted = encryption.decrypt(encrypted);
+```
+
+## Advanced Configuration
+- Custom secret keys
+- Different Caesar shifts
+- Validation settings
+```
+
+##### **Encryption Algorithm Specification**
+```
+Step 1: Create payload with dynamic elements
+{
+  email: "user@email.com",      // Static
+  timestamp: 1704067200000,     // Dynamic
+  nonce: "a1b2c3d4",           // Random 8-char
+  sessionId: "sess_xyz123",     // Session identifier
+  checksum: 123456              // Email validation
+}
+
+Step 2: XOR Encryption
+- XOR setiap character dengan secret key
+- Key: "SHINTYA_2024_SECRET" (18 chars)
+
+Step 3: Caesar Cipher  
+- Shift +7 untuk setiap character
+- Wrap around jika > 255
+
+Step 4: Base64 Encoding
+- Convert to QR-friendly format
+- ESP32 bisa baca dengan mudah
+```
+
+##### **ESP32 Integration Points**
+```cpp
+// ESP32 will implement:
+class CustomDecryption {
+  String decrypt(String qrData);
+  bool validateUser(String email);
+  String extractEmail(String decryptedJson);
+  bool checkTimestamp(long timestamp);
+};
+
+// Usage in ESP32:
+void processUserQR(String qrData) {
+  String email = decryption.extractEmail(qrData);
+  if (validateUser(email)) {
+    lcd.display("Welcome " + email);
+  } else {
+    lcd.display("Invalid User");
+  }
+}
+```
+
+#### **📊 Security Features**
+
+1. **Dynamic Content**: QR tidak bisa di-reuse atau duplicate
+2. **Timestamp Validation**: Prevent old QR usage  
+3. **Nonce System**: Setiap QR benar-benar unique
+4. **Checksum Validation**: Data integrity check
+5. **Mode-based Processing**: Context-aware scanning
+
+#### **🎯 User Experience Flow**
 
 ```
-   +=============================================================================+
-                        🔮 FUTURE DEVELOPMENT PLANNING                        |
-                                                                           |
-   |                           Coming Soon...                              |
-   |                                                                       |
-   |  📋 Planning Phase: Evaluating requirements dan priorities            |
-   |  🎯 Roadmap Creation: Detailed roadmap akan ditambahkan               |
-   |  📊 Feature Analysis: User feedback dan business needs assessment     |
-   +=============================================================================+
+User Opens Profile → Tap "QR Code Saya" → Modal Opens
+                          ↓
+                    Generate Button → Create Dynamic QR
+                          ↓
+                    Show QR Code → User can regenerate anytime
+                          ↓
+                    ESP32 Scans → Decrypt & validate email
+                          ↓
+                    Welcome Message → "Selamat datang [email]"
 ```
+
+#### **📱 UI/UX Enhancements**
+
+- **Visual Feedback**: Show QR generation count dan timestamp
+- **Scanner Status**: Display current ESP32 mode
+- **Security Indicators**: Show encryption status
+- **Easy Regeneration**: One-tap QR refresh
+
+#### **🔄 Integration Points**
+
+- **Profile Screen**: Add QR modal trigger
+- **Scanner Mode Service**: Real-time mode management
+- **Encryption Service**: Custom algorithm implementation
+- **Activity Logging**: Track QR generation dan usage
+
+#### **⚡ Performance Considerations**
+
+- **Lightweight Encryption**: Minimal processing overhead
+- **Quick Generation**: < 100ms QR creation time
+- **ESP32 Efficiency**: Simple decrypt algorithm
+- **Battery Optimized**: Minimal battery impact
+
+#### **🧪 Testing Strategy**
+
+- **Algorithm Testing**: Encrypt/decrypt validation
+- **QR Uniqueness**: Verify setiap generate beda
+- **ESP32 Compatibility**: Hardware integration testing
+- **Security Testing**: Timestamp dan nonce validation
+
+---
+
+### **🔮 Future Roadmap (Post v1.8.0)**
+
+#### **Planned Enhancements:**
+- **Advanced Analytics**: QR usage tracking dan patterns
+- **Multi-factor Authentication**: Combine QR + PIN/biometric
+- **Offline Mode**: Local QR validation capability
+- **Admin Dashboard**: QR management dan monitoring tools
 
 ### **💡 Contribution Ideas**
 
