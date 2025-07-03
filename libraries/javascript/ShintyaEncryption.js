@@ -76,14 +76,14 @@ class ShintyaEncryption {
    */
   encrypt(data) {
     try {
-      // Step 1: Create payload dengan dynamic elements
+      // Step 1: Create payload dengan dynamic elements (optimized for shorter length)
       const payload = {
         ...data,
-        timestamp: Date.now(),
-        nonce: this.generateNonce(8),
-        sessionId: this.generateSessionId(),
-        checksum: this.generateChecksum(JSON.stringify(data)),
-        version: this.version
+        t: Date.now(), // timestamp -> t
+        n: this.generateNonce(4), // nonce 4 chars instead of 8  
+        s: this.generateSessionId().split('_')[1], // shorter sessionId
+        c: this.generateChecksum(JSON.stringify(data))
+        // removed version field
       };
       
       // Step 2: Convert to JSON string
@@ -136,7 +136,7 @@ class ShintyaEncryption {
       this._validatePayload(payload);
       
       // Step 6: Extract original data (remove our added fields)
-      const { timestamp, nonce, sessionId, checksum, version, ...originalData } = payload;
+      const { t: timestamp, n: nonce, s: sessionId, c: checksum, ...originalData } = payload;
       
       return {
         data: originalData,
@@ -145,7 +145,7 @@ class ShintyaEncryption {
           nonce,
           sessionId,
           checksum,
-          version,
+          version: this.version, // add back for compatibility
           decryptedAt: Date.now()
         }
       };
@@ -411,8 +411,8 @@ class ShintyaEncryption {
    * @throws {Error} Jika payload tidak valid
    */
   _validatePayload(payload) {
-    // Check required fields
-    const requiredFields = ['timestamp', 'nonce', 'sessionId', 'checksum', 'version'];
+    // Check required fields (using short field names)
+    const requiredFields = ['t', 'n', 's', 'c']; // timestamp, nonce, sessionId, checksum
     
     for (const field of requiredFields) {
       if (!(field in payload)) {
@@ -421,23 +421,17 @@ class ShintyaEncryption {
     }
     
     // Validate timestamp (not too old)
-    if (!this.validateTimestamp(payload.timestamp)) {
+    if (!this.validateTimestamp(payload.t)) {
       throw new Error('Timestamp is too old or invalid');
     }
     
-    // Validate version compatibility
-    if (payload.version !== this.version) {
-      console.warn(`Version mismatch: payload=${payload.version}, library=${this.version}`);
-      // Note: Tidak throw error untuk backward compatibility
-    }
-    
     // Validate nonce format (should be hex string)
-    if (!/^[0-9a-f]+$/.test(payload.nonce)) {
+    if (!/^[0-9a-f]+$/.test(payload.n)) {
       throw new Error('Invalid nonce format');
     }
     
     // Validate checksum (reconstruct original data untuk verification)
-    const { timestamp, nonce, sessionId, checksum, version, ...originalData } = payload;
+    const { t: timestamp, n: nonce, s: sessionId, c: checksum, ...originalData } = payload;
     const expectedChecksum = this.generateChecksum(JSON.stringify(originalData));
     
     if (checksum !== expectedChecksum) {

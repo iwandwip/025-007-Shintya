@@ -64,13 +64,9 @@ export const encryptUserProfile = async (userProfile) => {
       throw new Error('Firebase Firestore belum diinisialisasi');
     }
     
-    // Prepare data untuk encryption
+    // Prepare data untuk encryption - email only
     const userData = {
-      email: userProfile.email,
-      nama: userProfile.nama,
-      role: userProfile.role,
-      type: "user_profile",
-      userId: userProfile.id
+      email: userProfile.email
     };
     
     // Select encryption instance berdasarkan role
@@ -575,11 +571,7 @@ export const generateSampleQR = async (type = "user_profile") => {
   try {
     const sampleData = {
       user_profile: {
-        email: "sample@shintya.com",
-        nama: "Sample User",
-        role: "user",
-        type: "user_profile",
-        userId: "sample_user_id"
+        email: "sample@shintya.com"
       },
       package_tracking: {
         noResi: "SH240001234",

@@ -154,11 +154,7 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                       Input Enkripsi:
                     </Text>
                     <Text style={[styles.stepValue, { color: colors.gray600 }]}>
-                      {JSON.stringify({
-                        email: userProfile?.email,
-                        nama: userProfile?.nama,
-                        role: userProfile?.role
-                      }, null, 0)}
+                      {userProfile?.email}
                     </Text>
                   </View>
                   
