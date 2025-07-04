@@ -40,7 +40,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import Button from "../../components/ui/Button";
-import QRCodeModal from "../../components/ui/QRCodeModal";
 import UserQRModal from "../../components/ui/UserQRModal";
 import UserQRModalSimple from "../../components/ui/UserQRModalSimple";
 import UserQRModalTest from "../../components/ui/UserQRModalTest";
@@ -63,7 +62,6 @@ function Profile() {
   // State untuk loading dan modal
   const [loggingOut, setLoggingOut] = useState(false);      // Loading saat logout
   const [refreshing, setRefreshing] = useState(false);      // Loading saat pull-to-refresh
-  const [qrModalVisible, setQrModalVisible] = useState(false); // Visibility modal QR code
   const [userQrModalVisible, setUserQrModalVisible] = useState(false); // Visibility untuk UserQR modal
   
   // Warna berdasarkan role pengguna (admin atau user)
@@ -118,13 +116,6 @@ function Profile() {
     router.push("/(tabs)/edit-profile"); // Navigasi ke halaman edit (tab tersembunyi)
   };
 
-  /**
-   * Handler untuk menampilkan modal QR Code
-   * QR Code berisi informasi pengguna untuk identifikasi
-   */
-  const handleShowQRCode = () => {
-    setQrModalVisible(true);
-  };
 
   /**
    * Handler untuk menampilkan modal User QR Code (Dynamic)
@@ -351,13 +342,6 @@ function Profile() {
               style={[styles.userQrButton, { borderColor: colors.primary }]}
             />
 
-            {/* Tombol QR code sederhana (Legacy) */}
-            <Button
-              title="Kode Sederhana"
-              onPress={handleShowQRCode}
-              variant="outline"
-              style={[styles.qrButton, { borderColor: colors.gray400 }]}
-            />
 
             {/* Tombol logout dengan loading state */}
             <Button
@@ -370,14 +354,6 @@ function Profile() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Modal QR Code untuk identifikasi pengguna */}
-      <QRCodeModal
-        visible={qrModalVisible}
-        onClose={() => setQrModalVisible(false)}
-        userEmail={userProfile?.email || ''} // Email sebagai identifier
-        isAdmin={userProfile?.role === 'admin'} // Informasi role untuk styling
-      />
 
       {/* Modal User QR Code dinamis dengan enkripsi */}
       <UserQRModalWorking
@@ -488,9 +464,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   userQrButton: {
-    marginBottom: 8,
-  },
-  qrButton: {
     marginBottom: 8,
   },
   logoutButton: {

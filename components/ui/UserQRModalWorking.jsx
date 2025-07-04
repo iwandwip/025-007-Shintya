@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from 'expo-clipboard';
 import { getThemeByRole } from "../../constants/Colors";
 import { encryptUserProfile, decryptQRCode } from "../../services/encryptionService";
 
@@ -83,6 +84,16 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
     setIsGenerating(false);
   };
   
+  // Copy to clipboard function
+  const copyToClipboard = async (text, label) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Berhasil', `${label} berhasil disalin ke clipboard`);
+    } catch (error) {
+      Alert.alert('Error', `Gagal menyalin ${label}: ${error.message}`);
+    }
+  };
+
   // Auto-generate EVERY TIME modal opens - fresh QR every time
   React.useEffect(() => {
     if (visible && userProfile?.email) {
@@ -150,9 +161,17 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                 <View style={styles.qrInfo}>
                   {/* Input Enkripsi */}
                   <View style={styles.encryptionStep}>
-                    <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                      Input Enkripsi:
-                    </Text>
+                    <View style={styles.stepHeader}>
+                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                        Input Enkripsi:
+                      </Text>
+                      <TouchableOpacity
+                        style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                        onPress={() => copyToClipboard(userProfile?.email, 'Input Enkripsi')}
+                      >
+                        <Ionicons name="copy-outline" size={14} color={colors.white} />
+                      </TouchableOpacity>
+                    </View>
                     <Text style={[styles.stepValue, { color: colors.gray600 }]}>
                       {userProfile?.email}
                     </Text>
@@ -161,9 +180,17 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                   {/* Hasil Enkripsi */}
                   {qrCode && (
                     <View style={styles.encryptionStep}>
-                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                        Hasil Enkripsi:
-                      </Text>
+                      <View style={styles.stepHeader}>
+                        <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                          Hasil Enkripsi:
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                          onPress={() => copyToClipboard(qrCode, 'Hasil Enkripsi')}
+                        >
+                          <Ionicons name="copy-outline" size={14} color={colors.white} />
+                        </TouchableOpacity>
+                      </View>
                       <Text style={[styles.stepValue, { color: colors.gray600 }]}>
                         {qrCode.substring(0, 50)}...
                       </Text>
@@ -173,9 +200,22 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                   {/* Hasil Dekripsi */}
                   {decryptedData && (
                     <View style={styles.encryptionStep}>
-                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                        Hasil Dekripsi:
-                      </Text>
+                      <View style={styles.stepHeader}>
+                        <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                          Hasil Dekripsi:
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                          onPress={() => copyToClipboard(
+                            decryptedData.error ? 
+                              `Error: ${decryptedData.error}` : 
+                              JSON.stringify(decryptedData, null, 2), 
+                            'Hasil Dekripsi'
+                          )}
+                        >
+                          <Ionicons name="copy-outline" size={14} color={colors.white} />
+                        </TouchableOpacity>
+                      </View>
                       <Text style={[styles.stepValue, { 
                         color: decryptedData.error ? '#DC2626' : colors.gray600 
                       }]}>
@@ -311,10 +351,24 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: "#3B82F6",
   },
+  stepHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   stepLabel: {
     fontSize: 12,
     fontWeight: "600",
-    marginBottom: 4,
+    flex: 1,
+  },
+  copyButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
   },
   stepValue: {
     fontSize: 11,

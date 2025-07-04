@@ -27,6 +27,12 @@ npm run cleanup
 # Generate test data
 npm run seed
 
+# Testing and utilities
+npm run test                # Run ESP32 simulator
+npm run test-encryption     # Run encryption tests
+npm run clean              # Clean and reinstall node_modules
+npm run reinstall          # Clean and reinstall dependencies
+
 # Build commands (see BUILD_APK.md for details)
 eas build --platform android --profile development
 eas build --platform android --profile preview
@@ -43,13 +49,14 @@ eas build --platform android --profile production
 - Special development admin account: `admin@gmail.com` (accepts any password)
 
 ### Key Technologies
-- **React Native + Expo SDK 53**
+- **React Native + Expo SDK 53** with React 19.0.0
 - **Firebase** (Authentication + Firestore + Realtime Database)
 - **Expo Router** for file-based navigation with nested route groups
 - **ESP32 Arduino firmware** with RFID RC522, ultrasonic sensor, and LCD display
 - **React Native SVG** for custom vector illustrations
 - **Async Storage** for local data persistence and caching
 - **EAS (Expo Application Services)** for cloud builds and distribution
+- **Additional Libraries**: Lucide icons, QR code generation, PDF export, Excel support
 
 ## Application Structure
 
