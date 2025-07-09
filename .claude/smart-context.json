@@ -1,0 +1,178 @@
+{
+  "projectOverview": {
+    "name": "Shintya Package Management System",
+    "type": "React Native + Expo Mobile Application",
+    "description": "Comprehensive package delivery and tracking system with ESP32 hardware integration",
+    "primaryLanguage": "JavaScript",
+    "framework": "React Native + Expo SDK 53",
+    "lastAnalyzed": "2025-07-09T12:00:00Z"
+  },
+  "codebaseStructure": {
+    "totalDirectories": 20,
+    "totalFiles": 89,
+    "keyDirectories": [
+      {
+        "name": "app",
+        "purpose": "Main application with Expo Router file-based routing",
+        "fileCount": 8,
+        "keyFeatures": ["Authentication flow", "Tab navigation", "Protected routes"]
+      },
+      {
+        "name": "components",
+        "purpose": "Reusable UI components with comprehensive modal system",
+        "fileCount": 25,
+        "keyFeatures": ["25+ reusable components", "Modal components", "Custom SVG illustrations"]
+      },
+      {
+        "name": "services",
+        "purpose": "Business logic layer with Firebase and hardware integration",
+        "fileCount": 14,
+        "keyFeatures": ["12 specialized services", "Firebase integration", "ESP32 communication"]
+      },
+      {
+        "name": "contexts",
+        "purpose": "Global state management via React Context",
+        "fileCount": 4,
+        "keyFeatures": ["Authentication", "Settings", "Notifications", "Theme management"]
+      },
+      {
+        "name": "utils",
+        "purpose": "Utility functions for common operations",
+        "fileCount": 3,
+        "keyFeatures": ["Date formatting", "Validation", "Status management"]
+      }
+    ]
+  },
+  "architecturalPatterns": {
+    "navigationPattern": "Expo Router with file-based routing",
+    "stateManagement": "React Context providers",
+    "dataLayer": "Firebase Firestore + Realtime Database",
+    "authentication": "Firebase Auth with session persistence",
+    "styling": "StyleSheet + GlueStack UI components",
+    "hardwareIntegration": "ESP32 via Firebase Realtime Database",
+    "errorHandling": "ErrorBoundary with graceful fallbacks",
+    "caching": "Smart caching with TTL and request throttling"
+  },
+  "businessLogic": {
+    "userRoles": ["user", "admin"],
+    "authenticationFlow": "Email/password with profile validation",
+    "packageManagement": {
+      "statusFlow": "Sedang Dikirim → Telah Tiba → Sudah Diambil",
+      "codSupport": "Cash on delivery with automatic loker assignment",
+      "lokerSystem": "5 loker maximum (COD packages only)",
+      "trackingSystem": "Real-time package tracking with notifications"
+    },
+    "hardwareFeatures": {
+      "rfidPairing": "30-second timeout sessions with 8-char hex codes",
+      "capacityMonitoring": "Ultrasonic sensor (0-30cm range)",
+      "lokerControl": "Remote open/close with 10-second auto-reset",
+      "realTimeSync": "Firebase Realtime Database integration"
+    }
+  },
+  "technicalStack": {
+    "frontend": {
+      "framework": "React Native 0.79.3",
+      "reactVersion": "19.0.0",
+      "expo": "53.0.11",
+      "routing": "Expo Router 5.1.0",
+      "ui": "GlueStack UI 1.1.73",
+      "icons": "Lucide React Native 0.515.0",
+      "svg": "React Native SVG 15.11.2"
+    },
+    "backend": {
+      "database": "Firebase Firestore + Realtime Database",
+      "authentication": "Firebase Auth",
+      "storage": "AsyncStorage for local persistence",
+      "realtime": "Firebase Realtime Database for hardware"
+    },
+    "hardware": {
+      "microcontroller": "ESP32",
+      "rfidModule": "RC522",
+      "sensor": "Ultrasonic HC-SR04",
+      "display": "LCD 20x4",
+      "connectivity": "WiFi"
+    },
+    "development": {
+      "buildSystem": "EAS (Expo Application Services)",
+      "testing": "ESP32 simulator + custom test runner",
+      "deployment": "EAS Build with dev/preview/production profiles"
+    }
+  },
+  "keyFeatures": {
+    "multiRoleSystem": {
+      "description": "Admin and user roles with different access levels",
+      "implementation": "Role-based routing and theming"
+    },
+    "realTimeSync": {
+      "description": "Live data synchronization across all screens",
+      "implementation": "Firebase listeners with optimized subscriptions"
+    },
+    "hardwareIntegration": {
+      "description": "ESP32 hardware integration for RFID and sensors",
+      "implementation": "Firebase Realtime Database communication"
+    },
+    "codSystem": {
+      "description": "Cash on delivery with automatic loker assignment",
+      "implementation": "Maximum 5 COD packages with loker control"
+    },
+    "qrCodeGeneration": {
+      "description": "Dynamic QR codes with encryption",
+      "implementation": "XOR + Caesar Cipher with timestamps"
+    },
+    "capacityMonitoring": {
+      "description": "Real-time box capacity monitoring",
+      "implementation": "Ultrasonic sensor with visual indicators"
+    }
+  },
+  "developmentPatterns": {
+    "componentStructure": "Functional components with hooks",
+    "stateManagement": "Context providers with custom hooks",
+    "errorHandling": "Error boundaries with user-friendly messages",
+    "dataFetching": "Real-time listeners with caching",
+    "formValidation": "Real-time validation with Indonesian messages",
+    "styling": "Centralized Colors constant with theme support",
+    "testing": "Hardware simulation with realistic data"
+  },
+  "securityMeasures": {
+    "authentication": "Firebase Auth with session persistence",
+    "dataProtection": "Soft delete system with audit trails",
+    "rfidSecurity": "Secure pairing with timeout sessions",
+    "qrEncryption": "Dynamic QR codes with replay protection",
+    "accessControl": "Role-based permissions and validation"
+  },
+  "performanceOptimizations": {
+    "caching": "Smart caching with TTL (30 seconds)",
+    "throttling": "Request throttling to prevent API spam",
+    "backgroundSync": "Efficient data sync on app resume",
+    "realTimeOptimization": "Selective Firebase listeners",
+    "memoryManagement": "Proper cleanup of subscriptions"
+  },
+  "localization": {
+    "primaryLanguage": "Indonesian (Bahasa Indonesia)",
+    "dateFormat": "Indonesian date formatting",
+    "currency": "IDR (Indonesian Rupiah)",
+    "phoneValidation": "Indonesian phone number patterns",
+    "errorMessages": "Indonesian error messages throughout"
+  },
+  "commonPatterns": {
+    "modalUsage": "Comprehensive modal system for forms and displays",
+    "loadingStates": "Consistent loading spinners and skeleton screens",
+    "toastNotifications": "Animated toast system with auto-dismiss",
+    "pullToRefresh": "Pull-to-refresh on all list screens",
+    "realTimeUpdates": "Live data updates across all screens",
+    "formHandling": "Consistent form validation and error display"
+  },
+  "developmentTools": {
+    "esp32Simulator": "Node.js based hardware simulator",
+    "seederService": "Comprehensive test data generation",
+    "firebaseCleanup": "Automated data cleanup utilities",
+    "buildProfiles": "EAS build configuration (dev/preview/production)"
+  },
+  "futureConsiderations": {
+    "adminDashboard": "Complete admin dashboard implementation",
+    "paymentGateway": "Payment gateway integration (Midtrans, etc.)",
+    "pushNotifications": "Push notification system",
+    "multiLanguage": "Multi-language support expansion",
+    "analytics": "Analytics dashboard with usage metrics"
+  }
+}
