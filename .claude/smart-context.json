@@ -168,6 +168,40 @@
     "firebaseCleanup": "Automated data cleanup utilities",
     "buildProfiles": "EAS build configuration (dev/preview/production)"
   },
+  "capacityBasedValidation": {
+    "date": "2025-07-09",
+    "description": "Enhanced AddResiModal with comprehensive capacity and COD limit validation - UPDATED",
+    "implementation": [
+      "UPDATED: Both COD and Non-COD require capacity ≤ 90%",
+      "Enhanced COD limit validation (maximum 5 packages globally + capacity ≤ 90%)",
+      "Removed auto-switching logic (both disabled when capacity > 90%)",
+      "Fixed modal layout with ScrollView + KeyboardAvoidingView",
+      "Added capacity data reload on every add button click",
+      "Enhanced submit button validation with universal capacity check",
+      "Improved Indonesian error messages and user feedback"
+    ],
+    "businessLogic": [
+      "UPDATED: COD packages require both max 5 packages AND capacity ≤ 90%",
+      "UPDATED: Non-COD packages require only capacity ≤ 90%",
+      "UPDATED: Both COD and Non-COD disabled when capacity > 90%",
+      "Real-time capacity reload ensures latest data for validation",
+      "Universal capacity check prevents any package addition when box full"
+    ],
+    "uiEnhancements": [
+      "FIXED: Modal layout with proper ScrollView and KeyboardAvoidingView",
+      "UPDATED: COD subtext shows both limits (count + capacity)",
+      "UPDATED: Information panel reflects new dual requirements",
+      "Enhanced error handling with capacity reload notifications",
+      "Improved modal responsiveness and button positioning"
+    ],
+    "technicalFixes": [
+      "Fixed modal buttons appearing outside modal bounds",
+      "Added ScrollView for better content scrolling",
+      "Implemented KeyboardAvoidingView for iOS compatibility",
+      "Added handleOpenAddModal function for capacity reload",
+      "Updated all validation logic to use universal capacity check"
+    ]
+  },
   "futureConsiderations": {
     "adminDashboard": "Complete admin dashboard implementation",
     "paymentGateway": "Payment gateway integration (Midtrans, etc.)",

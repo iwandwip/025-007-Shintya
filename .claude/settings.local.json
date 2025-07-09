@@ -5,7 +5,8 @@
       "Bash(git config:*)",
       "Bash(git commit:*)",
       "Bash(node:*)",
-      "WebFetch(domain:docs.expo.dev)"
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

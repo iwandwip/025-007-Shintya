@@ -165,12 +165,17 @@ components/
 ### Modal Components
 
 #### AddResiModal.jsx
-- **Purpose**: Add new package/receipt modal
+- **Purpose**: Add new package/receipt modal with comprehensive validation
 - **Key Features**:
-  - Package types (COD vs regular)
-  - Real-time occupied loker tracking
-  - Required field validation
-  - Capacity awareness (COD limit enforcement)
+  - Package types (COD vs Non-COD) with intelligent switching
+  - Real-time occupied loker tracking for COD packages
+  - **Enhanced Validation System**:
+    - COD limit: Maximum 5 active COD packages globally
+    - Capacity check: Non-COD disabled when capacity > 90%
+    - Real-time validation feedback with visual indicators
+  - Auto-switching from Non-COD to COD when capacity exceeds 90%
+  - Information panel showing current limits and warnings
+  - Comprehensive error messages in Indonesian
 - **Props**: `visible`, `onClose`, `onSubmit`, `loading`, `codResiCount`, `capacityPercentage`
 - **Dependencies**: `resiService`, `Colors`
 

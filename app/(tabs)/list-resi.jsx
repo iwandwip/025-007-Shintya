@@ -222,6 +222,36 @@ function ListResi() {
   }, []);
 
   /**
+   * Handler untuk membuka modal tambah resi dengan reload data kapasitas
+   * Memastikan data kapasitas selalu terbaru saat user ingin menambah paket
+   */
+  const handleOpenAddModal = async () => {
+    console.log('Opening add modal - reloading capacity data...');
+    
+    // Reload capacity data untuk memastikan validasi terbaru
+    try {
+      const result = await getCapacityData();
+      if (result.success && result.data) {
+        setCapacityData(result.data);
+        console.log('Capacity data reloaded:', result.data);
+      } else {
+        console.error('Failed to reload capacity data:', result.error);
+        // Set default capacity data jika gagal memuat
+        setCapacityData({ height: 0, maxHeight: 30 });
+        showNotification("Menggunakan data kapasitas default", "warning");
+      }
+    } catch (error) {
+      console.error('Error reloading capacity data:', error);
+      // Set default capacity data untuk fallback
+      setCapacityData({ height: 0, maxHeight: 30 });
+      showNotification("Menggunakan data kapasitas default", "error");
+    }
+    
+    // Buka modal setelah data dimuat
+    setShowAddModal(true);
+  };
+
+  /**
    * Handler untuk menambah resi baru dengan validasi business logic
    * 
    * Validasi yang dilakukan:
@@ -548,7 +578,7 @@ function ListResi() {
               styles.addButton,
               { backgroundColor: colors.primary },
             ]}
-            onPress={() => setShowAddModal(true)}
+            onPress={handleOpenAddModal}
           >
             <Ionicons name="add" size={24} color={colors.white} />
           </TouchableOpacity>
@@ -631,7 +661,8 @@ function ListResi() {
         onSubmit={handleAddResi}
         loading={addingResi}
         codResiCount={activeCodResiCount}
-        capacityPercentage={capacityData ? calculateCapacityStatus(capacityData.height, capacityData.maxHeight).percentage : 0}
+        capacityPercentage={capacityData && capacityData.height !== undefined && capacityData.maxHeight !== undefined ? 
+          calculateCapacityStatus(capacityData.height, capacityData.maxHeight).percentage : 0}
       />
 
       <EditResiModal
