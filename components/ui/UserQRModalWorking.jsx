@@ -190,16 +190,6 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
             {/* QR Code Display */}
             {getCurrentQRValue() ? (
               <View style={styles.qrContainer}>
-                {/* QR Mode Indicator */}
-                <View style={styles.qrModeIndicator}>
-                  <Text style={[styles.qrModeText, { color: colors.gray700 }]}>
-                    {isEncrypted ? 'QR Terenkripsi' : 'QR Email (Plain)'}
-                  </Text>
-                  <Text style={[styles.qrModeSubtext, { color: colors.gray500 }]}>
-                    Tap QR code untuk ganti mode
-                  </Text>
-                </View>
-                
                 {/* Clickable QR Code */}
                 <TouchableOpacity
                   style={[styles.qrWrapper, { backgroundColor: colors.white }]}
@@ -212,15 +202,6 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                     color="#000000"
                     backgroundColor="#FFFFFF"
                   />
-                  
-                  {/* Toggle Icon Overlay */}
-                  <View style={styles.toggleIconOverlay}>
-                    <Ionicons 
-                      name={isEncrypted ? "lock-closed" : "mail-outline"} 
-                      size={20} 
-                      color={colors.primary} 
-                    />
-                  </View>
                 </TouchableOpacity>
                 
                 <View style={styles.qrInfo}>
@@ -396,41 +377,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     position: 'relative',
-  },
-  qrModeIndicator: {
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#F0F9FF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-  },
-  qrModeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  qrModeSubtext: {
-    fontSize: 11,
-    fontStyle: 'italic',
-  },
-  toggleIconOverlay: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
   qrInfo: {
     alignItems: "stretch",
