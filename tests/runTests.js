@@ -24,7 +24,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('🚀 Shintya Encryption Library - Test Suite Runner');
+console.log('🚀 AES Encryption Service - Test Suite Runner');
 console.log(''.padEnd(60, '='));
 console.log(`📍 Test Directory: ${__dirname}`);
 console.log(`⏰ Started at: ${new Date().toLocaleString('id-ID')}\n`);
@@ -122,7 +122,7 @@ const runAllTests = async () => {
   
   if (failureCount === 0) {
     console.log('\n🎉 All test suites passed successfully!');
-    console.log('🔒 Encryption library is ready for production use.');
+    console.log('🔒 AES encryption service is ready for production use.');
   } else {
     console.log('\n⚠️  Some test suites failed. Please review the errors above.');
     console.log('🔧 Fix the issues before deploying to production.');

@@ -1,39 +1,46 @@
 /**
- * ENCRYPTION SERVICE - Layanan Enkripsi QR Code Dinamis
+ * ENCRYPTION SERVICE - Layanan Enkripsi QR Code Dinamis (React Native Fixed)
  * 
  * Service ini menangani semua operasi enkripsi dan dekripsi untuk QR code dinamis
- * dalam sistem Shintya Package Delivery. Mengintegrasikan ShintyaEncryption library
- * dengan sistem authentication dan user management.
+ * dalam sistem Shintya Package Delivery. Telah dimigrasi dari custom library
+ * ke implementasi AES128 dengan react-native-get-random-values untuk fix crypto error.
  * 
  * Features:
- * - Dynamic QR code generation yang selalu berbeda untuk same user data
+ * - Dynamic QR code generation dengan AES-128-CBC encryption
  * - User profile encryption dengan timestamp dan nonce validation
  * - Package data encryption untuk resi tracking
  * - Scanner mode management untuk ESP32 hardware
  * - Comprehensive error handling dengan Indonesian messages
  * - Activity logging untuk audit trail
+ * - React Native compatibility dengan polyfill
  * 
- * Security:
- * - XOR + Caesar Cipher encryption dengan custom secret keys
+ * Security Improvements:
+ * - AES-128-CBC encryption (industry standard)
+ * - Cryptographically secure random IV generation dengan polyfill
+ * - Proper key derivation dengan PBKDF2
  * - Timestamp validation untuk prevent replay attacks
  * - Nonce system untuk guarantee QR uniqueness
- * - Checksum validation untuk data integrity
- * - Mode-based processing untuk context-aware scanning
+ * - Enhanced data integrity validation
+ * - Fixed "Native crypto module could not be used" error
  * 
  * @author Shintya Package Delivery System
- * @version 1.0.0
+ * @version 2.1.0 (React Native Get Random Values Fix)
  */
 
-import ShintyaEncryption from '../libraries/javascript/ShintyaEncryption';
+// IMPORTANT: Import polyfill untuk fix crypto module error
+import 'react-native-get-random-values';
+
+import { AESFixedInstances } from './aesEncryptionServiceFixed.js';
 import { doc, setDoc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { ref, set, onValue, off } from 'firebase/database';
 import { db, realtimeDb } from './firebase';
 import { logActivity } from './activityService';
 
-// Encryption instances untuk different use cases
-const userQREncryption = new ShintyaEncryption("SHINTYA_2024_USER_QR", 7);
-const packageEncryption = new ShintyaEncryption("SHINTYA_2024_PACKAGE", 5);
-const adminEncryption = new ShintyaEncryption("SHINTYA_2024_ADMIN", 11);
+// AES Fixed Encryption instances untuk different use cases (React Native compatible)
+const { userQR: userQREncryption, packageQR: packageEncryption, adminQR: adminEncryption } = AESFixedInstances;
+
+// Feature flag untuk gradual migration (set to true untuk full AES)
+const USE_AES_ENCRYPTION = true;
 
 /**
  * Encrypt user profile data untuk QR code generation
@@ -72,7 +79,7 @@ export const encryptUserProfile = async (userProfile) => {
     // Select encryption instance berdasarkan role
     const encryptionInstance = userProfile.role === 'admin' ? adminEncryption : userQREncryption;
     
-    // Encrypt data
+    // Encrypt data dengan AES (synchronous)
     const encrypted = encryptionInstance.encrypt(userData);
     
     // Generate metadata untuk tracking
@@ -81,6 +88,7 @@ export const encryptUserProfile = async (userProfile) => {
       userEmail: userProfile.email,
       userRole: userProfile.role,
       qrType: "user_profile",
+      encryptionType: "AES128",
       encryptionVersion: encryptionInstance.getVersion(),
       algorithm: encryptionInstance.getAlgorithmInfo()
     };
@@ -142,7 +150,7 @@ export const encryptPackageData = async (packageData) => {
       nomorLoker: packageData.nomorLoker || null
     };
     
-    // Encrypt data
+    // Encrypt data dengan AES (synchronous)
     const encrypted = packageEncryption.encrypt(resiData);
     
     // Generate metadata
@@ -151,6 +159,7 @@ export const encryptPackageData = async (packageData) => {
       packageId: packageData.id,
       noResi: packageData.noResi,
       qrType: "package_tracking",
+      encryptionType: "AES128",
       encryptionVersion: packageEncryption.getVersion()
     };
     
@@ -206,13 +215,13 @@ export const decryptQRCode = async (encryptedQR, qrType = "user_profile") => {
         throw new Error('Tipe QR Code tidak valid');
     }
     
-    // Decrypt data
+    // Decrypt data dengan AES
     const decrypted = encryptionInstance.decrypt(encryptedQR);
     
     return {
       success: true,
-      data: decrypted.data,
-      metadata: decrypted.metadata,
+      data: decrypted,
+      encryptionType: "AES128",
       qrType,
       decryptedAt: Date.now()
     };
@@ -239,19 +248,22 @@ export const validateQRCode = (encryptedQR) => {
       return false;
     }
     
-    // Try dengan user encryption first
-    if (userQREncryption.isValidEncryptedData(encryptedQR)) {
-      return true;
-    }
-    
-    // Try dengan package encryption
-    if (packageEncryption.isValidEncryptedData(encryptedQR)) {
-      return true;
-    }
-    
-    // Try dengan admin encryption
-    if (adminEncryption.isValidEncryptedData(encryptedQR)) {
-      return true;
+    // Check AES format (IV:EncryptedData)
+    if (encryptedQR.includes(':')) {
+      // Try dengan user encryption first
+      if (userQREncryption.isValidEncryptedData(encryptedQR)) {
+        return true;
+      }
+      
+      // Try dengan package encryption
+      if (packageEncryption.isValidEncryptedData(encryptedQR)) {
+        return true;
+      }
+      
+      // Try dengan admin encryption
+      if (adminEncryption.isValidEncryptedData(encryptedQR)) {
+        return true;
+      }
     }
     
     return false;
@@ -593,6 +605,7 @@ export const generateSampleQR = async (type = "user_profile") => {
       success: true,
       qrCode: encrypted,
       sampleData: sampleData[type],
+      encryptionType: "AES128",
       type
     };
     
