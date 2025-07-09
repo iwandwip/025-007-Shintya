@@ -382,7 +382,6 @@ export const activityService = {
    * // Message: "Paket Smartphone Samsung telah tiba di tujuan"
    */
   async trackStatusChange(userId, resiNumber, oldStatus, newStatus, packageName) {
-    console.log("trackStatusChange called with:", { userId, resiNumber, oldStatus, newStatus, packageName });
     // Mapping status ke message yang user-friendly dalam Bahasa Indonesia
     const statusMessages = {
       "Sedang Dikirim": "sedang dalam perjalanan",

@@ -20,6 +20,7 @@ export default function StatusUpdateModal({
   onUpdateStatus,
   resiList = [],
   loading = false,
+  currentUserId = null,
 }) {
   const [selectedResiIds, setSelectedResiIds] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -39,7 +40,16 @@ export default function StatusUpdateModal({
     { value: "Sudah Diambil", label: "Sudah Diambil", icon: "checkmark-done", color: colors.success },
   ];
 
+  // Filter resi yang bisa dipilih (hanya milik user)
+  const selectableResi = resiList.filter(resi => resi.userId === currentUserId);
+
   const toggleResiSelection = (resiId) => {
+    // Cek apakah resi ini milik user
+    const resi = resiList.find(r => r.id === resiId);
+    if (resi && resi.userId !== currentUserId) {
+      return; // Jangan lakukan apa-apa jika bukan milik user
+    }
+
     setSelectedResiIds(prev => 
       prev.includes(resiId) 
         ? prev.filter(id => id !== resiId)
@@ -48,10 +58,10 @@ export default function StatusUpdateModal({
   };
 
   const selectAllResi = () => {
-    if (selectedResiIds.length === resiList.length) {
+    if (selectedResiIds.length === selectableResi.length) {
       setSelectedResiIds([]);
     } else {
-      setSelectedResiIds(resiList.map(resi => resi.id));
+      setSelectedResiIds(selectableResi.map(resi => resi.id));
     }
   };
 
@@ -157,7 +167,7 @@ export default function StatusUpdateModal({
             <View style={[styles.infoContainer, { backgroundColor: colors.blue50 }]}>
               <Ionicons name="information-circle" size={16} color={colors.blue600} />
               <Text style={[styles.infoText, { color: colors.blue600 }]}>
-                Total {resiList.length} resi tersedia untuk diupdate
+                {selectableResi.length} resi milik Anda dari {resiList.length} total resi
               </Text>
             </View>
 
@@ -167,13 +177,13 @@ export default function StatusUpdateModal({
               onPress={selectAllResi}
             >
               <Ionicons 
-                name={selectedResiIds.length === resiList.length ? "checkbox" : "square-outline"} 
+                name={selectedResiIds.length === selectableResi.length ? "checkbox" : "square-outline"} 
                 size={20} 
                 color={colors.primary} 
               />
               <Text style={[styles.selectAllText, { color: colors.gray700 }]}>
-                {selectedResiIds.length === resiList.length ? "Batalkan Semua" : "Pilih Semua"} 
-                ({selectedResiIds.length}/{resiList.length})
+                {selectedResiIds.length === selectableResi.length ? "Batalkan Semua" : "Pilih Semua"} 
+                ({selectedResiIds.length}/{selectableResi.length})
               </Text>
             </TouchableOpacity>
 
@@ -182,6 +192,8 @@ export default function StatusUpdateModal({
               {resiList.map((item, index) => {
                 const isSelected = selectedResiIds.includes(item.id);
                 const statusColor = getStatusColor(item.status);
+                const isOwner = item.userId === currentUserId;
+                const isDisabled = !isOwner;
 
                 return (
                   <View key={item.id} style={index > 0 ? { marginTop: 8 } : {}}>
@@ -193,27 +205,43 @@ export default function StatusUpdateModal({
                           borderColor: colors.primary,
                           backgroundColor: colors.primary + "10",
                         },
+                        isDisabled && {
+                          backgroundColor: colors.gray50,
+                          borderColor: colors.gray100,
+                          opacity: 0.6,
+                        },
                       ]}
                       onPress={() => toggleResiSelection(item.id)}
+                      disabled={isDisabled}
                     >
                       <View style={styles.selectionIndicator}>
                         <View style={[
                           styles.checkbox,
                           { borderColor: isSelected ? colors.primary : colors.gray300 },
                           isSelected && { backgroundColor: colors.primary },
+                          isDisabled && { borderColor: colors.gray200 },
                         ]}>
-                          {isSelected && (
+                          {isSelected && !isDisabled && (
                             <Ionicons name="checkmark" size={16} color={colors.white} />
+                          )}
+                          {isDisabled && (
+                            <Ionicons name="lock-closed" size={12} color={colors.gray400} />
                           )}
                         </View>
                       </View>
                       
                       <View style={styles.resiInfo}>
-                        <Text style={[styles.resiNumber, { color: colors.gray900 }]} numberOfLines={1}>
+                        <Text style={[
+                          styles.resiNumber, 
+                          { color: isDisabled ? colors.gray400 : colors.gray900 }
+                        ]} numberOfLines={1}>
                           {item.noResi}
                         </Text>
-                        <Text style={[styles.resiName, { color: colors.gray600 }]} numberOfLines={1}>
-                          {item.nama}
+                        <Text style={[
+                          styles.resiName, 
+                          { color: isDisabled ? colors.gray400 : colors.gray600 }
+                        ]} numberOfLines={1}>
+                          {item.nama} {!isOwner && "(Bukan milik Anda)"}
                         </Text>
                         <View style={[
                           styles.statusBadge,
