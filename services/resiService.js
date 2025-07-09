@@ -285,20 +285,36 @@ export const resiService = {
    */
   async updateResi(resiId, resiData) {
     try {
+      console.log("updateResi called with:", { resiId, resiData });
       const resiRef = doc(db, COLLECTION_NAME, resiId);
       
       // Ambil data saat ini untuk perbandingan (terutama status)
       const currentDoc = await getDoc(resiRef);
+      if (!currentDoc.exists()) {
+        console.error("Document not found:", resiId);
+        return { success: false, error: "Document not found" };
+      }
+      
       const currentData = currentDoc.data();
+      console.log("Current data:", currentData);
       
       // Update dokumen dengan timestamp otomatis
-      await updateDoc(resiRef, {
+      const updateData = {
         ...resiData,
         updatedAt: serverTimestamp(),  // Timestamp update untuk audit
-      });
+      };
+      console.log("Updating with data:", updateData);
+      
+      await updateDoc(resiRef, updateData);
+      console.log("Document updated successfully");
       
       // Log aktivitas jika ada perubahan status
       if (resiData.status && currentData.status !== resiData.status) {
+        console.log("Status changed, logging activity:", {
+          old: currentData.status,
+          new: resiData.status
+        });
+        
         await activityService.trackStatusChange(
           currentData.userId,
           currentData.noResi,

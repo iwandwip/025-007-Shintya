@@ -434,6 +434,7 @@ function ListResi() {
       return;
     }
 
+    console.log("Starting bulk status update:", { resiIds, newStatus, currentUser: currentUser.uid });
     setUpdatingStatus(true);
     
     try {
@@ -444,19 +445,27 @@ function ListResi() {
       for (const resiId of resiIds) {
         // Cari resi untuk validasi ownership
         const resi = resiList.find(r => r.id === resiId);
+        console.log("Processing resi:", { resiId, resi: resi ? { id: resi.id, noResi: resi.noResi, userId: resi.userId } : null });
         
         // SECURITY: Hanya pemilik yang bisa update status
         if (resi && resi.userId === currentUser.uid) {
+          console.log("Updating resi:", resiId, "to status:", newStatus);
           const result = await resiService.updateResi(resiId, { status: newStatus });
+          console.log("Update result:", result);
+          
           if (result.success) {
             successCount++;
           } else {
+            console.error("Failed to update resi:", resiId, result.error);
             errorCount++;
           }
         } else {
+          console.log("Skipping resi (not owner):", resiId);
           errorCount++;
         }
       }
+
+      console.log("Bulk update completed:", { successCount, errorCount });
 
       if (successCount > 0) {
         showNotification(`${successCount} resi berhasil diupdate ke status "${newStatus}"`, "success");
