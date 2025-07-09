@@ -140,12 +140,8 @@ function UserQRModal({ visible, onClose, userProfile }) {
         setLastGenerated(Date.now());
         console.log('generateNewQR: QR code set successfully');
         
-        // Track generation statistics (optional, don't fail if it errors)
-        try {
-          await trackQRGeneration(userProfile.id, 'user_profile');
-        } catch (trackError) {
-          console.warn('Failed to track QR generation:', trackError);
-        }
+        // Skip QR generation tracking - tidak perlu masuk aktivitas
+        // QR generation is dynamic and frequent, no need to track statistics
         
         // Set scanner mode ke user_qr untuk 5 menit (optional)
         try {

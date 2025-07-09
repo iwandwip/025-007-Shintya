@@ -93,17 +93,8 @@ export const encryptUserProfile = async (userProfile) => {
       algorithm: encryptionInstance.getAlgorithmInfo()
     };
     
-    // Log activity untuk audit trail
-    await logActivity({
-      userId: userProfile.id,
-      type: 'qr_generated',
-      message: `QR Code dinamis di-generate untuk user ${userProfile.email}`,
-      metadata: {
-        qrType: 'user_profile',
-        generatedAt: metadata.generatedAt,
-        encryptionVersion: metadata.encryptionVersion
-      }
-    });
+    // Skip activity logging untuk QR dinamis - tidak perlu masuk aktivitas
+    // QR Code generation is frequent and dynamic, no need to log in activities
     
     return {
       success: true,
