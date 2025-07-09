@@ -323,12 +323,6 @@ export default function AddResiModal({
 
             {/* Information Section */}
             <View style={[styles.infoContainer, { backgroundColor: colors.blue50 }]}>
-              <View style={styles.infoRow}>
-                <Ionicons name="information-circle" size={16} color={colors.blue600} />
-                <Text style={[styles.infoTitle, { color: colors.blue700 }]}>
-                  Batasan Penambahan Paket:
-                </Text>
-              </View>
               <View style={styles.infoList}>
                 <Text style={[styles.infoItem, { color: colors.blue600 }]}>
                   • COD: Maksimal 5 paket & kapasitas ≤ 90%
