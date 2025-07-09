@@ -32,28 +32,43 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
   const [generationCount, setGenerationCount] = useState(0);
   const [decryptedData, setDecryptedData] = useState(null);
   
+  // Toggle state untuk encrypted vs simple QR
+  const [isEncrypted, setIsEncrypted] = useState(true); // Default: encrypted QR
+  const [simpleQrCode, setSimpleQrCode] = useState(''); // Plain email QR
+  
   // Safe theme
   const colors = getThemeByRole(userProfile?.role === 'admin');
   
-  // Simple QR generation
-  const generateQR = async () => {
+  // Generate simple QR code (plain email)
+  const generateSimpleQR = () => {
+    if (!userProfile?.email) {
+      console.error('User profile tidak valid');
+      return;
+    }
+    
+    console.log('generateSimpleQR: Creating simple QR with email:', userProfile.email);
+    setSimpleQrCode(userProfile.email);
+  };
+  
+  // Generate encrypted QR code
+  const generateEncryptedQR = async () => {
     if (!userProfile?.email) {
       Alert.alert('Error', 'User profile tidak valid');
       return;
     }
     
-    console.log('generateQR: Starting...');
+    console.log('generateEncryptedQR: Starting...');
     setIsGenerating(true);
     
     try {
       const result = await encryptUserProfile(userProfile);
-      console.log('generateQR: Result:', result.success ? 'SUCCESS' : 'FAILED');
+      console.log('generateEncryptedQR: Result:', result.success ? 'SUCCESS' : 'FAILED');
       
       if (result.success) {
         setQrCode(result.qrCode);
         setQrMetadata(result.metadata);
         setGenerationCount(prev => prev + 1);
-        console.log('generateQR: QR set successfully');
+        console.log('generateEncryptedQR: QR set successfully');
         
         // Test dekripsi untuk verifikasi menggunakan real decryption
         try {
@@ -77,11 +92,33 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
         Alert.alert('Error', result.error || 'Gagal membuat QR Code');
       }
     } catch (error) {
-      console.error('generateQR: Error:', error);
+      console.error('generateEncryptedQR: Error:', error);
       Alert.alert('Error', 'Terjadi kesalahan: ' + error.message);
     }
     
     setIsGenerating(false);
+  };
+  
+  // Get current QR value with validation
+  const getCurrentQRValue = () => {
+    const currentValue = isEncrypted ? qrCode : simpleQrCode;
+    return currentValue && currentValue.length > 0 ? currentValue : null;
+  };
+  
+  // Toggle between encrypted and simple QR with validation
+  const toggleQRMode = () => {
+    const newMode = !isEncrypted;
+    const targetValue = newMode ? qrCode : simpleQrCode;
+    
+    console.log('toggleQRMode: Switching from', isEncrypted ? 'encrypted' : 'simple', 'to', newMode ? 'encrypted' : 'simple');
+    console.log('toggleQRMode: Target value available:', !!targetValue && targetValue.length > 0);
+    
+    if (!targetValue || targetValue.length === 0) {
+      Alert.alert('Error', 'QR Code belum tersedia untuk mode ini. Silakan tunggu...');
+      return;
+    }
+    
+    setIsEncrypted(newMode);
   };
   
   // Copy to clipboard function
@@ -94,17 +131,21 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
     }
   };
 
-  // Auto-generate EVERY TIME modal opens - fresh QR every time
+  // Auto-generate BOTH QR codes EVERY TIME modal opens
   React.useEffect(() => {
     if (visible && userProfile?.email) {
-      console.log('Auto-generating fresh QR on modal open...');
+      console.log('Auto-generating fresh QR codes on modal open...');
       // Reset state first
       setQrCode('');
       setQrMetadata(null);
       setDecryptedData(null);
       setGenerationCount(0);
-      // Generate new QR
-      generateQR();
+      setSimpleQrCode('');
+      setIsEncrypted(true); // Default to encrypted
+      
+      // Generate both QR codes
+      generateEncryptedQR(); // Generate encrypted QR
+      generateSimpleQR(); // Generate simple QR
     }
   }, [visible]); // Every time modal opens
   
@@ -147,40 +188,71 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
             </View>
 
             {/* QR Code Display */}
-            {qrCode ? (
+            {getCurrentQRValue() ? (
               <View style={styles.qrContainer}>
-                <View style={[styles.qrWrapper, { backgroundColor: colors.white }]}>
+                {/* QR Mode Indicator */}
+                <View style={styles.qrModeIndicator}>
+                  <Text style={[styles.qrModeText, { color: colors.gray700 }]}>
+                    {isEncrypted ? 'QR Terenkripsi' : 'QR Email (Plain)'}
+                  </Text>
+                  <Text style={[styles.qrModeSubtext, { color: colors.gray500 }]}>
+                    Tap QR code untuk ganti mode
+                  </Text>
+                </View>
+                
+                {/* Clickable QR Code */}
+                <TouchableOpacity
+                  style={[styles.qrWrapper, { backgroundColor: colors.white }]}
+                  onPress={toggleQRMode}
+                  activeOpacity={0.8}
+                >
                   <QRCode
-                    value={qrCode}
+                    value={getCurrentQRValue()}
                     size={200}
                     color="#000000"
                     backgroundColor="#FFFFFF"
                   />
-                </View>
+                  
+                  {/* Toggle Icon Overlay */}
+                  <View style={styles.toggleIconOverlay}>
+                    <Ionicons 
+                      name={isEncrypted ? "lock-closed" : "mail-outline"} 
+                      size={20} 
+                      color={colors.primary} 
+                    />
+                  </View>
+                </TouchableOpacity>
                 
                 <View style={styles.qrInfo}>
-                  {/* Hasil Enkripsi */}
-                  {qrCode && (
-                    <View style={styles.encryptionStep}>
-                      <View style={styles.stepHeader}>
-                        <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                          Hasil Enkripsi:
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.copyButton, { backgroundColor: colors.primary }]}
-                          onPress={() => copyToClipboard(qrCode, 'Hasil Enkripsi')}
-                        >
-                          <Ionicons name="copy-outline" size={14} color={colors.white} />
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={[styles.stepValue, { color: colors.gray600 }]}>
-                        {qrCode.substring(0, 50)}...
+                  {/* Current QR Code Value */}
+                  <View style={styles.encryptionStep}>
+                    <View style={styles.stepHeader}>
+                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
+                        {isEncrypted ? 'Hasil Enkripsi:' : 'Email (Plain Text):'}
                       </Text>
+                      <TouchableOpacity
+                        style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                        onPress={() => copyToClipboard(
+                          getCurrentQRValue() || '', 
+                          isEncrypted ? 'Hasil Enkripsi' : 'Email Plain Text'
+                        )}
+                      >
+                        <Ionicons name="copy-outline" size={14} color={colors.white} />
+                      </TouchableOpacity>
                     </View>
-                  )}
+                    <Text style={[styles.stepValue, { color: colors.gray600 }]}>
+                      {getCurrentQRValue() ? 
+                        (isEncrypted ? 
+                          getCurrentQRValue().substring(0, 50) + '...' : 
+                          getCurrentQRValue()
+                        ) : 
+                        'Loading...'
+                      }
+                    </Text>
+                  </View>
                   
-                  {/* Hasil Dekripsi */}
-                  {decryptedData && (
+                  {/* Hasil Dekripsi - hanya untuk encrypted mode */}
+                  {isEncrypted && decryptedData && (
                     <View style={styles.encryptionStep}>
                       <View style={styles.stepHeader}>
                         <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
@@ -214,8 +286,13 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={[styles.loadingText, { color: colors.gray600 }]}>
-                  {isGenerating ? 'Membuat QR Code...' : 'Memuat...'}
+                  {isGenerating ? 'Membuat QR Code...' : 'Memuat QR Code...'}
                 </Text>
+                {userProfile?.email && (
+                  <Text style={[styles.loadingSubtext, { color: colors.gray500 }]}>
+                    {isEncrypted ? 'Mengenkripsi data...' : 'Menyiapkan email QR...'}
+                  </Text>
+                )}
               </View>
             )}
 
@@ -233,13 +310,16 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                 Cara Penggunaan:
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                1. Tunjukkan QR code ke scanner ESP32
+                1. Tap QR code untuk toggle antara mode Terenkripsi dan Plain Text
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                2. QR akan otomatis tervalidasi dan menampilkan info user
+                2. Gunakan mode Terenkripsi untuk scanner ESP32 (lebih aman)
+              </Text>
+              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
+                3. Gunakan mode Plain Text untuk scanner umum (email saja)
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray500 }]}>
-                * QR code ini unik dan berubah setiap kali di-generate untuk keamanan
+                * QR terenkripsi berubah setiap kali di-generate untuk keamanan
               </Text>
             </View>
 
@@ -315,6 +395,42 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    position: 'relative',
+  },
+  qrModeIndicator: {
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  qrModeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  qrModeSubtext: {
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  toggleIconOverlay: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   qrInfo: {
     alignItems: "stretch",
@@ -365,6 +481,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
     textAlign: "center",
+  },
+  loadingSubtext: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: "center",
+    fontStyle: 'italic',
   },
   autoRefreshInfo: {
     flexDirection: "row",
