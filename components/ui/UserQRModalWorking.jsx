@@ -159,24 +159,6 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                 </View>
                 
                 <View style={styles.qrInfo}>
-                  {/* Input Enkripsi */}
-                  <View style={styles.encryptionStep}>
-                    <View style={styles.stepHeader}>
-                      <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                        Input Enkripsi:
-                      </Text>
-                      <TouchableOpacity
-                        style={[styles.copyButton, { backgroundColor: colors.primary }]}
-                        onPress={() => copyToClipboard(userProfile?.email, 'Input Enkripsi')}
-                      >
-                        <Ionicons name="copy-outline" size={14} color={colors.white} />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={[styles.stepValue, { color: colors.gray600 }]}>
-                      {userProfile?.email}
-                    </Text>
-                  </View>
-                  
                   {/* Hasil Enkripsi */}
                   {qrCode && (
                     <View style={styles.encryptionStep}>
