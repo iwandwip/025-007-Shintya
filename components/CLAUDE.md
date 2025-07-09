@@ -21,6 +21,7 @@ components/
 │   ├── IllustrationContainer.jsx    # SVG illustration wrapper
 │   ├── Input.jsx                    # Enhanced text input
 │   ├── LoadingSpinner.jsx           # Loading state components
+│   ├── MaxCapacityModal.jsx         # Maximum capacity adjustment modal
 │   ├── PaymentModal.jsx             # Payment interface
 │   ├── QRCodeModal.jsx              # QR code display with controls
 │   ├── TimelinePicker.jsx           # Timeline-based date selection
@@ -223,6 +224,17 @@ components/
   - Indonesian content
 - **Props**: `visible`, `onClose`
 - **Dependencies**: `SettingsContext`, `Colors`
+
+#### MaxCapacityModal.jsx
+- **Purpose**: Maximum capacity adjustment modal for box configuration
+- **Key Features**:
+  - Numeric input for maximum capacity (5-50 cm range)
+  - Real-time validation with error messages
+  - Preview of capacity changes
+  - Confirmation dialog before applying changes
+  - Integration with capacityService for real-time updates
+- **Props**: `visible`, `onClose`, `currentMaxHeight`, `onUpdate`
+- **Dependencies**: `capacityService`, `Colors`
 
 ### Utility Components
 

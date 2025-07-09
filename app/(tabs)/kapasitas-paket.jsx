@@ -33,6 +33,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -44,6 +45,7 @@ import {
   subscribeToCapacityUpdates, 
   calculateCapacityStatus 
 } from "../../services/capacityService";
+import MaxCapacityModal from "../../components/ui/MaxCapacityModal";
 
 /**
  * Komponen utama halaman Kapasitas Paket
@@ -73,6 +75,9 @@ function KapasitasPaket() {
   
   // State untuk loading inisialisasi
   const [loading, setLoading] = useState(true);
+  
+  // State untuk modal pengaturan kapasitas maksimal
+  const [showMaxCapacityModal, setShowMaxCapacityModal] = useState(false);
 
   /**
    * Memuat data kapasitas dari Firebase
@@ -214,6 +219,30 @@ function KapasitasPaket() {
     }
   };
 
+  /**
+   * Handle update kapasitas maksimal dari modal
+   * 
+   * @param {number} newMaxHeight - Kapasitas maksimal baru
+   */
+  const handleMaxCapacityUpdate = (newMaxHeight) => {
+    setKapasitasData(prevData => ({
+      ...prevData,
+      maxHeight: newMaxHeight,
+      percentage: (prevData.height / newMaxHeight) * 100
+    }));
+    
+    // Hitung ulang status dengan kapasitas baru
+    const statusInfo = calculateCapacityStatus(kapasitasData.height, newMaxHeight);
+    setKapasitasData(prevData => ({
+      ...prevData,
+      maxHeight: newMaxHeight,
+      percentage: statusInfo.percentage,
+      status: statusInfo.status,
+      message: statusInfo.message,
+      color: statusInfo.color
+    }));
+  };
+
   if (settingsLoading || loading) {
     return (
       <SafeAreaView
@@ -342,8 +371,12 @@ function KapasitasPaket() {
               </Text>
             </View>
 
-            {/* Batas maksimal box (biasanya 30cm) */}
-            <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
+            {/* Batas maksimal box (biasanya 30cm) - Clickable */}
+            <TouchableOpacity 
+              style={[styles.detailItem, styles.clickableItem, { borderColor: colors.gray100 }]}
+              onPress={() => setShowMaxCapacityModal(true)}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
                 Batas Maksimal
               </Text>
@@ -353,7 +386,11 @@ function KapasitasPaket() {
               <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
                 cm
               </Text>
-            </View>
+              {/* Indicator bahwa item ini clickable */}
+              <View style={[styles.clickableIndicator, { backgroundColor: colors.primary }]}>
+                <Text style={styles.clickableIcon}>✏️</Text>
+              </View>
+            </TouchableOpacity>
 
             {/* Persentase terisi (dihitung dari ketinggian/maxHeight) */}
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
@@ -441,6 +478,14 @@ function KapasitasPaket() {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Modal untuk pengaturan kapasitas maksimal */}
+      <MaxCapacityModal
+        visible={showMaxCapacityModal}
+        onClose={() => setShowMaxCapacityModal(false)}
+        currentMaxHeight={kapasitasData.maxHeight}
+        onUpdate={handleMaxCapacityUpdate}
+      />
     </SafeAreaView>
   );
 }
@@ -548,6 +593,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginHorizontal: 4,
+    position: 'relative',
+  },
+  clickableItem: {
+    // Styling for clickable items
+  },
+  clickableIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clickableIcon: {
+    fontSize: 10,
   },
   detailLabel: {
     fontSize: 12,
