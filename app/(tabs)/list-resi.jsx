@@ -44,6 +44,7 @@ import AddResiModal from "../../components/ui/AddResiModal";
 import EditResiModal from "../../components/ui/EditResiModal";
 import HelpModal from "../../components/ui/HelpModal";
 import QRCodeModal from "../../components/ui/QRCodeModal";
+import StatusUpdateModal from "../../components/ui/StatusUpdateModal";
 import { useNotification } from "../../contexts/NotificationContext";
 
 
@@ -85,6 +86,10 @@ function ListResi() {
   const [showHelpModal, setShowHelpModal] = useState(false);   // Modal bantuan
   const [showQRModal, setShowQRModal] = useState(false);       // Modal QR code untuk kontrol loker
   const [selectedResiForQR, setSelectedResiForQR] = useState(null); // Resi untuk QR code
+  
+  // State untuk status update modal
+  const [showStatusModal, setShowStatusModal] = useState(false); // Modal update status
+  const [updatingStatus, setUpdatingStatus] = useState(false);   // Loading saat update status
   
   // State untuk tab filter
   const [activeTab, setActiveTab] = useState("aktif");         // Tab aktif: "aktif" atau "riwayat"
@@ -418,6 +423,59 @@ function ListResi() {
   };
 
   /**
+   * Handler untuk bulk update status resi
+   * 
+   * @param {Array} resiIds - Array ID resi yang akan diupdate
+   * @param {string} newStatus - Status baru
+   */
+  const handleBulkStatusUpdate = async (resiIds, newStatus) => {
+    if (!currentUser) {
+      showNotification("Anda harus login terlebih dahulu", "error");
+      return;
+    }
+
+    setUpdatingStatus(true);
+    
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Update setiap resi secara individual
+      for (const resiId of resiIds) {
+        // Cari resi untuk validasi ownership
+        const resi = resiList.find(r => r.id === resiId);
+        
+        // SECURITY: Hanya pemilik yang bisa update status
+        if (resi && resi.userId === currentUser.uid) {
+          const result = await resiService.updateResi(resiId, { status: newStatus });
+          if (result.success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } else {
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showNotification(`${successCount} resi berhasil diupdate ke status "${newStatus}"`, "success");
+      }
+      
+      if (errorCount > 0) {
+        showNotification(`${errorCount} resi gagal diupdate (mungkin bukan milik Anda)`, "warning");
+      }
+
+      setShowStatusModal(false);
+    } catch (error) {
+      console.error("Error in bulk status update:", error);
+      showNotification("Terjadi kesalahan saat update status", "error");
+    }
+    
+    setUpdatingStatus(false);
+  };
+
+  /**
    * Render item resi dalam FlatList
    * 
    * @param {object} param0 - Object dengan property item dari FlatList
@@ -575,6 +633,15 @@ function ListResi() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[
+              styles.statusButton,
+              { backgroundColor: colors.info },
+            ]}
+            onPress={() => setShowStatusModal(true)}
+          >
+            <Ionicons name="sync" size={24} color={colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
               styles.addButton,
               { backgroundColor: colors.primary },
             ]}
@@ -690,6 +757,14 @@ function ListResi() {
         userEmail={selectedResiForQR?.noResi || ""}
         isAdmin={false}
         resiData={selectedResiForQR}
+      />
+
+      <StatusUpdateModal
+        visible={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        onUpdateStatus={handleBulkStatusUpdate}
+        resiList={filteredResiList}
+        loading={updatingStatus}
       />
     </SafeAreaView>
   );
@@ -814,6 +889,13 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  statusButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButton: {
     width: 44,
