@@ -191,11 +191,11 @@ function Profile() {
         <View style={styles.content}>
           {/* Seksi profil dengan avatar dan info dasar */}
           <View style={styles.profileSection}>
-            {/* Avatar dengan background warna sesuai role - tappable for hidden toggle */}
+            {/* Avatar dengan background warna sesuai encryption mode - tappable for hidden toggle */}
             <TouchableOpacity
               style={[
                 styles.avatarContainer,
-                { backgroundColor: colors.primary }, // Warna berbeda untuk admin/user
+                { backgroundColor: encryptionMode === 'encrypted' ? '#3B82F6' : '#10B981' }, // Biru untuk encrypted, hijau untuk plain
               ]}
               onPress={handleHiddenEncryptionToggle}
               activeOpacity={0.7}

@@ -195,13 +195,13 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                   <View style={styles.encryptionStep}>
                     <View style={styles.stepHeader}>
                       <Text style={[styles.stepLabel, { color: colors.gray700 }]}>
-                        {isEncrypted ? 'Hasil Enkripsi:' : 'Email (Plain Text):'}
+                        {isEncrypted ? 'Hasil Enkripsi:' : 'Email:'}
                       </Text>
                       <TouchableOpacity
                         style={[styles.copyButton, { backgroundColor: colors.primary }]}
                         onPress={() => copyToClipboard(
                           getCurrentQRValue() || '', 
-                          isEncrypted ? 'Hasil Enkripsi' : 'Email Plain Text'
+                          isEncrypted ? 'Hasil Enkripsi' : 'Email'
                         )}
                       >
                         <Ionicons name="copy-outline" size={14} color={colors.white} />
@@ -263,35 +263,16 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
               </View>
             )}
 
-            {/* Info: QR auto-refreshes */}
-            <View style={styles.autoRefreshInfo}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.gray500} />
-              <Text style={[styles.autoRefreshText, { color: colors.gray500 }]}>
-                QR Code otomatis diperbaharui setiap kali dibuka untuk keamanan
-              </Text>
-            </View>
+            {/* Info: QR auto-refreshes - only show for encrypted mode */}
+            {isEncrypted && (
+              <View style={styles.autoRefreshInfo}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.gray500} />
+                <Text style={[styles.autoRefreshText, { color: colors.gray500 }]}>
+                  QR Code otomatis diperbaharui setiap kali dibuka untuk keamanan
+                </Text>
+              </View>
+            )}
 
-            {/* Instructions */}
-            <View style={styles.instructionsContainer}>
-              <Text style={[styles.instructionsTitle, { color: colors.gray700 }]}>
-                Cara Penggunaan:
-              </Text>
-              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                1. Mode saat ini: {isEncrypted ? 'Terenkripsi' : 'Plain Text'}
-              </Text>
-              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                2. Mode QR Code dapat diubah dengan tap avatar profil
-              </Text>
-              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                3. Mode Terenkripsi: Untuk scanner ESP32 (lebih aman)
-              </Text>
-              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                4. Mode Plain Text: Untuk scanner umum (email saja)
-              </Text>
-              <Text style={[styles.instructionsText, { color: colors.gray500 }]}>
-                * QR terenkripsi berubah setiap kali di-generate untuk keamanan
-              </Text>
-            </View>
 
           </ScrollView>
         </View>
@@ -438,22 +419,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     flex: 1,
-    lineHeight: 16,
-  },
-  instructionsContainer: {
-    backgroundColor: "#f0f9ff",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  instructionsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  instructionsText: {
-    fontSize: 12,
-    marginBottom: 4,
     lineHeight: 16,
   },
 });
