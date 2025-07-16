@@ -16,20 +16,24 @@ import { lokerControlService } from "../../services/lokerControlService";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = null }) {
+function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = null, onUpdateStatus = null }) {
   const colors = getThemeByRole(isAdmin);
   const [loadingCommand, setLoadingCommand] = useState(null);
   const [lokerStatus, setLokerStatus] = useState(null);
   const [countdown, setCountdown] = useState(0);
   const [activeCommand, setActiveCommand] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   
   // Use resi number if provided, otherwise use userEmail
   const qrValue = resiData?.noResi || userEmail;
   const displayText = resiData?.noResi || userEmail;
-  const title = resiData ? "Kontrol Loker" : "Kode QR Saya";
-  const description = resiData ? "Kontrol loker untuk paket COD Anda" : "Tunjukkan kode QR ini untuk identifikasi";
+  const title = resiData ? (isArrivedPackage ? "Paket Sudah Tiba" : "Kontrol Loker") : "Kode QR Saya";
+  const description = resiData ? 
+    (isArrivedPackage ? "Kontrol loker untuk paket COD atau tandai sebagai sudah diambil" : "Kontrol loker untuk paket COD Anda") : 
+    "Tunjukkan kode QR ini untuk identifikasi";
   
   const isCODPackage = resiData?.tipePaket === "COD" && resiData?.nomorLoker;
+  const isArrivedPackage = resiData?.status === "Telah Tiba";
 
   // Subscribe to loker status for COD packages
   useEffect(() => {
@@ -74,6 +78,7 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = 
       setCountdown(0);
       setActiveCommand(null);
       setLoadingCommand(null);
+      setUpdatingStatus(false);
     }
   }, [visible]);
 
@@ -107,6 +112,47 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = 
     }
     
     setLoadingCommand(null);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!resiData?.id || !onUpdateStatus) return;
+    
+    Alert.alert(
+      "Konfirmasi",
+      "Apakah Anda yakin ingin mengubah status paket ini ke 'Sudah Diambil'?",
+      [
+        { text: "Batal", style: "cancel" },
+        { 
+          text: "Ya", 
+          onPress: async () => {
+            setUpdatingStatus(true);
+            try {
+              await onUpdateStatus(resiData.id, "Sudah Diambil");
+              Alert.alert(
+                "Berhasil",
+                "Status paket berhasil diubah ke 'Sudah Diambil'",
+                [
+                  { 
+                    text: "OK", 
+                    onPress: () => {
+                      onClose();
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              Alert.alert(
+                "Gagal",
+                "Gagal mengubah status paket. Silakan coba lagi.",
+                [{ text: "OK" }]
+              );
+            } finally {
+              setUpdatingStatus(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -259,6 +305,36 @@ function QRCodeModal({ visible, onClose, userEmail, isAdmin = false, resiData = 
               </Text>
             </View>
           )}
+
+          {/* Update Status Button for Arrived Packages */}
+          {isArrivedPackage && onUpdateStatus && (
+            <View style={styles.statusUpdateContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.statusUpdateButton,
+                  { backgroundColor: colors.primary },
+                  updatingStatus && { opacity: 0.7 }
+                ]}
+                onPress={handleUpdateStatus}
+                disabled={updatingStatus}
+              >
+                {updatingStatus ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-done" size={20} color={colors.white} />
+                    <Text style={[styles.buttonText, { color: colors.white }]}>
+                      Tandai Sudah Diambil
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              <Text style={[styles.statusUpdateText, { color: colors.gray500 }]}>
+                Gunakan tombol ini jika paket sudah diambil
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -397,6 +473,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: "center",
     fontStyle: "italic",
+  },
+  statusUpdateContainer: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e5e5",
+    alignItems: "center",
+  },
+  statusUpdateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: "100%",
+    gap: 8,
+  },
+  statusUpdateText: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 8,
   },
 });
 

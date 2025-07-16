@@ -423,6 +423,41 @@ function ListResi() {
   };
 
   /**
+   * Handler untuk single status update (dari QR Code modal)
+   * 
+   * @param {string} resiId - ID resi yang akan diupdate
+   * @param {string} newStatus - Status baru
+   */
+  const handleSingleStatusUpdate = async (resiId, newStatus) => {
+    if (!currentUser) {
+      showNotification("Anda harus login terlebih dahulu", "error");
+      return;
+    }
+
+    try {
+      // Cari resi untuk validasi ownership
+      const resi = resiList.find(r => r.id === resiId);
+      
+      // SECURITY: Hanya pemilik yang bisa update status
+      if (resi && resi.userId === currentUser.uid) {
+        const result = await resiService.updateResi(resiId, { status: newStatus });
+        
+        if (result.success) {
+          showNotification(`Status berhasil diubah ke "${newStatus}"`, "success");
+        } else {
+          throw new Error(result.error || "Gagal mengubah status");
+        }
+      } else {
+        throw new Error("Anda tidak memiliki akses untuk mengubah status resi ini");
+      }
+    } catch (error) {
+      console.error("Error in single status update:", error);
+      showNotification(`Gagal mengubah status: ${error.message}`, "error");
+      throw error; // Re-throw untuk handling di QRCodeModal
+    }
+  };
+
+  /**
    * Handler untuk bulk update status resi
    * 
    * @param {Array} resiIds - Array ID resi yang akan diupdate
@@ -758,6 +793,7 @@ function ListResi() {
         userEmail={selectedResiForQR?.noResi || ""}
         isAdmin={false}
         resiData={selectedResiForQR}
+        onUpdateStatus={handleSingleStatusUpdate}
       />
 
       <StatusUpdateModal
