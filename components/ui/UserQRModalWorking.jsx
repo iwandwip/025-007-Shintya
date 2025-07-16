@@ -19,11 +19,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from 'expo-clipboard';
 import { getThemeByRole } from "../../constants/Colors";
 import { encryptUserProfile, decryptQRCode } from "../../services/encryptionService";
+import { useSettings } from "../../contexts/SettingsContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 function UserQRModalWorking({ visible, onClose, userProfile }) {
   console.log('UserQRModalWorking rendered with:', { visible, userProfile: userProfile?.email });
+  
+  // Get encryption mode from settings
+  const { encryptionMode } = useSettings();
   
   // Simple state - no complex useEffect
   const [qrCode, setQrCode] = useState('');
@@ -32,12 +36,14 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
   const [generationCount, setGenerationCount] = useState(0);
   const [decryptedData, setDecryptedData] = useState(null);
   
-  // Toggle state untuk encrypted vs simple QR
-  const [isEncrypted, setIsEncrypted] = useState(true); // Default: encrypted QR
+  // Simple QR code state
   const [simpleQrCode, setSimpleQrCode] = useState(''); // Plain email QR
   
   // Safe theme
   const colors = getThemeByRole(userProfile?.role === 'admin');
+  
+  // Check if current mode is encrypted (default is now plain)
+  const isEncrypted = encryptionMode === 'encrypted';
   
   // Generate simple QR code (plain email)
   const generateSimpleQR = () => {
@@ -105,22 +111,6 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
     return currentValue && currentValue.length > 0 ? currentValue : null;
   };
   
-  // Toggle between encrypted and simple QR with validation
-  const toggleQRMode = () => {
-    const newMode = !isEncrypted;
-    const targetValue = newMode ? qrCode : simpleQrCode;
-    
-    console.log('toggleQRMode: Switching from', isEncrypted ? 'encrypted' : 'simple', 'to', newMode ? 'encrypted' : 'simple');
-    console.log('toggleQRMode: Target value available:', !!targetValue && targetValue.length > 0);
-    
-    if (!targetValue || targetValue.length === 0) {
-      Alert.alert('Error', 'QR Code belum tersedia untuk mode ini. Silakan tunggu...');
-      return;
-    }
-    
-    setIsEncrypted(newMode);
-  };
-  
   // Copy to clipboard function
   const copyToClipboard = async (text, label) => {
     try {
@@ -141,7 +131,7 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
       setDecryptedData(null);
       setGenerationCount(0);
       setSimpleQrCode('');
-      setIsEncrypted(true); // Default to encrypted
+      // No need to set isEncrypted, it's derived from settings
       
       // Generate both QR codes
       generateEncryptedQR(); // Generate encrypted QR
@@ -190,19 +180,15 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
             {/* QR Code Display */}
             {getCurrentQRValue() ? (
               <View style={styles.qrContainer}>
-                {/* Clickable QR Code */}
-                <TouchableOpacity
-                  style={[styles.qrWrapper, { backgroundColor: colors.white }]}
-                  onPress={toggleQRMode}
-                  activeOpacity={0.8}
-                >
+                {/* QR Code - no longer clickable */}
+                <View style={[styles.qrWrapper, { backgroundColor: colors.white }]}>
                   <QRCode
                     value={getCurrentQRValue()}
                     size={200}
                     color="#000000"
                     backgroundColor="#FFFFFF"
                   />
-                </TouchableOpacity>
+                </View>
                 
                 <View style={styles.qrInfo}>
                   {/* Current QR Code Value */}
@@ -291,13 +277,16 @@ function UserQRModalWorking({ visible, onClose, userProfile }) {
                 Cara Penggunaan:
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                1. Tap QR code untuk toggle antara mode Terenkripsi dan Plain Text
+                1. Mode saat ini: {isEncrypted ? 'Terenkripsi' : 'Plain Text'}
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                2. Gunakan mode Terenkripsi untuk scanner ESP32 (lebih aman)
+                2. Mode QR Code dapat diubah dengan tap avatar profil
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
-                3. Gunakan mode Plain Text untuk scanner umum (email saja)
+                3. Mode Terenkripsi: Untuk scanner ESP32 (lebih aman)
+              </Text>
+              <Text style={[styles.instructionsText, { color: colors.gray600 }]}>
+                4. Mode Plain Text: Untuk scanner umum (email saja)
               </Text>
               <Text style={[styles.instructionsText, { color: colors.gray500 }]}>
                 * QR terenkripsi berubah setiap kali di-generate untuk keamanan

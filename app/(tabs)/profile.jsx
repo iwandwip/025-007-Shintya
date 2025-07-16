@@ -34,11 +34,13 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useNotification } from "../../contexts/NotificationContext";
 import Button from "../../components/ui/Button";
 import UserQRModal from "../../components/ui/UserQRModal";
 import UserQRModalSimple from "../../components/ui/UserQRModalSimple";
@@ -55,7 +57,8 @@ import { getColors, getThemeByRole } from "../../constants/Colors";
 function Profile() {
   // Context dan hooks untuk autentikasi, tema, dan navigasi
   const { currentUser, userProfile, refreshProfile } = useAuth();
-  const { theme, loading: settingsLoading } = useSettings();
+  const { theme, encryptionMode, changeEncryptionMode, loading: settingsLoading } = useSettings();
+  const { showNotification } = useNotification();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
@@ -116,6 +119,22 @@ function Profile() {
     router.push("/(tabs)/edit-profile"); // Navigasi ke halaman edit (tab tersembunyi)
   };
 
+  /**
+   * Handler untuk hidden toggle encryption mode
+   * Dipanggil saat avatar profile di-tap
+   */
+  const handleHiddenEncryptionToggle = async () => {
+    const newMode = encryptionMode === 'encrypted' ? 'plain' : 'encrypted';
+    await changeEncryptionMode(newMode);
+    
+    // Show toast notification
+    const modeText = newMode === 'encrypted' ? 'Terenkripsi' : 'Plain Text';
+    showNotification(
+      `Mode QR Code: ${modeText}`,
+      'info'
+    );
+  };
+
 
   /**
    * Handler untuk menampilkan modal User QR Code (Dynamic)
@@ -172,17 +191,19 @@ function Profile() {
         <View style={styles.content}>
           {/* Seksi profil dengan avatar dan info dasar */}
           <View style={styles.profileSection}>
-            {/* Avatar dengan background warna sesuai role */}
-            <View
+            {/* Avatar dengan background warna sesuai role - tappable for hidden toggle */}
+            <TouchableOpacity
               style={[
                 styles.avatarContainer,
                 { backgroundColor: colors.primary }, // Warna berbeda untuk admin/user
               ]}
+              onPress={handleHiddenEncryptionToggle}
+              activeOpacity={0.7}
             >
               <Text style={[styles.avatarText, { color: colors.white }]}>
                 👤
               </Text>
-            </View>
+            </TouchableOpacity>
             {/* Nama pengguna */}
             <Text style={[styles.nameText, { color: colors.gray900 }]}>
               {userProfile?.nama || "Nama User"}

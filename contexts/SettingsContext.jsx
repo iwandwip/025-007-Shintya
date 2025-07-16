@@ -7,6 +7,7 @@
  * 
  * Fitur utama:
  * - Manajemen tema light/dark mode
+ * - Mode enkripsi QR Code (encrypted/plain)
  * - Persistensi pengaturan dengan AsyncStorage
  * - Loading state untuk proses inisialisasi
  * - Error handling untuk operasi storage
@@ -31,8 +32,10 @@ const SettingsContext = createContext();
  * 
  * @returns {Object} Context pengaturan dengan properties:
  *   - theme: String tema saat ini ('light' atau 'dark')
+ *   - encryptionMode: String mode enkripsi QR Code ('encrypted' atau 'plain')
  *   - loading: Boolean status loading saat inisialisasi
  *   - changeTheme: Function untuk mengubah tema
+ *   - changeEncryptionMode: Function untuk mengubah mode enkripsi
  */
 export const useSettings = () => {
   const context = useContext(SettingsContext);
@@ -40,9 +43,11 @@ export const useSettings = () => {
   // Jika hook dipanggil di luar SettingsProvider, return default values
   if (!context) {
     return {
-      theme: "light",     // Default ke tema light
-      loading: false,     // Tidak ada loading jika tidak ada context
-      changeTheme: () => {}, // Function kosong sebagai fallback
+      theme: "light",            // Default ke tema light
+      encryptionMode: "plain",   // Default ke mode plain
+      loading: false,            // Tidak ada loading jika tidak ada context
+      changeTheme: () => {},     // Function kosong sebagai fallback
+      changeEncryptionMode: () => {}, // Function kosong sebagai fallback
     };
   }
   return context;
@@ -60,6 +65,9 @@ export const useSettings = () => {
 export const SettingsProvider = ({ children }) => {
   // State untuk menyimpan tema saat ini ("light" atau "dark")
   const [theme, setTheme] = useState("light");
+  
+  // State untuk menyimpan mode enkripsi QR Code ("encrypted" atau "plain")
+  const [encryptionMode, setEncryptionMode] = useState("plain");
   
   // State loading untuk proses inisialisasi pengaturan dari AsyncStorage
   const [loading, setLoading] = useState(true);
@@ -80,11 +88,20 @@ export const SettingsProvider = ({ children }) => {
       if (savedTheme && (savedTheme === "light" || savedTheme === "dark")) {
         setTheme(savedTheme);
       }
+      
+      // Ambil mode enkripsi yang tersimpan dari AsyncStorage
+      const savedEncryptionMode = await AsyncStorage.getItem("encryption_mode");
+      
+      // Validasi nilai mode enkripsi yang valid ("encrypted" atau "plain")
+      if (savedEncryptionMode && (savedEncryptionMode === "encrypted" || savedEncryptionMode === "plain")) {
+        setEncryptionMode(savedEncryptionMode);
+      }
       // Jika tidak ada tema tersimpan atau nilai tidak valid, gunakan default "light"
     } catch (error) {
       // Error handling jika gagal membaca dari AsyncStorage
       console.error("Error loading settings:", error);
       setTheme("light"); // Fallback ke tema light
+      setEncryptionMode("plain"); // Fallback ke mode plain
     } finally {
       // Set loading selesai terlepas dari hasil operasi
       setLoading(false);
@@ -118,6 +135,32 @@ export const SettingsProvider = ({ children }) => {
   };
 
   /**
+   * Mengubah mode enkripsi QR Code dan menyimpannya secara persisten
+   * 
+   * Function ini akan mengupdate state mode enkripsi dan menyimpan pilihan
+   * ke AsyncStorage agar tetap tersimpan setelah aplikasi ditutup.
+   * 
+   * @param {string} newMode - Mode enkripsi baru ("encrypted" atau "plain")
+   */
+  const changeEncryptionMode = async (newMode) => {
+    try {
+      // Validasi mode enkripsi yang valid
+      if (newMode === "encrypted" || newMode === "plain") {
+        // Update state mode enkripsi untuk trigger re-render
+        setEncryptionMode(newMode);
+        
+        // Simpan pilihan mode enkripsi ke AsyncStorage untuk persistensi
+        await AsyncStorage.setItem("encryption_mode", newMode);
+      }
+      // Jika mode tidak valid, abaikan permintaan
+    } catch (error) {
+      // Error handling jika gagal menyimpan ke AsyncStorage
+      console.error("Error saving encryption mode:", error);
+      // Tetap update state meskipun gagal menyimpan ke storage
+    }
+  };
+
+  /**
    * useEffect untuk inisialisasi pengaturan
    * 
    * Memuat pengaturan tersimpan dari AsyncStorage saat komponen mount.
@@ -130,9 +173,11 @@ export const SettingsProvider = ({ children }) => {
 
   // Object value yang akan disediakan oleh context provider
   const value = {
-    theme: theme || "light", // Pastikan selalu ada nilai tema (fallback ke "light")
-    loading,                 // Status loading untuk proses inisialisasi
-    changeTheme,            // Function untuk mengubah tema
+    theme: theme || "light",                           // Pastikan selalu ada nilai tema (fallback ke "light")
+    encryptionMode: encryptionMode || "plain",         // Pastikan selalu ada nilai mode enkripsi (fallback ke "plain")
+    loading,                                           // Status loading untuk proses inisialisasi
+    changeTheme,                                      // Function untuk mengubah tema
+    changeEncryptionMode,                             // Function untuk mengubah mode enkripsi
   };
 
   // Return Provider component dengan value context
