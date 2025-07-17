@@ -458,6 +458,29 @@ function ListResi() {
   };
 
   /**
+   * Handler untuk konfirmasi status update untuk paket non-COD
+   * 
+   * @param {string} resiId - ID resi yang akan diupdate
+   */
+  const handleStatusUpdateConfirmation = (resiId) => {
+    Alert.alert(
+      "Konfirmasi",
+      "Apakah Anda yakin paket ini sudah diambil?",
+      [
+        {
+          text: "Batal",
+          style: "cancel"
+        },
+        {
+          text: "Ya, Sudah Diambil",
+          style: "default",
+          onPress: () => handleSingleStatusUpdate(resiId, "Sudah Diambil")
+        }
+      ]
+    );
+  };
+
+  /**
    * Handler untuk bulk update status resi
    * 
    * @param {Array} resiIds - Array ID resi yang akan diupdate
@@ -617,6 +640,19 @@ function ListResi() {
                 Tap untuk kontrol loker
               </Text>
             </View>
+          )}
+          
+          {/* Tombol Tandai Sudah Diambil - Untuk semua paket yang telah tiba */}
+          {isOwner && item.status === 'Telah Tiba' && (
+            <TouchableOpacity
+              style={[styles.statusUpdateButton, { backgroundColor: colors.success }]}
+              onPress={() => handleStatusUpdateConfirmation(item.id)}
+            >
+              <Ionicons name="checkmark-circle-outline" size={16} color={colors.white} />
+              <Text style={[styles.statusUpdateButtonText, { color: colors.white }]}>
+                Tandai Sudah Diambil
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </CardComponent>
@@ -1011,6 +1047,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 4,
+  },
+  statusUpdateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 6,
+  },
+  statusUpdateButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 

@@ -357,7 +357,7 @@ function Profile() {
 
             {/* Tombol QR Code dinamis (Enhanced Security) */}
             <Button
-              title="QR Code Saya"
+              title="Kode Saya"
               onPress={handleShowUserQR}
               variant="outline"
               style={[styles.userQrButton, { borderColor: colors.primary }]}
