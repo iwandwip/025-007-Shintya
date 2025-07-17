@@ -188,19 +188,21 @@ services/
   - `completePairing(rfidCode)` - Complete pairing process
 
 ### lokerControlService.js
-- **Purpose**: Remote loker control (open/close commands)
+- **Purpose**: Remote loker control (open/close commands) with RTDB mirroring
 - **Key Features**:
   - Remote loker commands (buka/tutup)
   - 10-second auto-reset functionality
   - 5 loker system (maximum 5 COD packages)
-  - Real-time status monitoring
+  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
+  - **Write operations sync** to both Firestore and RTDB
+  - Real-time status monitoring from Firestore
   - Conflict resolution and priority management
 - **Key Functions**:
-  - `openLoker(lokerNumber)` - Send open command
-  - `closeLoker(lokerNumber)` - Send close command
-  - `resetLokerControl(lokerNumber)` - Reset loker state
-  - `getLokerStatus(lokerNumber)` - Get loker status
-  - `subscribeToLokerStatus(callback)` - Monitor loker status
+  - `sendLokerCommand(nomorLoker, command)` - Send command (writes to both databases)
+  - `openLoker(nomorLoker)` - Send open command
+  - `closeLoker(nomorLoker)` - Send close command
+  - `subscribeToLokerStatus(nomorLoker, callback)` - Monitor loker status from Firestore
+  - `subscribeToAllLokers(callback)` - Monitor all lokers from Firestore
 
 ### scannerModeService.js
 - **Purpose**: ESP32 scanner mode management

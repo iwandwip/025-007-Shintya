@@ -1,4 +1,4 @@
-import { db } from "./firebase";
+import { db, realtimeDb } from "./firebase";
 import {
   collection,
   doc,
@@ -6,8 +6,15 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
+import {
+  ref,
+  set,
+  onValue,
+  off,
+} from "firebase/database";
 
 const COLLECTION_NAME = "lokerControl";
+const RTDB_PATH = "lokerControl";
 
 export const lokerControlService = {
   async sendLokerCommand(nomorLoker, command) {
@@ -22,7 +29,20 @@ export const lokerControlService = {
         nomorLoker: nomorLoker,
       };
       
+      // Simpan ke Firestore
       await setDoc(docRef, commandData, { merge: true });
+      
+      // Mirror ke RTDB dengan timestamp yang consistent
+      const rtdbCommandData = {
+        buka: command === "buka" ? 1 : 0,
+        tutup: command === "tutup" ? 1 : 0,
+        timestamp: Date.now(),
+        lastCommand: command,
+        nomorLoker: nomorLoker,
+      };
+      
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/loker_${nomorLoker}`);
+      await set(rtdbRef, rtdbCommandData);
       
       // Auto-reset after 10 seconds
       setTimeout(async () => {
@@ -33,7 +53,19 @@ export const lokerControlService = {
             timestamp: serverTimestamp(),
             lastCommand: "reset",
           };
+          
+          // Reset di Firestore
           await setDoc(docRef, resetData, { merge: true });
+          
+          // Mirror reset ke RTDB
+          const rtdbResetData = {
+            buka: 0,
+            tutup: 0,
+            timestamp: Date.now(),
+            lastCommand: "reset",
+          };
+          
+          await set(rtdbRef, rtdbResetData);
         } catch (error) {
           console.error("Error resetting loker command:", error);
         }
