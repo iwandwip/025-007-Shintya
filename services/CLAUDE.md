@@ -87,20 +87,27 @@ services/
 ## Package Management Services
 
 ### resiService.js
-- **Purpose**: Package receipt CRUD operations and COD management
+- **Purpose**: Package receipt CRUD operations and COD management with RTDB mirroring
 - **Key Features**:
   - Package lifecycle management
   - COD support with automatic loker assignment
   - Status tracking (Sedang Dikirim → Telah Tiba → Sudah Diambil)
-  - Real-time data synchronization
+  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
+  - **Firestore remains primary** for all read operations
+  - **Write operations sync** to both Firestore and RTDB
+  - Real-time data synchronization from Firestore
   - Activity logging for all operations
 - **Key Functions**:
-  - `createResi(resiData)` - Create new package
-  - `getAllResi()` - Get all packages with real-time updates
-  - `updateResi(resiId, updateData)` - Update package details
-  - `deleteResi(resiId)` - Delete package
-  - `subscribeToResiList(callback)` - Real-time package subscription
-  - `getOccupiedLokers()` - Check occupied loker numbers
+  - `addResi(resiData)` - Create new package (writes to both databases)
+  - `getResiList()` - Get all packages from Firestore
+  - `updateResi(resiId, updateData)` - Update package details (syncs both databases)
+  - `deleteResi(resiId)` - Delete package (removes from both databases)
+  - `subscribeToResiList(callback)` - Real-time package subscription from Firestore
+  - `getOccupiedLokers()` - Check occupied loker numbers from Firestore
+  - `getUserResiCount(userId)` - Get user package count from Firestore
+  - `getUserPackageStats(userId)` - Get user statistics from Firestore
+  - `subscribeToUserPackageStats(userId, callback)` - Real-time stats from Firestore
+  - `subscribeToOccupiedLokers(callback)` - Real-time loker monitoring from Firestore
 
 ### userPackageService.js
 - **Purpose**: Timeline-based package management with caching
@@ -245,8 +252,11 @@ services/
 ## Integration Patterns
 
 ### Firebase Integration
-- **Firestore**: Primary database for structured data
-- **Realtime Database**: Hardware communication and real-time updates
+- **Firestore**: Primary database for all structured data and read operations
+- **Realtime Database**: Hardware communication, real-time updates, and data mirroring
+- **RTDB Mirroring Architecture**: Automatic data mirroring from Firestore to RTDB for backup
+- **Firestore Primary**: All read operations performed on Firestore only
+- **Write Synchronization**: All write operations performed on both databases
 - **Authentication**: User management with AsyncStorage persistence
 - **Batch Operations**: Atomic transactions for data consistency
 

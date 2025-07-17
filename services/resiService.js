@@ -30,7 +30,7 @@
  * @version 1.0.0
  */
 
-import { db } from "./firebase";
+import { db, realtimeDb } from "./firebase";
 import {
   collection,
   addDoc,
@@ -45,10 +45,25 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
+import {
+  ref,
+  set,
+  push,
+  get,
+  remove,
+  update,
+  orderByChild,
+  query as rtdbQuery,
+  onValue,
+  off,
+} from "firebase/database";
 import { activityService } from "./activityService";
 
 // Nama collection di Firestore untuk menyimpan data resi/paket
 const COLLECTION_NAME = "receipts";
+
+// Path untuk RTDB mirroring data resi/paket
+const RTDB_PATH = "receipts";
 
 export const resiService = {
   /**
@@ -80,13 +95,29 @@ export const resiService = {
    */
   async addResi(resiData) {
     try {
-      // Tambahkan resi ke Firestore dengan metadata otomatis
-      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      // Siapkan data dengan metadata
+      const dataToAdd = {
         ...resiData,
         status: "Sedang Dikirim", // Default status untuk paket baru
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+      
+      // Tambahkan resi ke Firestore dengan metadata otomatis
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToAdd);
+      
+      // Mirror data ke RTDB dengan timestamp yang consistent
+      const rtdbData = {
+        ...resiData,
+        status: "Sedang Dikirim",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        firestoreId: docRef.id // Reference ke document Firestore
+      };
+      
+      // Simpan ke RTDB menggunakan Firestore document ID sebagai key
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${docRef.id}`);
+      await set(rtdbRef, rtdbData);
       
       // Log aktivitas penambahan paket untuk audit trail
       await activityService.trackPackageAdded(
@@ -301,7 +332,17 @@ export const resiService = {
         updatedAt: serverTimestamp(),  // Timestamp update untuk audit
       };
       
+      // Update di Firestore
       await updateDoc(resiRef, updateData);
+      
+      // Mirror update ke RTDB
+      const rtdbUpdateData = {
+        ...resiData,
+        updatedAt: Date.now(),
+      };
+      
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${resiId}`);
+      await update(rtdbRef, rtdbUpdateData);
       
       // Log aktivitas jika ada perubahan status
       if (resiData.status && currentData.status !== resiData.status) {
@@ -345,6 +386,11 @@ export const resiService = {
     try {
       // Hapus dokumen resi secara permanen dari Firestore
       await deleteDoc(doc(db, COLLECTION_NAME, resiId));
+      
+      // Mirror deletion ke RTDB
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${resiId}`);
+      await remove(rtdbRef);
+      
       return { success: true };
     } catch (error) {
       console.error("Error deleting resi:", error);
