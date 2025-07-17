@@ -36,7 +36,17 @@ import {
   query, 
   where 
 } from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  ref,
+  set,
+  update,
+  remove,
+  get
+} from 'firebase/database';
+import { db, realtimeDb } from './firebase';
+
+// Path untuk RTDB mirroring data users
+const RTDB_PATH = 'users';
 
 /**
  * Fungsi untuk membuat profil user baru di Firestore
@@ -100,7 +110,18 @@ export const createUserProfile = async (uid, profileData) => {
 
     // Simpan profil ke Firestore collection 'users'
     await setDoc(doc(db, 'users', uid), userProfile);
-    console.log('Profil user berhasil dibuat');
+    
+    // Mirror ke RTDB dengan timestamp yang consistent
+    const rtdbUserProfile = {
+      ...userProfile,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${uid}`);
+    await set(rtdbRef, rtdbUserProfile);
+    
+    console.log('Profil user berhasil dibuat dan dimirror ke RTDB');
     return { success: true, profile: userProfile };
   } catch (error) {
     console.error('Error membuat profil user:', error);
@@ -207,8 +228,17 @@ export const updateUserProfile = async (uid, updates) => {
     // Update dokumen user di Firestore
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, updateData);
+    
+    // Mirror update ke RTDB
+    const rtdbUpdateData = {
+      ...updates,
+      updatedAt: Date.now()
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${uid}`);
+    await update(rtdbRef, rtdbUpdateData);
 
-    console.log('Profil user berhasil diupdate');
+    console.log('Profil user berhasil diupdate dan dimirror ke RTDB');
     return { success: true };
   } catch (error) {
     console.error('Error update profil user:', error);
@@ -308,14 +338,25 @@ export const updateUserRFID = async (userId, rfidCode) => {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    // Update kode RFID user dengan timestamp
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    const updateData = {
       rfidCode: rfidCode,    // Kode RFID 8 karakter hex
       updatedAt: new Date()  // Timestamp untuk audit trail
-    });
+    };
 
-    console.log('RFID user berhasil diupdate');
+    // Update kode RFID user dengan timestamp
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, updateData);
+    
+    // Mirror update ke RTDB
+    const rtdbUpdateData = {
+      rfidCode: rfidCode,
+      updatedAt: Date.now()
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
+    await update(rtdbRef, rtdbUpdateData);
+
+    console.log('RFID user berhasil diupdate dan dimirror ke RTDB');
     return { success: true };
   } catch (error) {
     console.error('Error update RFID user:', error);
@@ -350,14 +391,25 @@ export const deleteUserRFID = async (userId) => {
       throw new Error('Firestore belum diinisialisasi');
     }
 
-    // Hapus kode RFID user (set ke null)
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    const updateData = {
       rfidCode: null,        // Hapus kode RFID
       updatedAt: new Date()  // Timestamp untuk audit trail
-    });
+    };
 
-    console.log('RFID user berhasil dihapus');
+    // Hapus kode RFID user (set ke null)
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, updateData);
+    
+    // Mirror update ke RTDB
+    const rtdbUpdateData = {
+      rfidCode: null,
+      updatedAt: Date.now()
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
+    await update(rtdbRef, rtdbUpdateData);
+
+    console.log('RFID user berhasil dihapus dan dimirror ke RTDB');
     return { success: true };
   } catch (error) {
     console.error('Error menghapus RFID user:', error);
@@ -411,14 +463,18 @@ export const deleteUser = async (userId) => {
       throw new Error('User sudah dihapus sebelumnya');
     }
 
-    // Hapus dokumen user secara permanen
+    // Hapus dokumen user secara permanen dari Firestore
     await deleteDoc(userRef);
+    
+    // Mirror deletion ke RTDB
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
+    await remove(rtdbRef);
 
-    console.log('Data user berhasil dihapus dari Firestore');
+    console.log('Data user berhasil dihapus dari Firestore dan RTDB');
 
     return { 
       success: true, 
-      message: 'Data user berhasil dihapus dari Firestore. Akun login tetap ada di sistem tapi tidak bisa digunakan.'
+      message: 'Data user berhasil dihapus dari Firestore dan RTDB. Akun login tetap ada di sistem tapi tidak bisa digunakan.'
     };
   } catch (error) {
     console.error('Error menghapus user:', error);
@@ -465,17 +521,32 @@ export const restoreUser = async (userId) => {
       throw new Error('Data user tidak ditemukan');
     }
 
-    // Update status user menjadi aktif kembali
-    await updateDoc(userRef, {
+    const updateData = {
       deleted: false,              // Aktifkan kembali user
       deletedAt: null,             // Hapus timestamp penghapusan
       deletedBy: null,             // Hapus info penghapus
       restoredAt: new Date(),      // Timestamp pemulihan
       restoredBy: 'admin',         // Info yang memulihkan
       updatedAt: new Date()        // Timestamp update
-    });
+    };
 
-    console.log('Data user berhasil dipulihkan');
+    // Update status user menjadi aktif kembali
+    await updateDoc(userRef, updateData);
+    
+    // Mirror restore ke RTDB
+    const rtdbUpdateData = {
+      deleted: false,
+      deletedAt: null,
+      deletedBy: null,
+      restoredAt: Date.now(),
+      restoredBy: 'admin',
+      updatedAt: Date.now()
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
+    await update(rtdbRef, rtdbUpdateData);
+
+    console.log('Data user berhasil dipulihkan dan dimirror ke RTDB');
     return { success: true };
   } catch (error) {
     console.error('Error memulihkan user:', error);

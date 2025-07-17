@@ -55,19 +55,25 @@ services/
   - `handleAuthError(error)` - Comprehensive error handling
 
 ### userService.js
-- **Purpose**: User profile and RFID management
+- **Purpose**: User profile and RFID management with RTDB mirroring
 - **Key Features**:
   - User profile CRUD operations
   - RFID code management
   - Role-based access control
   - Soft delete system
+  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
+  - **Write operations sync** to both Firestore and RTDB
   - Activity tracking integration
 - **Key Functions**:
-  - `getUserProfile(userId)` - Get user profile
-  - `updateUserProfile(userId, profileData)` - Update profile
-  - `updateUserRfid(userId, rfidCode)` - RFID code assignment
-  - `deleteUser(userId)` - Soft delete user
-  - `getAllUsers()` - Admin function for user management
+  - `createUserProfile(uid, profileData)` - Create user profile (writes to both databases)
+  - `getUserProfile(userId)` - Get user profile from Firestore
+  - `updateUserProfile(userId, profileData)` - Update profile (syncs both databases)
+  - `updateUserRFID(userId, rfidCode)` - RFID code assignment (syncs both databases)
+  - `deleteUserRFID(userId)` - Remove RFID code (syncs both databases)
+  - `deleteUser(userId)` - Delete user (removes from both databases)
+  - `restoreUser(userId)` - Restore user (syncs both databases)
+  - `getAllUsers()` - Admin function for user management from Firestore
+  - `getDeletedUsers()` - Get soft-deleted users from Firestore
 
 ### encryptionService.js
 - **Purpose**: QR code encryption and scanner mode management
