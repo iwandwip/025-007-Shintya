@@ -58,12 +58,13 @@ import {
   off,
 } from "firebase/database";
 import { activityService } from "./activityService";
+import { sequenceService } from './sequenceService';
 
 // Nama collection di Firestore untuk menyimpan data resi/paket
 const COLLECTION_NAME = "receipts";
 
 // Path untuk RTDB mirroring data resi/paket
-const RTDB_PATH = "receipts";
+const RTDB_PATH = "original/receipts";
 
 export const resiService = {
   /**
@@ -115,9 +116,12 @@ export const resiService = {
         firestoreId: docRef.id // Reference ke document Firestore
       };
       
-      // Simpan ke RTDB menggunakan Firestore document ID sebagai key
+      // Mirror to original RTDB path
       const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${docRef.id}`);
       await set(rtdbRef, rtdbData);
+      
+      // Mirror to sequence path dengan sequential ID
+      await sequenceService.addWithSequentialId('receipts', docRef.id, resiData);
       
       // Log aktivitas penambahan paket untuk audit trail
       await activityService.trackPackageAdded(
@@ -335,7 +339,7 @@ export const resiService = {
       // Update di Firestore
       await updateDoc(resiRef, updateData);
       
-      // Mirror update ke RTDB
+      // Mirror update to original RTDB path
       const rtdbUpdateData = {
         ...resiData,
         updatedAt: Date.now(),
@@ -343,6 +347,9 @@ export const resiService = {
       
       const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${resiId}`);
       await update(rtdbRef, rtdbUpdateData);
+      
+      // Mirror update to sequence path
+      await sequenceService.updateByFirebaseId('receipts', resiId, resiData);
       
       // Log aktivitas jika ada perubahan status
       if (resiData.status && currentData.status !== resiData.status) {
@@ -387,9 +394,12 @@ export const resiService = {
       // Hapus dokumen resi secara permanen dari Firestore
       await deleteDoc(doc(db, COLLECTION_NAME, resiId));
       
-      // Mirror deletion ke RTDB
+      // Mirror deletion to original RTDB path
       const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${resiId}`);
       await remove(rtdbRef);
+      
+      // Mirror deletion to sequence path
+      await sequenceService.deleteByFirebaseId('receipts', resiId);
       
       return { success: true };
     } catch (error) {

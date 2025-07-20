@@ -19,6 +19,7 @@ services/
 ├── lokerControlService.js      # Remote loker control
 ├── scannerModeService.js       # ESP32 scanner mode management
 ├── activityService.js          # User activity logging and audit trail
+├── sequenceService.js          # Sequential ID management for ESP32
 └── seederService.js            # Test data generation for development
 ```
 
@@ -55,23 +56,24 @@ services/
   - `handleAuthError(error)` - Comprehensive error handling
 
 ### userService.js
-- **Purpose**: User profile and RFID management with RTDB mirroring
+- **Purpose**: User profile and RFID management with dual RTDB mirroring
 - **Key Features**:
   - User profile CRUD operations
   - RFID code management
   - Role-based access control
   - Soft delete system
-  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
-  - **Write operations sync** to both Firestore and RTDB
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Activity tracking integration
 - **Key Functions**:
-  - `createUserProfile(uid, profileData)` - Create user profile (writes to both databases)
+  - `createUserProfile(uid, profileData)` - Create user profile (writes to both databases + sequence)
   - `getUserProfile(userId)` - Get user profile from Firestore
-  - `updateUserProfile(userId, profileData)` - Update profile (syncs both databases)
-  - `updateUserRFID(userId, rfidCode)` - RFID code assignment (syncs both databases)
-  - `deleteUserRFID(userId)` - Remove RFID code (syncs both databases)
-  - `deleteUser(userId)` - Delete user (removes from both databases)
-  - `restoreUser(userId)` - Restore user (syncs both databases)
+  - `updateUserProfile(userId, profileData)` - Update profile (syncs all three paths)
+  - `updateUserRFID(userId, rfidCode)` - RFID code assignment (syncs all three paths)
+  - `deleteUserRFID(userId)` - Remove RFID code (syncs all three paths)
+  - `deleteUser(userId)` - Delete user (removes from all three paths)
+  - `restoreUser(userId)` - Restore user (syncs all three paths)
   - `getAllUsers()` - Admin function for user management from Firestore
   - `getDeletedUsers()` - Get soft-deleted users from Firestore
 
@@ -93,21 +95,22 @@ services/
 ## Package Management Services
 
 ### resiService.js
-- **Purpose**: Package receipt CRUD operations and COD management with RTDB mirroring
+- **Purpose**: Package receipt CRUD operations and COD management with dual RTDB mirroring
 - **Key Features**:
   - Package lifecycle management
   - COD support with automatic loker assignment
   - Status tracking (Sedang Dikirim → Telah Tiba → Sudah Diambil)
-  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
   - **Firestore remains primary** for all read operations
-  - **Write operations sync** to both Firestore and RTDB
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Real-time data synchronization from Firestore
   - Activity logging for all operations
 - **Key Functions**:
-  - `addResi(resiData)` - Create new package (writes to both databases)
+  - `addResi(resiData)` - Create new package (writes to both databases + sequence)
   - `getResiList()` - Get all packages from Firestore
-  - `updateResi(resiId, updateData)` - Update package details (syncs both databases)
-  - `deleteResi(resiId)` - Delete package (removes from both databases)
+  - `updateResi(resiId, updateData)` - Update package details (syncs all three paths)
+  - `deleteResi(resiId)` - Delete package (removes from all three paths)
   - `subscribeToResiList(callback)` - Real-time package subscription from Firestore
   - `getOccupiedLokers()` - Check occupied loker numbers from Firestore
   - `getUserResiCount(userId)` - Get user package count from Firestore
@@ -194,17 +197,18 @@ services/
   - `completePairing(rfidCode)` - Complete pairing process
 
 ### lokerControlService.js
-- **Purpose**: Remote loker control (open/close commands) with RTDB mirroring
+- **Purpose**: Remote loker control (open/close commands) with dual RTDB mirroring
 - **Key Features**:
   - Remote loker commands (buka/tutup)
   - 10-second auto-reset functionality
   - 5 loker system (maximum 5 COD packages)
-  - **RTDB Data Mirroring** (Firestore primary, RTDB as mirror copy)
-  - **Write operations sync** to both Firestore and RTDB
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Real-time status monitoring from Firestore
   - Conflict resolution and priority management
 - **Key Functions**:
-  - `sendLokerCommand(nomorLoker, command)` - Send command (writes to both databases)
+  - `sendLokerCommand(nomorLoker, command)` - Send command (writes to both databases + sequence)
   - `openLoker(nomorLoker)` - Send open command
   - `closeLoker(nomorLoker)` - Send close command
   - `subscribeToLokerStatus(nomorLoker, callback)` - Monitor loker status from Firestore
@@ -242,6 +246,24 @@ services/
   - `subscribeToActivities(callback)` - Real-time activity updates
   - `deleteOldActivities()` - Cleanup old activities
 
+### sequenceService.js
+- **Purpose**: Sequential ID management for ESP32 compatibility
+- **Key Features**:
+  - Sequential ID generation (1, 2, 3) for predictable ESP32 access
+  - Atomic ID increment using Firebase transactions
+  - Mapping between Firebase IDs and sequential IDs
+  - Meta information tracking (count, lastId)
+  - ESP32-optimized utility functions
+- **Key Functions**:
+  - `generateSequentialId(collectionName)` - Generate new sequential ID
+  - `addWithSequentialId(collection, firebaseId, data)` - Add with sequence ID
+  - `updateByFirebaseId(collection, firebaseId, updates)` - Update by Firebase ID
+  - `deleteByFirebaseId(collection, firebaseId)` - Delete by Firebase ID
+  - `getSequentialIdByFirebaseId(collection, firebaseId)` - Get sequence ID
+  - `getFirebaseIdBySequentialId(collection, sequenceId)` - Get Firebase ID
+  - `findUserByRfid(rfidCode)` - ESP32 utility: find user by RFID
+  - `getPackagesByLoker(lokerNumber)` - ESP32 utility: get packages by loker
+
 ### seederService.js
 - **Purpose**: Test data generation for development
 - **Key Features**:
@@ -261,10 +283,14 @@ services/
 
 ### Firebase Integration
 - **Firestore**: Primary database for all structured data and read operations
-- **Realtime Database**: Hardware communication, real-time updates, and data mirroring
-- **RTDB Mirroring Architecture**: Automatic data mirroring from Firestore to RTDB for backup
+- **Realtime Database**: Hardware communication, real-time updates, and dual path mirroring
+- **Dual RTDB Mirroring Architecture**: 
+  - Original paths: `original/receipts/`, `original/users/`, `original/lokerControl/` (app compatibility)
+  - Sequence paths: `sequence/receipts/1,2,3`, `sequence/users/1,2,3`, etc. (ESP32 compatibility)
+  - Mapping paths: `mapping/collection/firebaseId → sequentialId`
 - **Firestore Primary**: All read operations performed on Firestore only
-- **Write Synchronization**: All write operations performed on both databases
+- **Triple Write Synchronization**: All write operations performed on Firestore + 2 RTDB paths
+- **Sequential ID Management**: Atomic increment for collision-free ESP32 IDs
 - **Authentication**: User management with AsyncStorage persistence
 - **Batch Operations**: Atomic transactions for data consistency
 

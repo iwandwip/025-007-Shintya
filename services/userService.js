@@ -44,9 +44,10 @@ import {
   get
 } from 'firebase/database';
 import { db, realtimeDb } from './firebase';
+import { sequenceService } from './sequenceService';
 
 // Path untuk RTDB mirroring data users
-const RTDB_PATH = 'users';
+const RTDB_PATH = 'original/users';
 
 /**
  * Fungsi untuk membuat profil user baru di Firestore
@@ -111,7 +112,7 @@ export const createUserProfile = async (uid, profileData) => {
     // Simpan profil ke Firestore collection 'users'
     await setDoc(doc(db, 'users', uid), userProfile);
     
-    // Mirror ke RTDB dengan timestamp yang consistent
+    // Mirror to original RTDB path
     const rtdbUserProfile = {
       ...userProfile,
       createdAt: Date.now(),
@@ -120,6 +121,9 @@ export const createUserProfile = async (uid, profileData) => {
     
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${uid}`);
     await set(rtdbRef, rtdbUserProfile);
+    
+    // Mirror to sequence path dengan sequential ID
+    await sequenceService.addWithSequentialId('users', uid, userProfile);
     
     console.log('Profil user berhasil dibuat dan dimirror ke RTDB');
     return { success: true, profile: userProfile };
@@ -229,7 +233,7 @@ export const updateUserProfile = async (uid, updates) => {
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, updateData);
     
-    // Mirror update ke RTDB
+    // Mirror update to original RTDB path
     const rtdbUpdateData = {
       ...updates,
       updatedAt: Date.now()
@@ -237,6 +241,9 @@ export const updateUserProfile = async (uid, updates) => {
     
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${uid}`);
     await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('users', uid, updates);
 
     console.log('Profil user berhasil diupdate dan dimirror ke RTDB');
     return { success: true };
@@ -355,6 +362,9 @@ export const updateUserRFID = async (userId, rfidCode) => {
     
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
     await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('users', userId, updateData);
 
     console.log('RFID user berhasil diupdate dan dimirror ke RTDB');
     return { success: true };
@@ -408,6 +418,9 @@ export const deleteUserRFID = async (userId) => {
     
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
     await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('users', userId, updateData);
 
     console.log('RFID user berhasil dihapus dan dimirror ke RTDB');
     return { success: true };
@@ -469,6 +482,9 @@ export const deleteUser = async (userId) => {
     // Mirror deletion ke RTDB
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
     await remove(rtdbRef);
+    
+    // Mirror deletion to sequence path
+    await sequenceService.deleteByFirebaseId('users', userId);
 
     console.log('Data user berhasil dihapus dari Firestore dan RTDB');
 
@@ -545,6 +561,9 @@ export const restoreUser = async (userId) => {
     
     const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
     await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror restore to sequence path
+    await sequenceService.updateByFirebaseId('users', userId, updateData);
 
     console.log('Data user berhasil dipulihkan dan dimirror ke RTDB');
     return { success: true };

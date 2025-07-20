@@ -1,15 +1,19 @@
 /**
- * MIGRATION SCRIPT WITH AUTHENTICATION - Firestore to RTDB Data Migration
+ * MIGRATION SCRIPT WITH AUTHENTICATION - Firestore to RTDB Dual Mirroring Migration
  * 
  * Script untuk mengcopy semua data dari Firestore ke Realtime Database (RTDB)
- * dengan dukungan authentication menggunakan admin credentials.
+ * dengan dukungan dual mirroring dan authentication menggunakan admin credentials.
  * 
  * IMPORTANT: Script ini memerlukan login terlebih dahulu atau service account
  * 
  * Collections yang akan dimigrate:
- * - receipts (Package receipts)
- * - users (User profiles)  
- * - lokerControl (Loker control commands)
+ * - receipts (Package receipts) → receipts/ dan sequence/receipts/
+ * - users (User profiles) → users/ dan sequence/users/
+ * - lokerControl (Loker control commands) → lokerControl/ dan sequence/lokerControl/
+ * 
+ * Dual Mirroring:
+ * - Original path: collection/firebaseId (untuk app compatibility)
+ * - Sequence path: sequence/collection/1,2,3 (untuk ESP32 compatibility)
  * 
  * Cara menjalankan:
  * 1. Login ke Firebase terlebih dahulu di browser
@@ -22,7 +26,7 @@
  * 3. node scripts/migrateWithAuth.js
  * 
  * @author Shintya Package Delivery System
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // Import Firebase modules
@@ -37,6 +41,8 @@ const {
   getDatabase, 
   ref, 
   set,
+  get,
+  runTransaction,
   connectDatabaseEmulator 
 } = require('firebase/database');
 const { 
@@ -71,20 +77,24 @@ const CONFIG = {
   ADMIN_EMAIL: "admin@gmail.com",  // Email admin untuk login
   ADMIN_PASSWORD: "admin123",      // Password admin yang benar
   USE_ANONYMOUS_AUTH: false,       // Set true untuk anonymous auth
+  ENABLE_DUAL_MIRRORING: true,     // Enable dual mirroring (original + sequence paths)
   COLLECTIONS_TO_MIGRATE: [
     { 
       firestore: 'receipts', 
-      rtdb: 'receipts',
+      rtdb: 'original/receipts',
+      sequence: 'receipts',
       description: 'Package receipts and tracking data'
     },
     { 
       firestore: 'users', 
-      rtdb: 'users',
+      rtdb: 'original/users',
+      sequence: 'users',
       description: 'User profiles and RFID data'
     },
     { 
       firestore: 'lokerControl', 
-      rtdb: 'lokerControl',
+      rtdb: 'original/lokerControl',
+      sequence: 'lokerControl',
       description: 'Loker control commands and status'
     }
   ]
@@ -117,6 +127,50 @@ function convertTimestamp(firestoreData) {
  */
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Generate sequential ID untuk collection
+ */
+async function generateSequentialId(collectionName) {
+  try {
+    const metaRef = ref(realtimeDb, `sequence/${collectionName}/meta/lastId`);
+    
+    // Atomic increment untuk avoid collision
+    const result = await runTransaction(metaRef, (currentValue) => {
+      return (currentValue || 0) + 1;
+    });
+    
+    if (result.committed) {
+      // Update count juga
+      const countRef = ref(realtimeDb, `sequence/${collectionName}/meta/count`);
+      await set(countRef, result.snapshot.val());
+      
+      return result.snapshot.val();
+    } else {
+      throw new Error('Failed to generate sequential ID');
+    }
+  } catch (error) {
+    console.error(`Error generating sequential ID for ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Initialize sequence meta untuk collection
+ */
+async function initializeSequenceMeta(collectionName) {
+  try {
+    const metaRef = ref(realtimeDb, `sequence/${collectionName}/meta`);
+    const snapshot = await get(metaRef);
+    
+    if (!snapshot.exists()) {
+      await set(metaRef, { count: 0, lastId: 0 });
+      console.log(`   ✅ Initialized sequence meta for ${collectionName}`);
+    }
+  } catch (error) {
+    console.warn(`   ⚠️  Failed to initialize sequence meta for ${collectionName}:`, error.message);
+  }
 }
 
 /**
@@ -164,13 +218,22 @@ async function authenticateUser() {
 }
 
 /**
- * Fungsi utama untuk migrate satu collection
+ * Fungsi utama untuk migrate satu collection dengan dual mirroring
  */
 async function migrateCollection(collectionConfig) {
   console.log(`\n🔄 Migrating ${collectionConfig.firestore} → ${collectionConfig.rtdb}`);
   console.log(`📝 ${collectionConfig.description}`);
   
+  if (CONFIG.ENABLE_DUAL_MIRRORING) {
+    console.log(`🔀 Dual mirroring enabled: sequence/${collectionConfig.sequence}/`);
+  }
+  
   try {
+    // Initialize sequence meta jika dual mirroring enabled
+    if (CONFIG.ENABLE_DUAL_MIRRORING && !CONFIG.DRY_RUN) {
+      await initializeSequenceMeta(collectionConfig.sequence);
+    }
+    
     // Get semua dokumen dari Firestore collection
     console.log(`📊 Fetching data from Firestore collection: ${collectionConfig.firestore}...`);
     const firestoreRef = collection(db, collectionConfig.firestore);
@@ -211,11 +274,37 @@ async function migrateCollection(collectionConfig) {
           
           if (CONFIG.DRY_RUN) {
             console.log(`🧪 [DRY RUN] Would migrate: ${doc.id}`);
+            if (CONFIG.ENABLE_DUAL_MIRRORING) {
+              console.log(`🧪 [DRY RUN] Would also create sequence entry`);
+            }
             migratedCount++;
           } else {
-            // Write to RTDB
+            // Write to original RTDB path
             const rtdbRef = ref(realtimeDb, `${collectionConfig.rtdb}/${doc.id}`);
-            await set(rtdbRef, convertedData);
+            await set(rtdbRef, {
+              ...convertedData,
+              firestoreId: doc.id
+            });
+            
+            // Write to sequence path jika dual mirroring enabled
+            if (CONFIG.ENABLE_DUAL_MIRRORING) {
+              try {
+                const sequentialId = await generateSequentialId(collectionConfig.sequence);
+                const sequenceRef = ref(realtimeDb, `sequence/${collectionConfig.sequence}/${sequentialId}`);
+                await set(sequenceRef, {
+                  ...convertedData,
+                  firebaseId: doc.id,
+                  sequenceId: sequentialId
+                });
+                
+                // Save mapping Firebase ID → Sequential ID
+                const mappingRef = ref(realtimeDb, `mapping/${collectionConfig.sequence}/${doc.id}`);
+                await set(mappingRef, sequentialId);
+              } catch (sequenceError) {
+                console.warn(`\n⚠️  Failed to create sequence entry for ${doc.id}:`, sequenceError.message);
+              }
+            }
+            
             migratedCount++;
             
             // Progress indicator
@@ -246,6 +335,10 @@ async function migrateCollection(collectionConfig) {
     console.log(`   - Migrated: ${formatNumber(migratedCount)} documents`);
     console.log(`   - Errors: ${formatNumber(errorCount)} documents`);
     
+    if (CONFIG.ENABLE_DUAL_MIRRORING && !CONFIG.DRY_RUN) {
+      console.log(`   - Dual mirroring: Original + Sequence paths`);
+    }
+    
     if (errors.length > 0) {
       console.log(`\n❌ Error Details:`);
       errors.forEach((error, index) => {
@@ -275,11 +368,15 @@ async function migrateCollection(collectionConfig) {
  * Fungsi utama untuk menjalankan migrasi
  */
 async function runMigration() {
-  console.log('🚀 Starting Firestore to RTDB Migration Script (With Authentication)');
+  console.log('🚀 Starting Firestore to RTDB Dual Mirroring Migration Script (With Authentication)');
   console.log('='.repeat(70));
   
   if (CONFIG.DRY_RUN) {
     console.log('🧪 DRY RUN MODE: No data will be written to RTDB');
+  }
+  
+  if (CONFIG.ENABLE_DUAL_MIRRORING) {
+    console.log('🔀 DUAL MIRRORING ENABLED: Data will be mirrored to both original and sequence paths');
   }
   
   try {
@@ -362,8 +459,14 @@ async function runMigration() {
     
     console.log('\n📝 Next Steps:');
     console.log('   1. Verify data in Firebase Console → Realtime Database');
+    console.log('      - Original paths: original/receipts/, original/users/, original/lokerControl/');
+    if (CONFIG.ENABLE_DUAL_MIRRORING) {
+      console.log('      - Sequence paths: sequence/receipts/, sequence/users/, sequence/lokerControl/');
+      console.log('      - Mapping paths: mapping/receipts/, mapping/users/, mapping/lokerControl/');
+    }
     console.log('   2. Test your application with the mirrored data');
-    console.log('   3. Monitor RTDB usage and performance');
+    console.log('   3. Test ESP32 compatibility with sequence paths (1,2,3 IDs)');
+    console.log('   4. Monitor RTDB usage and performance');
     
     // Sign out user
     await auth.signOut();

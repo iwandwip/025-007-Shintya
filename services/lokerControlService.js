@@ -12,9 +12,10 @@ import {
   onValue,
   off,
 } from "firebase/database";
+import { sequenceService } from './sequenceService';
 
 const COLLECTION_NAME = "lokerControl";
-const RTDB_PATH = "lokerControl";
+const RTDB_PATH = "original/lokerControl";
 
 export const lokerControlService = {
   async sendLokerCommand(nomorLoker, command) {
@@ -44,6 +45,14 @@ export const lokerControlService = {
       const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/loker_${nomorLoker}`);
       await set(rtdbRef, rtdbCommandData);
       
+      // Mirror to sequence path (create if not exists)
+      try {
+        await sequenceService.updateByFirebaseId('lokerControl', `loker_${nomorLoker}`, rtdbCommandData);
+      } catch (error) {
+        // If not exists, create new entry
+        await sequenceService.addWithSequentialId('lokerControl', `loker_${nomorLoker}`, rtdbCommandData);
+      }
+      
       // Auto-reset after 10 seconds
       setTimeout(async () => {
         try {
@@ -66,6 +75,13 @@ export const lokerControlService = {
           };
           
           await set(rtdbRef, rtdbResetData);
+          
+          // Mirror reset to sequence path
+          try {
+            await sequenceService.updateByFirebaseId('lokerControl', `loker_${nomorLoker}`, rtdbResetData);
+          } catch (error) {
+            console.error("Error resetting sequence loker:", error);
+          }
         } catch (error) {
           console.error("Error resetting loker command:", error);
         }
