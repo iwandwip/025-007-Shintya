@@ -15,18 +15,27 @@ import { useSettings } from '../../contexts/SettingsContext';
 const { width: screenWidth } = Dimensions.get('window');
 
 function CapacitySettingsModal({ visible, onClose }) {
-  const { capacityDisplayMode, enableHeightConversion, changeCapacityDisplayMode, changeHeightConversion } = useSettings();
+  const { 
+    capacityDisplayMode, 
+    enableHeightConversion, 
+    enablePercentageConversion,
+    changeCapacityDisplayMode, 
+    changeHeightConversion,
+    changePercentageConversion
+  } = useSettings();
   const colors = getThemeByRole(false);
   
   const [selectedMode, setSelectedMode] = useState(capacityDisplayMode);
-  const [selectedConversion, setSelectedConversion] = useState(enableHeightConversion);
+  const [selectedHeightConversion, setSelectedHeightConversion] = useState(enableHeightConversion);
+  const [selectedPercentageConversion, setSelectedPercentageConversion] = useState(enablePercentageConversion);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSave = async () => {
     try {
       setIsUpdating(true);
       await changeCapacityDisplayMode(selectedMode);
-      await changeHeightConversion(selectedConversion);
+      await changeHeightConversion(selectedHeightConversion);
+      await changePercentageConversion(selectedPercentageConversion);
       onClose();
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -37,7 +46,8 @@ function CapacitySettingsModal({ visible, onClose }) {
 
   const handleCancel = () => {
     setSelectedMode(capacityDisplayMode);
-    setSelectedConversion(enableHeightConversion);
+    setSelectedHeightConversion(enableHeightConversion);
+    setSelectedPercentageConversion(enablePercentageConversion);
     onClose();
   };
 
@@ -135,7 +145,41 @@ function CapacitySettingsModal({ visible, onClose }) {
                 </View>
               </TouchableOpacity>
 
-              {/* Conversion Toggle - only show when percentage mode */}
+              {/* Conversion Toggle for Height Mode */}
+              {selectedMode === 'height' && (
+                <View style={[styles.conversionSection, { backgroundColor: colors.green50 }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
+                    Opsi Konversi Persentase
+                  </Text>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.toggleButton,
+                      {
+                        backgroundColor: selectedPercentageConversion ? colors.blue100 : colors.gray100,
+                        borderColor: selectedPercentageConversion ? colors.blue500 : colors.gray300,
+                      }
+                    ]}
+                    onPress={() => setSelectedPercentageConversion(!selectedPercentageConversion)}
+                  >
+                    <Text style={[
+                      styles.toggleText,
+                      { color: selectedPercentageConversion ? colors.blue700 : colors.gray600 }
+                    ]}>
+                      {selectedPercentageConversion ? '✅ Konversi ke Persentase' : '🚫 Tinggi Saja'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <Text style={[styles.toggleDesc, { color: colors.gray600 }]}>
+                    {selectedPercentageConversion 
+                      ? 'Tampilkan tinggi + persentase hasil konversi'
+                      : 'Tampilkan hanya tinggi dari ESP32'
+                    }
+                  </Text>
+                </View>
+              )}
+
+              {/* Conversion Toggle for Percentage Mode */}
               {selectedMode === 'percentage' && (
                 <View style={[styles.conversionSection, { backgroundColor: colors.blue50 }]}>
                   <Text style={[styles.sectionTitle, { color: colors.gray900 }]}>
@@ -146,22 +190,22 @@ function CapacitySettingsModal({ visible, onClose }) {
                     style={[
                       styles.toggleButton,
                       {
-                        backgroundColor: selectedConversion ? colors.green100 : colors.gray100,
-                        borderColor: selectedConversion ? colors.green500 : colors.gray300,
+                        backgroundColor: selectedHeightConversion ? colors.green100 : colors.gray100,
+                        borderColor: selectedHeightConversion ? colors.green500 : colors.gray300,
                       }
                     ]}
-                    onPress={() => setSelectedConversion(!selectedConversion)}
+                    onPress={() => setSelectedHeightConversion(!selectedHeightConversion)}
                   >
                     <Text style={[
                       styles.toggleText,
-                      { color: selectedConversion ? colors.green700 : colors.gray600 }
+                      { color: selectedHeightConversion ? colors.green700 : colors.gray600 }
                     ]}>
-                      {selectedConversion ? '✅ Konversi ke Tinggi' : '🚫 Persentase Saja'}
+                      {selectedHeightConversion ? '✅ Konversi ke Tinggi' : '🚫 Persentase Saja'}
                     </Text>
                   </TouchableOpacity>
                   
                   <Text style={[styles.toggleDesc, { color: colors.gray600 }]}>
-                    {selectedConversion 
+                    {selectedHeightConversion 
                       ? 'Tampilkan persentase + tinggi hasil konversi'
                       : 'Tampilkan hanya persentase dari ESP32'
                     }

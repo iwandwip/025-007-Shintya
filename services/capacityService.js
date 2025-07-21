@@ -418,7 +418,7 @@ export const subscribeToCapacityUpdates = (callback) => {
  * 
  * Fungsi ini mengkonversi data sensor (ketinggian atau persentase langsung)
  * menjadi status yang mudah dipahami pengguna dengan indikator visual dan pesan.
- * Mendukung dua mode: height mode dan percentage mode dengan opsi konversi balik.
+ * Mendukung dual mode symmetric dengan opsi konversi untuk kedua mode.
  * 
  * Logika Kalkulasi Status:
  * - 90-100%: PENUH (Merah) - Kotak hampir penuh, perlu dikosongkan
@@ -426,41 +426,49 @@ export const subscribeToCapacityUpdates = (callback) => {
  * - 30-69%:  TERISI SEBAGIAN (Biru) - Kotak tersedia untuk paket baru
  * - 0-29%:   KOSONG (Hijau) - Kotak kosong, siap menerima paket
  * 
- * Mode Operasi:
- * - Height Mode: Kalkulasi persentase dari height/maxHeight
- * - Percentage Mode: Gunakan persentase langsung dari ESP32
- * - Percentage Mode + Conversion: Gunakan persentase ESP32 + konversi balik ke height
+ * Mode Operasi Symmetric:
+ * - Height Mode: Height dari ESP32 + optional konversi ke percentage
+ * - Height Mode + Conversion: Height ESP32 + percentage hasil konversi
+ * - Percentage Mode: Percentage dari ESP32 + optional konversi ke height
+ * - Percentage Mode + Conversion: Percentage ESP32 + height hasil konversi
  * 
  * @function calculateCapacityStatus
  * @param {number} height - Ketinggian paket terukur dalam cm (optional jika ada percentage)
  * @param {number} [maxHeight=30] - Kapasitas maksimum kotak dalam cm
  * @param {number} [directPercentage] - Persentase langsung dari ESP32 (0-100)
- * @param {boolean} [enableHeightConversion=true] - Aktifkan konversi balik percentage → height
+ * @param {boolean} [enableHeightConversion=true] - Aktifkan konversi percentage → height
+ * @param {boolean} [enablePercentageConversion=true] - Aktifkan konversi height → percentage
  * @returns {Object} Status object dengan format:
  *   - percentage: number - Persentase kapasitas (0-100)
  *   - height: number - Ketinggian (dari sensor atau hasil konversi)
  *   - calculatedHeight: number - Ketinggian hasil konversi balik (jika ada)
+ *   - calculatedPercentage: number - Persentase hasil konversi (jika ada)
  *   - status: string - Status dalam bahasa Indonesia
  *   - message: string - Pesan deskriptif untuk pengguna
  *   - color: string - Kode warna hex untuk indikator visual
  * 
  * @example
  * // Mode Height: Sensor membaca ketinggian 25cm dari kotak 30cm
- * const status1 = calculateCapacityStatus(25, 30);
- * console.log(status1.percentage); // 83.33
+ * const status1 = calculateCapacityStatus(25, 30, null, true, true);
+ * console.log(status1.percentage); // 83.33 (calculated)
+ * 
+ * // Mode Height tanpa konversi: Hanya tampilkan height
+ * const status2 = calculateCapacityStatus(25, 30, null, true, false);
+ * console.log(status2.calculatedPercentage); // null
  * 
  * // Mode Percentage: ESP32 mengirim persentase langsung 75%
- * const status2 = calculateCapacityStatus(null, 30, 75);
- * console.log(status2.percentage); // 75
- * 
- * // Mode Percentage + Conversion: ESP32 75% + konversi balik ke height
- * const status3 = calculateCapacityStatus(null, 30, 75, true);
+ * const status3 = calculateCapacityStatus(null, 30, 75, true, true);
  * console.log(status3.calculatedHeight); // 22.5
+ * 
+ * // Mode Percentage tanpa konversi: Hanya tampilkan percentage
+ * const status4 = calculateCapacityStatus(null, 30, 75, false, true);
+ * console.log(status4.calculatedHeight); // null
  */
-export const calculateCapacityStatus = (height, maxHeight = 30, directPercentage = null, enableHeightConversion = true) => {
+export const calculateCapacityStatus = (height, maxHeight = 30, directPercentage = null, enableHeightConversion = true, enablePercentageConversion = true) => {
   let percentage;
   let actualHeight = height;
   let calculatedHeight = null;
+  let calculatedPercentage = null;
   
   // Tentukan persentase berdasarkan mode yang digunakan
   if (directPercentage !== null && directPercentage !== undefined) {
@@ -476,9 +484,17 @@ export const calculateCapacityStatus = (height, maxHeight = 30, directPercentage
       }
     }
   } else if (height !== null && height !== undefined) {
-    // Mode Ketinggian: Hitung persentase dari ketinggian/maxHeight
-    percentage = (height / maxHeight) * 100;
+    // Mode Ketinggian: Gunakan nilai tinggi dari ESP32
     actualHeight = height;
+    
+    // Konversi ke persentase jika diaktifkan
+    if (enablePercentageConversion) {
+      calculatedPercentage = (height / maxHeight) * 100;
+      percentage = calculatedPercentage;
+    } else {
+      // Jika konversi tidak aktif, tetap hitung percentage untuk status tapi tidak ditampilkan
+      percentage = (height / maxHeight) * 100;
+    }
   } else {
     // Fallback: Default ke 0% jika tidak ada data
     percentage = 0;
@@ -514,6 +530,7 @@ export const calculateCapacityStatus = (height, maxHeight = 30, directPercentage
     percentage: Math.min(Math.max(percentage, 0), 100), // Clamp antara 0-100% untuk konsistensi UI
     height: actualHeight, // Ketinggian (asli atau hasil konversi)
     calculatedHeight, // Ketinggian hasil konversi balik (null jika tidak ada)
+    calculatedPercentage, // Persentase hasil konversi (null jika tidak ada)
     status,
     message,
     color

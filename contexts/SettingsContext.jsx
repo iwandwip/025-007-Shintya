@@ -47,11 +47,13 @@ export const useSettings = () => {
       encryptionMode: "plain",   // Default ke mode plain
       capacityDisplayMode: "height", // Default ke mode height
       enableHeightConversion: true, // Default ke konversi aktif
+      enablePercentageConversion: true, // Default ke konversi percentage aktif
       loading: false,            // Tidak ada loading jika tidak ada context
       changeTheme: () => {},     // Function kosong sebagai fallback
       changeEncryptionMode: () => {}, // Function kosong sebagai fallback
       changeCapacityDisplayMode: () => {}, // Function kosong sebagai fallback
       changeHeightConversion: () => {}, // Function kosong sebagai fallback
+      changePercentageConversion: () => {}, // Function kosong sebagai fallback
     };
   }
   return context;
@@ -78,6 +80,9 @@ export const SettingsProvider = ({ children }) => {
   
   // State untuk menyimpan opsi konversi balik dari percentage ke height
   const [enableHeightConversion, setEnableHeightConversion] = useState(true);
+  
+  // State untuk menyimpan opsi konversi dari height ke percentage
+  const [enablePercentageConversion, setEnablePercentageConversion] = useState(true);
   
   // State loading untuk proses inisialisasi pengaturan dari AsyncStorage
   const [loading, setLoading] = useState(true);
@@ -122,6 +127,14 @@ export const SettingsProvider = ({ children }) => {
       if (savedEnableHeightConversion !== null) {
         setEnableHeightConversion(savedEnableHeightConversion === "true");
       }
+      
+      // Ambil opsi konversi percentage yang tersimpan dari AsyncStorage
+      const savedEnablePercentageConversion = await AsyncStorage.getItem("enable_percentage_conversion");
+      
+      // Validasi nilai boolean untuk konversi percentage
+      if (savedEnablePercentageConversion !== null) {
+        setEnablePercentageConversion(savedEnablePercentageConversion === "true");
+      }
       // Jika tidak ada pengaturan tersimpan atau nilai tidak valid, gunakan default values
     } catch (error) {
       // Error handling jika gagal membaca dari AsyncStorage
@@ -130,6 +143,7 @@ export const SettingsProvider = ({ children }) => {
       setEncryptionMode("plain"); // Fallback ke mode plain
       setCapacityDisplayMode("height"); // Fallback ke mode height
       setEnableHeightConversion(true); // Fallback ke konversi aktif
+      setEnablePercentageConversion(true); // Fallback ke konversi percentage aktif
     } finally {
       // Set loading selesai terlepas dari hasil operasi
       setLoading(false);
@@ -241,6 +255,32 @@ export const SettingsProvider = ({ children }) => {
   };
 
   /**
+   * Mengubah opsi konversi percentage dan menyimpannya secara persisten
+   * 
+   * Function ini akan mengupdate state konversi percentage dan menyimpan pilihan
+   * ke AsyncStorage agar tetap tersimpan setelah aplikasi ditutup.
+   * 
+   * @param {boolean} enabled - Status konversi percentage (true/false)
+   */
+  const changePercentageConversion = async (enabled) => {
+    try {
+      // Validasi nilai boolean
+      if (typeof enabled === "boolean") {
+        // Update state konversi percentage untuk trigger re-render
+        setEnablePercentageConversion(enabled);
+        
+        // Simpan pilihan konversi percentage ke AsyncStorage untuk persistensi
+        await AsyncStorage.setItem("enable_percentage_conversion", enabled.toString());
+      }
+      // Jika nilai tidak valid, abaikan permintaan
+    } catch (error) {
+      // Error handling jika gagal menyimpan ke AsyncStorage
+      console.error("Error saving percentage conversion setting:", error);
+      // Tetap update state meskipun gagal menyimpan ke storage
+    }
+  };
+
+  /**
    * useEffect untuk inisialisasi pengaturan
    * 
    * Memuat pengaturan tersimpan dari AsyncStorage saat komponen mount.
@@ -257,11 +297,13 @@ export const SettingsProvider = ({ children }) => {
     encryptionMode: encryptionMode || "plain",         // Pastikan selalu ada nilai mode enkripsi (fallback ke "plain")
     capacityDisplayMode: capacityDisplayMode || "height", // Pastikan selalu ada nilai mode tampilan kapasitas (fallback ke "height")
     enableHeightConversion: enableHeightConversion !== undefined ? enableHeightConversion : true, // Pastikan selalu ada nilai konversi height (fallback ke true)
+    enablePercentageConversion: enablePercentageConversion !== undefined ? enablePercentageConversion : true, // Pastikan selalu ada nilai konversi percentage (fallback ke true)
     loading,                                           // Status loading untuk proses inisialisasi
     changeTheme,                                      // Function untuk mengubah tema
     changeEncryptionMode,                             // Function untuk mengubah mode enkripsi
     changeCapacityDisplayMode,                        // Function untuk mengubah mode tampilan kapasitas
     changeHeightConversion,                           // Function untuk mengubah opsi konversi height
+    changePercentageConversion,                       // Function untuk mengubah opsi konversi percentage
   };
 
   // Return Provider component dengan value context

@@ -56,7 +56,7 @@ import CapacitySettingsModal from "../../components/ui/CapacitySettingsModal";
 function KapasitasPaket() {
   // Context dan hooks untuk autentikasi, tema, dan safe area
   const { userProfile, refreshProfile } = useAuth();
-  const { theme, capacityDisplayMode, enableHeightConversion, loading: settingsLoading } = useSettings();
+  const { theme, capacityDisplayMode, enableHeightConversion, enablePercentageConversion, loading: settingsLoading } = useSettings();
   const insets = useSafeAreaInsets();
   const colors = getThemeByRole(false); // Selalu menggunakan tema user
   
@@ -68,6 +68,7 @@ function KapasitasPaket() {
     height: 0,           // Ketinggian saat ini dari sensor (cm) atau hasil konversi
     percentage: 0,       // Persentase langsung dari ESP32 atau terkalkulasi
     calculatedHeight: null, // Ketinggian hasil konversi balik (jika ada)
+    calculatedPercentage: null, // Persentase hasil konversi (jika ada)
     maxHeight: 30,       // Batas maksimal box (cm)
     status: "Kosong",    // Status kapasitas (Kosong/Terisi Sebagian/Hampir Penuh/Penuh)
     message: "Box kosong, siap menerima paket", // Pesan deskriptif
@@ -100,10 +101,10 @@ function KapasitasPaket() {
         let statusInfo;
         if (capacityDisplayMode === 'percentage' && directPercentage !== undefined) {
           // Mode Persentase: Gunakan persentase langsung dari ESP32 dengan opsi konversi
-          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion);
+          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion, enablePercentageConversion);
         } else {
-          // Mode Ketinggian: Hitung dari height/maxHeight
-          statusInfo = calculateCapacityStatus(height, maxHeight);
+          // Mode Ketinggian: Gunakan ketinggian dari ESP32 dengan opsi konversi
+          statusInfo = calculateCapacityStatus(height, maxHeight, null, enableHeightConversion, enablePercentageConversion);
         }
         
         // Update state dengan data terbaru dan status yang dihitung
@@ -111,6 +112,7 @@ function KapasitasPaket() {
           height: statusInfo.height,          // Ketinggian (asli atau hasil konversi)
           percentage: directPercentage || statusInfo.percentage,  // Persentase dari ESP32 atau terkalkulasi
           calculatedHeight: statusInfo.calculatedHeight, // Ketinggian hasil konversi balik
+          calculatedPercentage: statusInfo.calculatedPercentage, // Persentase hasil konversi
           maxHeight,
           status: statusInfo.status,          // Status dalam bahasa Indonesia
           message: statusInfo.message,        // Pesan deskriptif
@@ -143,10 +145,10 @@ function KapasitasPaket() {
         let statusInfo;
         if (capacityDisplayMode === 'percentage' && directPercentage !== undefined) {
           // Mode Persentase: Gunakan persentase langsung dari ESP32 dengan opsi konversi
-          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion);
+          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion, enablePercentageConversion);
         } else {
-          // Mode Ketinggian: Hitung dari height/maxHeight
-          statusInfo = calculateCapacityStatus(height, maxHeight);
+          // Mode Ketinggian: Gunakan ketinggian dari ESP32 dengan opsi konversi
+          statusInfo = calculateCapacityStatus(height, maxHeight, null, enableHeightConversion, enablePercentageConversion);
         }
         
         // Update state dengan data real-time dari ESP32
@@ -166,7 +168,7 @@ function KapasitasPaket() {
     
     // Cleanup subscription saat component unmount
     return () => unsubscribe();
-  }, [capacityDisplayMode, enableHeightConversion]); // Reload data when display mode or conversion setting changes
+  }, [capacityDisplayMode, enableHeightConversion, enablePercentageConversion]); // Reload data when display mode or conversion setting changes
 
   /**
    * Effect untuk reload data saat screen difokuskan
@@ -397,27 +399,21 @@ function KapasitasPaket() {
 
           {/* Grid 3 kolom untuk detail angka */}
           <View style={styles.detailGrid}>
-            {/* Ketinggian saat ini dari sensor ultrasonik atau hasil konversi */}
-            <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
-              <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                {capacityDisplayMode === 'percentage' && enableHeightConversion && kapasitasData.calculatedHeight 
-                  ? "Tinggi (Konversi)" 
-                  : "Ketinggian Saat Ini"
-                }
-              </Text>
-              <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
-                {kapasitasData.height ? kapasitasData.height.toFixed(1) : '0.0'}
-              </Text>
-              <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
-                cm
-              </Text>
-              {/* Indikator jika ini hasil konversi */}
-              {capacityDisplayMode === 'percentage' && enableHeightConversion && kapasitasData.calculatedHeight && (
-                <View style={[styles.conversionIndicator, { backgroundColor: colors.blue100 }]}>
-                  <Text style={styles.conversionIcon}>🔄</Text>
-                </View>
-              )}
-            </View>
+            {/* Ketinggian saat ini - Conditional display based on mode and conversion settings */}
+            {((capacityDisplayMode === 'height') || 
+              (capacityDisplayMode === 'percentage' && enableHeightConversion)) && (
+              <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
+                <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
+                  Ketinggian Saat Ini
+                </Text>
+                <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
+                  {kapasitasData.height ? kapasitasData.height.toFixed(1) : '0.0'}
+                </Text>
+                <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
+                  cm
+                </Text>
+              </View>
+            )}
 
             {/* Batas maksimal box (biasanya 30cm) - Clickable */}
             <TouchableOpacity 
@@ -440,18 +436,21 @@ function KapasitasPaket() {
               </View>
             </TouchableOpacity>
 
-            {/* Persentase terisi (dihitung dari ketinggian/maxHeight) */}
-            <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
-              <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                Persentase
-              </Text>
-              <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
-                {kapasitasData.percentage.toFixed(1)}
-              </Text>
-              <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
-                %
-              </Text>
-            </View>
+            {/* Persentase terisi - Conditional display based on mode and conversion settings */}
+            {((capacityDisplayMode === 'height' && enablePercentageConversion) || 
+              (capacityDisplayMode === 'percentage')) && (
+              <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
+                <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
+                  Persentase Terisi
+                </Text>
+                <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
+                  {kapasitasData.percentage.toFixed(1)}
+                </Text>
+                <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
+                  %
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -679,19 +678,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clickableIcon: {
-    fontSize: 10,
-  },
-  conversionIndicator: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  conversionIcon: {
     fontSize: 10,
   },
   detailLabel: {
