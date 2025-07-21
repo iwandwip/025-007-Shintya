@@ -38,12 +38,19 @@ import {
   onSnapshot, 
   updateDoc
 } from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  ref,
+  set,
+  update,
+} from 'firebase/database';
+import { db, realtimeDb } from './firebase';
 import { updateUserRFID } from './userService';
+import { sequenceService } from './sequenceService';
 
 // Konstanta untuk konfigurasi collection pairing RFID
 const PAIRING_COLLECTION = 'rfid_pairing';
 const PAIRING_DOC_ID = 'current_session';
+const RTDB_PATH = 'original/rfid_pairing';
 
 /**
  * Memulai proses pairing RFID card untuk user yang sedang login.
@@ -100,6 +107,18 @@ export const startPairing = async (userId) => {
 
     // Simpan session ke Firebase untuk komunikasi dengan ESP32
     await setDoc(doc(db, PAIRING_COLLECTION, PAIRING_DOC_ID), pairingData);
+    
+    // Mirror to original RTDB path
+    const rtdbData = {
+      ...pairingData,
+      firestoreId: PAIRING_DOC_ID
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${PAIRING_DOC_ID}`);
+    await set(rtdbRef, rtdbData);
+    
+    // Mirror to sequence path dengan sequential ID
+    await sequenceService.addWithSequentialId('rfid_pairing', PAIRING_DOC_ID, pairingData);
     
     // Timeout otomatis 30 detik untuk keamanan session
     setTimeout(async () => {
@@ -166,16 +185,31 @@ export const cancelPairing = async () => {
     // Referensi dokumen session pairing
     const docRef = doc(db, PAIRING_COLLECTION, PAIRING_DOC_ID);
     
-    // Reset semua data session untuk menghentikan proses ESP32
-    await setDoc(docRef, {
+    // Data untuk cancel session
+    const cancelData = {
       isActive: false,      // Flag non-aktif untuk ESP32
       userId: '',           // Clear user ID
       startTime: '',        // Clear timestamp mulai
       rfidCode: '',         // Clear kode RFID
       status: '',           // Clear status session
-      cancelledTime: '',    // Clear timestamp pembatalan
+      cancelledTime: new Date().toISOString(),    // Set timestamp pembatalan
       receivedTime: ''      // Clear timestamp terima kode
-    });
+    };
+    
+    // Reset semua data session untuk menghentikan proses ESP32
+    await setDoc(docRef, cancelData);
+    
+    // Mirror to original RTDB path
+    const rtdbData = {
+      ...cancelData,
+      firestoreId: PAIRING_DOC_ID
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${PAIRING_DOC_ID}`);
+    await set(rtdbRef, rtdbData);
+    
+    // Mirror to sequence path
+    await sequenceService.updateByFirebaseId('rfid_pairing', PAIRING_DOC_ID, cancelData);
 
     return { success: true };
   } catch (error) {
@@ -394,12 +428,28 @@ export const updateRFIDCode = async (rfidCode) => {
 
     // Pastikan session masih aktif sebelum update
     if (docSnap.exists() && docSnap.data().isActive) {
-      // Update session dengan kode RFID dari ESP32
-      await updateDoc(docRef, {
+      // Data update dengan kode RFID dari ESP32
+      const updateData = {
         rfidCode: rfidCode,              // Kode RFID yang berhasil ditulis
         status: 'received',             // Status berubah ke 'received'
-        receivedTime: new Date()        // Timestamp saat kode diterima
-      });
+        receivedTime: new Date().toISOString()        // Timestamp saat kode diterima
+      };
+      
+      // Update session dengan kode RFID dari ESP32
+      await updateDoc(docRef, updateData);
+      
+      // Mirror update to original RTDB path
+      const rtdbUpdateData = {
+        rfidCode: rfidCode,
+        status: 'received',
+        receivedTime: new Date().toISOString()
+      };
+      
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${PAIRING_DOC_ID}`);
+      await update(rtdbRef, rtdbUpdateData);
+      
+      // Mirror update to sequence path
+      await sequenceService.updateByFirebaseId('rfid_pairing', PAIRING_DOC_ID, updateData);
       
       return { success: true };
     }

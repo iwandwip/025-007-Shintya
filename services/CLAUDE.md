@@ -8,17 +8,17 @@ The `services/` directory contains the business logic layer for the React Native
 services/
 ├── firebase.js                 # Firebase configuration and initialization
 ├── authService.js              # User authentication and session management
-├── userService.js              # User profile and RFID management
+├── userService.js              # User profile and RFID management (DUAL MIRRORED)
 ├── encryptionService.js        # QR code encryption and scanner mode
-├── resiService.js              # Package receipt CRUD operations
+├── resiService.js              # Package receipt CRUD operations (DUAL MIRRORED)
 ├── userPackageService.js       # Timeline-based package management
 ├── packageStatusManager.js     # Smart caching and performance optimization
 ├── timelineService.js          # Delivery timeline and period management
-├── capacityService.js          # Ultrasonic sensor integration
-├── pairingService.js           # RFID card pairing with ESP32
-├── lokerControlService.js      # Remote loker control
-├── scannerModeService.js       # ESP32 scanner mode management
-├── activityService.js          # User activity logging and audit trail
+├── capacityService.js          # Ultrasonic sensor integration (DUAL MIRRORED)
+├── pairingService.js           # RFID card pairing with ESP32 (DUAL MIRRORED)
+├── lokerControlService.js      # Remote loker control (DUAL MIRRORED)
+├── scannerModeService.js       # ESP32 scanner mode management (DUAL MIRRORED)
+├── activityService.js          # User activity logging and audit trail (DUAL MIRRORED)
 ├── sequenceService.js          # Sequential ID management for ESP32
 └── seederService.js            # Test data generation for development
 ```
@@ -167,34 +167,39 @@ services/
 ## Hardware Integration Services
 
 ### capacityService.js
-- **Purpose**: Ultrasonic sensor integration for capacity monitoring
+- **Purpose**: Ultrasonic sensor integration for capacity monitoring with dual RTDB mirroring
 - **Key Features**:
   - Real-time capacity monitoring
   - Ultrasonic sensor data processing (0-30cm range)
   - Status calculation (Kosong → Terisi Sebagian → Hampir Penuh → Penuh)
-  - Firebase Realtime Database integration
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Automatic updates and notifications
 - **Key Functions**:
-  - `getCapacityData()` - Get current capacity
-  - `subscribeToCapacityUpdates(callback)` - Real-time capacity updates
-  - `updateCapacityData(height, maxHeight)` - Update capacity data
+  - `getCapacityData()` - Get current capacity from Firestore
+  - `subscribeToCapacityUpdates(callback)` - Real-time capacity updates from Firestore
+  - `updateCapacityHeight(height, deviceId)` - Update capacity data (syncs all three paths)
+  - `updateMaxHeight(maxHeight, deviceId)` - Update max height (syncs all three paths)
   - `calculateCapacityStatus(height, maxHeight)` - Calculate status
-  - `getCapacityPercentage()` - Get capacity percentage
 
 ### pairingService.js
-- **Purpose**: RFID card pairing with ESP32 hardware
+- **Purpose**: RFID card pairing with ESP32 hardware with dual RTDB mirroring
 - **Key Features**:
   - 30-second timeout sessions
   - Random 8-character hex code generation
   - RC522 module integration
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Real-time sync between app and hardware
   - Session management and cleanup
 - **Key Functions**:
-  - `startPairingSession(userId)` - Initialize pairing
-  - `generateRfidCode()` - Generate random RFID code
-  - `subscribeToPairingStatus(callback)` - Monitor pairing status
-  - `cancelPairingSession()` - Cancel active session
-  - `completePairing(rfidCode)` - Complete pairing process
+  - `startPairing(userId)` - Initialize pairing (writes to all three paths)
+  - `cancelPairing()` - Cancel active session (syncs all three paths)
+  - `listenToPairingData(callback)` - Monitor pairing status from Firestore
+  - `updateRFIDCode(rfidCode)` - Update RFID code (syncs all three paths)
+  - `getPairingStatus()` - Get current pairing status from Firestore
 
 ### lokerControlService.js
 - **Purpose**: Remote loker control (open/close commands) with dual RTDB mirroring
@@ -215,36 +220,43 @@ services/
   - `subscribeToAllLokers(callback)` - Monitor all lokers from Firestore
 
 ### scannerModeService.js
-- **Purpose**: ESP32 scanner mode management
+- **Purpose**: ESP32 scanner mode management with dual RTDB mirroring
 - **Key Features**:
   - Scanner mode switching (resi/user_qr/idle)
   - Session timeout management (5 minutes)
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - Real-time mode synchronization
   - Conflict resolution
   - Activity logging
 - **Key Functions**:
-  - `setScannerMode(mode, userId)` - Set scanner mode
-  - `getScannerMode()` - Get current scanner mode
-  - `clearScannerMode()` - Reset to idle mode
-  - `subscribeToScannerMode(callback)` - Monitor mode changes
-  - `extendScannerSession()` - Extend session timeout
+  - `setScannerMode(mode, userId)` - Set scanner mode (writes to all three paths)
+  - `getScannerMode()` - Get current scanner mode from RTDB
+  - `resetScannerMode(userId, reason)` - Reset to idle mode (syncs all three paths)
+  - `subscribeScannerMode(callback)` - Monitor mode changes from RTDB
+  - `extendScannerMode(userId, additionalMs)` - Extend session timeout (syncs all three paths)
 
 ## Supporting Services
 
 ### activityService.js
-- **Purpose**: User activity logging and audit trail
+- **Purpose**: User activity logging and audit trail with dual RTDB mirroring
 - **Key Features**:
   - Comprehensive activity tracking
+  - **Dual RTDB Data Mirroring** (Firestore primary, RTDB dual paths)
+  - **Write operations sync** to Firestore + original RTDB path + sequence path
+  - Sequential ID management for ESP32 compatibility
   - User action logging
   - Audit trail maintenance
   - Activity categorization
   - Real-time activity feed
 - **Key Functions**:
-  - `logActivity(userId, type, message, metadata)` - Log user activity
-  - `getUserActivities(userId)` - Get user activity history
-  - `getGlobalActivities()` - Get system-wide activities
-  - `subscribeToActivities(callback)` - Real-time activity updates
-  - `deleteOldActivities()` - Cleanup old activities
+  - `addActivity(activityData)` - Log user activity (writes to all three paths)
+  - `getUserActivities(userId)` - Get user activity history from Firestore
+  - `subscribeToUserActivities(userId, callback)` - Real-time activity updates from Firestore
+  - `cleanupOldActivities(userId)` - Cleanup old activities (syncs all three paths)
+  - `trackStatusChange(userId, resiNumber, oldStatus, newStatus, packageName)` - Track package status changes
+  - `trackPackageAdded(userId, resiNumber, packageName)` - Track new package additions
 
 ### sequenceService.js
 - **Purpose**: Sequential ID management for ESP32 compatibility
@@ -284,12 +296,12 @@ services/
 ### Firebase Integration
 - **Firestore**: Primary database for all structured data and read operations
 - **Realtime Database**: Hardware communication, real-time updates, and dual path mirroring
-- **Dual RTDB Mirroring Architecture**: 
-  - Original paths: `original/receipts/`, `original/users/`, `original/lokerControl/` (app compatibility)
+- **Complete Dual RTDB Mirroring Architecture**: 
+  - Original paths: `original/receipts/`, `original/users/`, `original/lokerControl/`, `original/globalActivities/`, `original/capacity/`, `original/rfid_pairing/`, `original/scannerModeHistory/` (app compatibility)
   - Sequence paths: `sequence/receipts/1,2,3`, `sequence/users/1,2,3`, etc. (ESP32 compatibility)
   - Mapping paths: `mapping/collection/firebaseId → sequentialId`
 - **Firestore Primary**: All read operations performed on Firestore only
-- **Triple Write Synchronization**: All write operations performed on Firestore + 2 RTDB paths
+- **Triple Write Synchronization**: ALL Firestore operations performed on Firestore + 2 RTDB paths
 - **Sequential ID Management**: Atomic increment for collision-free ESP32 IDs
 - **Authentication**: User management with AsyncStorage persistence
 - **Batch Operations**: Atomic transactions for data consistency

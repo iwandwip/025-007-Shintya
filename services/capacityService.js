@@ -34,11 +34,18 @@ import {
   updateDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  ref,
+  set,
+  update,
+} from 'firebase/database';
+import { db, realtimeDb } from './firebase';
+import { sequenceService } from './sequenceService';
 
 // Konstanta konfigurasi Firebase untuk data sensor kapasitas
 const CAPACITY_COLLECTION = 'capacity';
 const CAPACITY_DOC_ID = 'box_sensor';
+const RTDB_PATH = 'original/capacity';
 
 /**
  * Mengambil data kapasitas terkini dari sensor ultrasonik ESP32.
@@ -93,6 +100,21 @@ export const getCapacityData = async () => {
       
       // Simpan konfigurasi default ke Firebase
       await setDoc(docRef, defaultData);
+      
+      // Mirror to original RTDB path
+      const rtdbData = {
+        ...defaultData,
+        lastUpdated: Date.now(),
+        firestoreId: CAPACITY_DOC_ID
+      };
+      
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${CAPACITY_DOC_ID}`);
+      await set(rtdbRef, rtdbData);
+      
+      // Mirror to sequence path dengan sequential ID
+      await sequenceService.addWithSequentialId('capacity', CAPACITY_DOC_ID, defaultData);
+      
+      console.log('Capacity data berhasil diinisialisasi dan dimirror ke RTDB');
       return {
         success: true,
         data: defaultData
@@ -142,10 +164,28 @@ export const updateCapacityHeight = async (height, deviceId = 'ESP32_001') => {
     const docRef = doc(db, CAPACITY_COLLECTION, CAPACITY_DOC_ID);
     
     // Update data sensor dengan pembacaan terbaru dari ESP32
-    await updateDoc(docRef, {
+    const updateData = {
       height: height,                    // Ketinggian dari sensor ultrasonik
       lastUpdated: serverTimestamp(),   // Timestamp pembacaan untuk tracking
       deviceId: deviceId                // ID ESP32 untuk identifikasi perangkat
+    };
+    
+    await updateDoc(docRef, updateData);
+    
+    // Mirror update to original RTDB path
+    const rtdbUpdateData = {
+      height: height,
+      lastUpdated: Date.now(),
+      deviceId: deviceId
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${CAPACITY_DOC_ID}`);
+    await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('capacity', CAPACITY_DOC_ID, {
+      height: height,
+      deviceId: deviceId
     });
     
     return {
@@ -195,10 +235,28 @@ export const updateMaxHeight = async (maxHeight, deviceId = 'ESP32_001') => {
     const docRef = doc(db, CAPACITY_COLLECTION, CAPACITY_DOC_ID);
     
     // Update kapasitas maksimum untuk kalibrasi sistem
-    await updateDoc(docRef, {
+    const updateData = {
       maxHeight: maxHeight,             // Batas maksimum kotak dalam cm
       lastUpdated: serverTimestamp(),  // Timestamp konfigurasi untuk audit
       deviceId: deviceId               // ID ESP32 yang dikonfigurasi
+    };
+    
+    await updateDoc(docRef, updateData);
+    
+    // Mirror update to original RTDB path
+    const rtdbUpdateData = {
+      maxHeight: maxHeight,
+      lastUpdated: Date.now(),
+      deviceId: deviceId
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${CAPACITY_DOC_ID}`);
+    await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('capacity', CAPACITY_DOC_ID, {
+      maxHeight: maxHeight,
+      deviceId: deviceId
     });
     
     return {

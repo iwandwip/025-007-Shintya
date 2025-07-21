@@ -41,7 +41,7 @@
  * @version 1.0.0
  */
 
-import { db } from "./firebase";
+import { db, realtimeDb } from "./firebase";
 import {
   collection,
   addDoc,
@@ -55,9 +55,16 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+import {
+  ref,
+  set,
+  remove,
+} from "firebase/database";
+import { sequenceService } from './sequenceService';
 
 // Konstanta nama collection untuk aktivitas global pengguna
 const COLLECTION_NAME = "globalActivities";
+const RTDB_PATH = "original/globalActivities";
 
 export const activityService = {
   /**
@@ -112,10 +119,24 @@ export const activityService = {
         ...activityData,                    // Spread data aktivitas dari parameter
         createdAt: serverTimestamp(),      // Timestamp server Firebase untuk konsistensi
       });
+      
+      // Mirror to original RTDB path
+      const rtdbData = {
+        ...activityData,
+        createdAt: Date.now(),
+        firestoreId: docRef.id
+      };
+      
+      const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${docRef.id}`);
+      await set(rtdbRef, rtdbData);
+      
+      // Mirror to sequence path dengan sequential ID
+      await sequenceService.addWithSequentialId('globalActivities', docRef.id, activityData);
 
       // Auto-cleanup aktivitas lama untuk menjaga performa (max 3 per user)
       await this.cleanupOldActivities(activityData.userId);
       
+      console.log('Activity berhasil ditambahkan dan dimirror ke RTDB');
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error("Error adding activity:", error);
@@ -179,9 +200,17 @@ export const activityService = {
         const activitiesToDelete = sortedActivities.slice(3);  // Aktivitas ke-4 dst
         
         // Batch delete untuk efisiensi network dan atomic operation
-        const deletePromises = activitiesToDelete.map(activity => 
-          deleteDoc(doc(db, COLLECTION_NAME, activity.id))
-        );
+        const deletePromises = activitiesToDelete.map(async (activity) => {
+          // Delete from Firestore
+          await deleteDoc(doc(db, COLLECTION_NAME, activity.id));
+          
+          // Mirror deletion to original RTDB path
+          const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${activity.id}`);
+          await remove(rtdbRef);
+          
+          // Mirror deletion to sequence path
+          await sequenceService.deleteByFirebaseId('globalActivities', activity.id);
+        });
         
         await Promise.all(deletePromises);
         console.log(`Cleanup: ${activitiesToDelete.length} aktivitas lama dihapus untuk user ${userId}`);

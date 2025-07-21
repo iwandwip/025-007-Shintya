@@ -96,6 +96,30 @@ const CONFIG = {
       rtdb: 'original/lokerControl',
       sequence: 'lokerControl',
       description: 'Loker control commands and status'
+    },
+    { 
+      firestore: 'globalActivities', 
+      rtdb: 'original/globalActivities',
+      sequence: 'globalActivities',
+      description: 'User activity logs and audit trail'
+    },
+    { 
+      firestore: 'capacity', 
+      rtdb: 'original/capacity',
+      sequence: 'capacity',
+      description: 'Ultrasonic sensor capacity data'
+    },
+    { 
+      firestore: 'rfid_pairing', 
+      rtdb: 'original/rfid_pairing',
+      sequence: 'rfid_pairing',
+      description: 'RFID card pairing session data'
+    },
+    { 
+      firestore: 'scannerModeHistory', 
+      rtdb: 'original/scannerModeHistory',
+      sequence: 'scannerModeHistory',
+      description: 'ESP32 scanner mode change history'
     }
   ]
 };

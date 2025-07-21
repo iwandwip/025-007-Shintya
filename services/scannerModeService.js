@@ -25,6 +25,7 @@ import { ref, set, get, onValue, off, update } from 'firebase/database';
 import { doc, setDoc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { realtimeDb, db } from './firebase';
 import { logActivity } from './activityService';
+import { sequenceService } from './sequenceService';
 
 // Scanner mode constants
 export const SCANNER_MODES = {
@@ -35,6 +36,10 @@ export const SCANNER_MODES = {
 
 // Default mode duration (5 minutes)
 const DEFAULT_MODE_DURATION = 300000; // 5 minutes in milliseconds
+
+// RTDB paths for dual mirroring
+const RTDB_PATH = 'original/scannerMode';
+const HISTORY_COLLECTION = 'scannerModeHistory';
 
 /**
  * Set ESP32 scanner mode dengan validation dan expiration
@@ -81,6 +86,18 @@ export const setScannerMode = async (mode, userId, durationMs = DEFAULT_MODE_DUR
     // Update di Firebase Realtime Database untuk ESP32
     const scannerModeRef = ref(realtimeDb, 'scannerMode');
     await set(scannerModeRef, scannerModeData);
+    
+    // Mirror to original RTDB path untuk dual mirroring
+    const rtdbData = {
+      ...scannerModeData,
+      firestoreId: 'scanner_mode_doc'
+    };
+    
+    const originalRtdbRef = ref(realtimeDb, `${RTDB_PATH}/scanner_mode_doc`);
+    await set(originalRtdbRef, rtdbData);
+    
+    // Mirror to sequence path (for consistency with other services)
+    await sequenceService.addWithSequentialId('scannerMode', 'scanner_mode_doc', scannerModeData);
 
     // Log ke history untuk tracking
     await _logModeChange(userId, mode, reason, durationMs);
@@ -298,15 +315,23 @@ export const extendScannerMode = async (userId, additionalMs) => {
 
     // Calculate new expiration time
     const newExpiresAt = currentMode.expiresAt + additionalMs;
-    const scannerModeRef = ref(realtimeDb, 'scannerMode');
-    
-    await update(scannerModeRef, {
+    const updateData = {
       expiresAt: newExpiresAt,
       lastUpdated: Date.now(),
       extendedBy: userId,
       extendedAt: Date.now(),
       extendedDuration: additionalMs
-    });
+    };
+    
+    const scannerModeRef = ref(realtimeDb, 'scannerMode');
+    await update(scannerModeRef, updateData);
+    
+    // Mirror update to original RTDB path
+    const originalRtdbRef = ref(realtimeDb, `${RTDB_PATH}/scanner_mode_doc`);
+    await update(originalRtdbRef, updateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('scannerMode', 'scanner_mode_doc', updateData);
 
     // Log activity
     await logActivity({
@@ -413,15 +438,31 @@ export const getScannerModeStatistics = async (timeframe = 'day') => {
  */
 const _logModeChange = async (userId, mode, reason, durationMs) => {
   try {
-    const historyRef = collection(db, 'scannerModeHistory');
-    await addDoc(historyRef, {
+    const historyData = {
       userId,
       mode,
       reason,
       durationMs,
       timestamp: Date.now(),
       createdAt: new Date().toISOString()
-    });
+    };
+    
+    // Save to Firestore
+    const historyRef = collection(db, HISTORY_COLLECTION);
+    const docRef = await addDoc(historyRef, historyData);
+    
+    // Mirror to original RTDB path
+    const rtdbData = {
+      ...historyData,
+      firestoreId: docRef.id
+    };
+    
+    const rtdbRef = ref(realtimeDb, `original/${HISTORY_COLLECTION}/${docRef.id}`);
+    await set(rtdbRef, rtdbData);
+    
+    // Mirror to sequence path
+    await sequenceService.addWithSequentialId(HISTORY_COLLECTION, docRef.id, historyData);
+    
   } catch (error) {
     console.error('Error logging mode change:', error);
     // Don't throw error, ini optional logging
