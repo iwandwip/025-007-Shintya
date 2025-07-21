@@ -517,4 +517,63 @@ export const getDeletedUsers = async () => {
     console.error('Error mengambil data user terhapus:', error);
     return { success: false, error: error.message, data: [] };
   }
+},
+
+/**
+ * Bulk delete semua user dan reset sequence
+ * Berguna untuk testing atau cleanup
+ * 
+ * @returns {Promise<Object>} Result dengan success status
+ */
+bulkDeleteAllUsers: async () => {
+  try {
+    // Get semua user untuk delete satu-satu dari Firestore
+    const q = query(collection(db, "users"));
+    const snapshot = await getDocs(q);
+    
+    const deletePromises = [];
+    const userIds = [];
+    
+    // Collect all user IDs
+    snapshot.forEach((doc) => {
+      userIds.push(doc.id);
+    });
+    
+    // Delete all from Firestore
+    userIds.forEach((userId) => {
+      deletePromises.push(deleteDoc(doc(db, "users", userId)));
+    });
+    
+    // Wait untuk semua Firestore deletions selesai
+    await Promise.all(deletePromises);
+    
+    // Clear original RTDB path
+    const rtdbRef = ref(realtimeDb, "original/users");
+    await remove(rtdbRef);
+    
+    // Reset sequence (this will clear sequence data dan reset meta ke 0)
+    await sequenceService.resetSequence('users');
+    
+    console.log(`Bulk deleted ${userIds.length} users and reset sequence`);
+    return { success: true, deletedCount: userIds.length };
+  } catch (error) {
+    console.error("Error bulk deleting all users:", error);
+    return { success: false, error: error.message };
+  }
+},
+
+/**
+ * Recalculate meta count untuk sync RTDB sequence dengan Firestore
+ * 
+ * @returns {Promise<Object>} Result dengan success status
+ */
+syncSequenceMeta: async () => {
+  try {
+    await sequenceService.recalculateMetaCount('users');
+    console.log('Successfully synced users sequence meta');
+    return { success: true };
+  } catch (error) {
+    console.error("Error syncing sequence meta:", error);
+    return { success: false, error: error.message };
+  }
 };

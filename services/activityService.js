@@ -483,6 +483,65 @@ export const activityService = {
 
     // Simpan aktivitas ke audit trail
     return await this.addActivity(activity);
+  },
+
+  /**
+   * Bulk delete semua activity dan reset sequence
+   * Berguna untuk testing atau cleanup
+   * 
+   * @returns {Promise<Object>} Result dengan success status
+   */
+  async bulkDeleteAllActivities() {
+    try {
+      // Get semua activity untuk delete satu-satu dari Firestore
+      const q = query(collection(db, "globalActivities"));
+      const snapshot = await getDocs(q);
+      
+      const deletePromises = [];
+      const activityIds = [];
+      
+      // Collect all activity IDs
+      snapshot.forEach((doc) => {
+        activityIds.push(doc.id);
+      });
+      
+      // Delete all from Firestore
+      activityIds.forEach((activityId) => {
+        deletePromises.push(deleteDoc(doc(db, "globalActivities", activityId)));
+      });
+      
+      // Wait untuk semua Firestore deletions selesai
+      await Promise.all(deletePromises);
+      
+      // Clear original RTDB path
+      const rtdbRef = ref(realtimeDb, "original/globalActivities");
+      await remove(rtdbRef);
+      
+      // Reset sequence (this will clear sequence data dan reset meta ke 0)
+      await sequenceService.resetSequence('globalActivities');
+      
+      console.log(`Bulk deleted ${activityIds.length} activities and reset sequence`);
+      return { success: true, deletedCount: activityIds.length };
+    } catch (error) {
+      console.error("Error bulk deleting all activities:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Recalculate meta count untuk sync RTDB sequence dengan Firestore
+   * 
+   * @returns {Promise<Object>} Result dengan success status
+   */
+  async syncSequenceMeta() {
+    try {
+      await sequenceService.recalculateMetaCount('globalActivities');
+      console.log('Successfully synced activities sequence meta');
+      return { success: true };
+    } catch (error) {
+      console.error("Error syncing sequence meta:", error);
+      return { success: false, error: error.message };
+    }
   }
 };
 

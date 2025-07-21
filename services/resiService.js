@@ -680,4 +680,64 @@ export const resiService = {
       }
     );
   },
+
+  /**
+   * Bulk delete semua resi dan reset sequence
+   * Berguna untuk testing atau cleanup
+   * 
+   * @returns {Promise<Object>} Result dengan success status
+   */
+  async bulkDeleteAllResi() {
+    try {
+      // Get semua resi untuk delete satu-satu dari Firestore
+      const q = query(collection(db, COLLECTION_NAME));
+      const snapshot = await getDocs(q);
+      
+      const deletePromises = [];
+      const resiIds = [];
+      
+      // Collect all resi IDs
+      snapshot.forEach((doc) => {
+        resiIds.push(doc.id);
+      });
+      
+      // Delete all from Firestore
+      resiIds.forEach((resiId) => {
+        deletePromises.push(deleteDoc(doc(db, COLLECTION_NAME, resiId)));
+      });
+      
+      // Wait untuk semua Firestore deletions selesai
+      await Promise.all(deletePromises);
+      
+      // Clear original RTDB path
+      const rtdbRef = ref(realtimeDb, RTDB_PATH);
+      await remove(rtdbRef);
+      
+      // Reset sequence (this will clear sequence data dan reset meta ke 0)
+      await sequenceService.resetSequence('receipts');
+      
+      console.log(`Bulk deleted ${resiIds.length} resi and reset sequence`);
+      return { success: true, deletedCount: resiIds.length };
+    } catch (error) {
+      console.error("Error bulk deleting all resi:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Recalculate meta count untuk sync RTDB sequence dengan Firestore
+   * Berguna untuk fix inconsistencies
+   * 
+   * @returns {Promise<Object>} Result dengan success status
+   */
+  async syncSequenceMeta() {
+    try {
+      await sequenceService.recalculateMetaCount('receipts');
+      console.log('Successfully synced receipts sequence meta');
+      return { success: true };
+    } catch (error) {
+      console.error("Error syncing sequence meta:", error);
+      return { success: false, error: error.message };
+    }
+  },
 };

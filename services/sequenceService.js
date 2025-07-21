@@ -195,8 +195,8 @@ export const sequenceService = {
       const mappingRef = ref(realtimeDb, `${MAPPING_BASE}/${collectionName}/${firebaseId}`);
       await remove(mappingRef);
       
-      // NOTE: Tidak update count, biarkan gaps untuk consistency
-      // Sequential ID 1,2,4,5 adalah OK untuk ESP32
+      // Update count in meta (FIXED: Count should decrease on delete)
+      await this.decrementCount(collectionName);
       
       console.log(`Deleted ${collectionName} sequential ID ${sequentialId}`);
       return true;
@@ -323,6 +323,120 @@ export const sequenceService = {
     } catch (error) {
       console.error(`Error getting all data for ${collectionName}:`, error);
       return [];
+    }
+  },
+
+  /**
+   * Decrement count in meta when item is deleted
+   * 
+   * @param {string} collectionName - Nama collection
+   * @returns {Promise<boolean>} Success status
+   */
+  async decrementCount(collectionName) {
+    try {
+      const countRef = ref(realtimeDb, `${SEQUENCE_BASE}/${collectionName}/meta/count`);
+      
+      // Atomic decrement untuk avoid race conditions
+      const result = await runTransaction(countRef, (currentCount) => {
+        return Math.max((currentCount || 0) - 1, 0); // Never go below 0
+      });
+      
+      if (result.committed) {
+        console.log(`Decremented count for ${collectionName}: ${result.snapshot.val()}`);
+        return true;
+      } else {
+        throw new Error('Failed to decrement count');
+      }
+    } catch (error) {
+      console.error(`Error decrementing count for ${collectionName}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Recalculate and sync meta count with actual data count
+   * 
+   * @param {string} collectionName - Nama collection
+   * @returns {Promise<boolean>} Success status
+   */
+  async recalculateMetaCount(collectionName) {
+    try {
+      // Get all data untuk count actual items
+      const dataRef = ref(realtimeDb, `${SEQUENCE_BASE}/${collectionName}`);
+      const snapshot = await get(dataRef);
+      
+      let actualCount = 0;
+      let maxSequenceId = 0;
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        
+        // Count actual items (exclude meta)
+        Object.keys(data).forEach(key => {
+          if (key !== 'meta' && !isNaN(parseInt(key))) {
+            actualCount++;
+            maxSequenceId = Math.max(maxSequenceId, parseInt(key));
+          }
+        });
+      }
+      
+      // Update meta dengan actual count
+      const metaRef = ref(realtimeDb, `${SEQUENCE_BASE}/${collectionName}/meta`);
+      await set(metaRef, { 
+        count: actualCount,
+        lastId: maxSequenceId 
+      });
+      
+      console.log(`Recalculated meta for ${collectionName}: count=${actualCount}, lastId=${maxSequenceId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error recalculating meta for ${collectionName}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reset sequence untuk start fresh dengan count 0
+   * Berguna ketika semua data dihapus dan user ingin mulai dari 1 lagi
+   * 
+   * @param {string} collectionName - Nama collection
+   * @returns {Promise<boolean>} Success status
+   */
+  async resetSequence(collectionName) {
+    try {
+      // Clear all data (keep structure)
+      const collectionRef = ref(realtimeDb, `${SEQUENCE_BASE}/${collectionName}`);
+      await remove(collectionRef);
+      
+      // Clear all mappings
+      const mappingRef = ref(realtimeDb, `${MAPPING_BASE}/${collectionName}`);
+      await remove(mappingRef);
+      
+      // Initialize fresh meta
+      await this.initializeCollection(collectionName);
+      
+      console.log(`Reset sequence for ${collectionName}`);
+      return true;
+    } catch (error) {
+      console.error(`Error resetting sequence for ${collectionName}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bulk delete all items in collection dan reset sequence
+   * 
+   * @param {string} collectionName - Nama collection
+   * @returns {Promise<boolean>} Success status
+   */
+  async bulkDeleteAll(collectionName) {
+    try {
+      await this.resetSequence(collectionName);
+      console.log(`Bulk deleted all items in ${collectionName}`);
+      return true;
+    } catch (error) {
+      console.error(`Error bulk deleting ${collectionName}:`, error);
+      throw error;
     }
   },
 
