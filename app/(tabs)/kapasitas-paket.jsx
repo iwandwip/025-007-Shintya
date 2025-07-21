@@ -397,7 +397,7 @@ function KapasitasPaket() {
             Detail Kapasitas
           </Text>
 
-          {/* Grid 3 kolom untuk detail angka */}
+          {/* Detail Grid - Dynamic layout based on visible fields */}
           <View style={styles.detailGrid}>
             {/* Ketinggian saat ini - Conditional display based on mode and conversion settings */}
             {((capacityDisplayMode === 'height') || 
@@ -415,7 +415,7 @@ function KapasitasPaket() {
               </View>
             )}
 
-            {/* Batas maksimal box (biasanya 30cm) - Clickable */}
+            {/* Batas maksimal box (biasanya 30cm) - Always visible and clickable */}
             <TouchableOpacity 
               style={[styles.detailItem, styles.clickableItem, { borderColor: colors.gray100 }]}
               onPress={() => setShowMaxCapacityModal(true)}
@@ -653,10 +653,13 @@ const styles = StyleSheet.create({
   },
   detailGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
+    flexWrap: "wrap",
+    gap: 8,
   },
   detailItem: {
     flex: 1,
+    minWidth: 100,
     alignItems: "center",
     paddingVertical: 12,
     borderWidth: 1,

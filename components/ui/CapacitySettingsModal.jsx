@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,15 @@ function CapacitySettingsModal({ visible, onClose }) {
   const [selectedHeightConversion, setSelectedHeightConversion] = useState(enableHeightConversion);
   const [selectedPercentageConversion, setSelectedPercentageConversion] = useState(enablePercentageConversion);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Sync modal state with context when modal opens or context changes
+  useEffect(() => {
+    if (visible) {
+      setSelectedMode(capacityDisplayMode);
+      setSelectedHeightConversion(enableHeightConversion);
+      setSelectedPercentageConversion(enablePercentageConversion);
+    }
+  }, [visible, capacityDisplayMode, enableHeightConversion, enablePercentageConversion]);
 
   const handleSave = async () => {
     try {
