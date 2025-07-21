@@ -241,6 +241,18 @@ components/
 - **Props**: `visible`, `onClose`, `currentMaxHeight`, `onUpdate`
 - **Dependencies**: `capacityService`, `Colors`
 
+#### CapacitySettingsModal.jsx
+- **Purpose**: Dual mode capacity monitoring settings modal
+- **Key Features**:
+  - Mode selection between height (cm) and percentage data from ESP32
+  - Conversion toggle option for percentage mode (convert back to height)
+  - AsyncStorage integration for persistent settings
+  - Radio button interface for mode selection
+  - Conditional conversion toggle for percentage mode only
+  - Real-time settings application without app restart
+- **Props**: `visible`, `onClose`
+- **Dependencies**: `SettingsContext`, `Colors`
+
 ### Utility Components
 
 #### IllustrationContainer.jsx
