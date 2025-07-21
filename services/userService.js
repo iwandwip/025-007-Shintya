@@ -106,7 +106,6 @@ export const createUserProfile = async (uid, profileData) => {
     if (profileData.role === 'user') {
       userProfile.nama = profileData.nama;           // Nama lengkap
       userProfile.noTelp = profileData.noTelp;       // Nomor telepon
-      userProfile.rfidCode = profileData.rfidCode || ""; // RFID code (kosong jika belum paired)
     }
 
     // Simpan profil ke Firestore collection 'users'
@@ -314,121 +313,7 @@ export const getAllUsers = async () => {
   }
 };
 
-/**
- * Fungsi untuk mengupdate kode RFID user
- * 
- * Melakukan update pada field rfidCode user setelah proses
- * pairing RFID berhasil dilakukan melalui ESP32 hardware.
- * 
- * @param {string} userId - Firebase Auth UID user
- * @param {string} rfidCode - Kode RFID 8 karakter hex yang sudah dipaired
- * @returns {Promise<Object>} Result object dengan status operasi
- * @returns {boolean} returns.success - Apakah update berhasil
- * @returns {string} returns.error - Pesan error (jika gagal)
- * 
- * Proses RFID Pairing:
- * 1. User memulai pairing session di app
- * 2. App generate 8-char hex code
- * 3. ESP32 menulis code ke RFID card
- * 4. User konfirmasi pairing berhasil
- * 5. Fungsi ini menyimpan code ke profil user
- * 
- * Kegunaan RFID:
- * - Akses paket COD dengan tap RFID
- * - Identifikasi user di hardware
- * - Logging aktivitas user
- */
-export const updateUserRFID = async (userId, rfidCode) => {
-  try {
-    // Validasi Firestore connection
-    if (!db) {
-      throw new Error('Firestore belum diinisialisasi');
-    }
 
-    const updateData = {
-      rfidCode: rfidCode,    // Kode RFID 8 karakter hex
-      updatedAt: new Date()  // Timestamp untuk audit trail
-    };
-
-    // Update kode RFID user dengan timestamp
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, updateData);
-    
-    // Mirror update ke RTDB
-    const rtdbUpdateData = {
-      rfidCode: rfidCode,
-      updatedAt: Date.now()
-    };
-    
-    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
-    await update(rtdbRef, rtdbUpdateData);
-    
-    // Mirror update to sequence path
-    await sequenceService.updateByFirebaseId('users', userId, updateData);
-
-    console.log('RFID user berhasil diupdate dan dimirror ke RTDB');
-    return { success: true };
-  } catch (error) {
-    console.error('Error update RFID user:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Fungsi untuk menghapus kode RFID user
- * 
- * Menghapus kode RFID dari profil user (set ke null) sehingga
- * user tidak bisa lagi mengakses paket menggunakan RFID card.
- * 
- * @param {string} userId - Firebase Auth UID user
- * @returns {Promise<Object>} Result object dengan status operasi
- * @returns {boolean} returns.success - Apakah penghapusan berhasil
- * @returns {string} returns.error - Pesan error (jika gagal)
- * 
- * Kegunaan:
- * - User ingin unlink RFID card dari akun
- * - RFID card hilang/rusak
- * - Admin menghapus akses RFID user
- * - Reset sebelum pairing ulang
- * 
- * Catatan: Setelah RFID dihapus, user harus melakukan
- * pairing ulang untuk menggunakan fitur RFID access lagi.
- */
-export const deleteUserRFID = async (userId) => {
-  try {
-    // Validasi Firestore connection
-    if (!db) {
-      throw new Error('Firestore belum diinisialisasi');
-    }
-
-    const updateData = {
-      rfidCode: null,        // Hapus kode RFID
-      updatedAt: new Date()  // Timestamp untuk audit trail
-    };
-
-    // Hapus kode RFID user (set ke null)
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, updateData);
-    
-    // Mirror update ke RTDB
-    const rtdbUpdateData = {
-      rfidCode: null,
-      updatedAt: Date.now()
-    };
-    
-    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${userId}`);
-    await update(rtdbRef, rtdbUpdateData);
-    
-    // Mirror update to sequence path
-    await sequenceService.updateByFirebaseId('users', userId, updateData);
-
-    console.log('RFID user berhasil dihapus dan dimirror ke RTDB');
-    return { success: true };
-  } catch (error) {
-    console.error('Error menghapus RFID user:', error);
-    return { success: false, error: error.message };
-  }
-};
 
 /**
  * Fungsi untuk menghapus user secara permanen dari Firestore

@@ -72,7 +72,7 @@ const CONFIG = {
     { 
       firestore: 'users', 
       rtdb: 'users',
-      description: 'User profiles and RFID data'
+      description: 'User profiles and data'
     },
     { 
       firestore: 'lokerControl', 

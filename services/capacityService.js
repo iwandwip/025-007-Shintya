@@ -93,6 +93,7 @@ export const getCapacityData = async () => {
       // Buat dokumen default jika belum ada (inisialisasi pertama kali)
       const defaultData = {
         height: 0,                    // Kotak kosong (0cm)
+        percentage: 0,               // Persentase langsung dari ESP32 (0%)
         maxHeight: 30,               // Kapasitas maksimum 30cm
         lastUpdated: serverTimestamp(), // Timestamp server Firebase
         deviceId: 'ESP32_001'        // ID perangkat ESP32 default
@@ -194,6 +195,78 @@ export const updateCapacityHeight = async (height, deviceId = 'ESP32_001') => {
     };
   } catch (error) {
     console.error('Error updating capacity height:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Update persentase kapasitas langsung dari ESP32.
+ * 
+ * Fungsi ini dipanggil oleh ESP32 ketika dalam mode persentase.
+ * ESP32 mengirim persentase yang sudah dihitung langsung tanpa
+ * perlu konversi dari ketinggian.
+ * 
+ * Mode Persentase ESP32:
+ * 1. ESP32 membaca sensor ultrasonik (HC-SR04)
+ * 2. ESP32 melakukan kalkulasi persentase internal
+ * 3. Kirim persentase langsung ke Firebase
+ * 4. Update timestamp untuk tracking pembacaan terakhir
+ * 
+ * @async
+ * @function updateCapacityPercentage
+ * @param {number} percentage - Persentase kapasitas dalam % (0-100)
+ * @param {string} [deviceId='ESP32_001'] - ID perangkat ESP32 yang mengirim data
+ * @returns {Promise<Object>} Response object dengan format:
+ *   - success: boolean - Status keberhasilan update
+ *   - message: string - Pesan konfirmasi jika berhasil
+ *   - error: string - Pesan error jika operasi gagal
+ * 
+ * @example
+ * // ESP32 mengirim data persentase 75%
+ * const result = await updateCapacityPercentage(75, 'ESP32_001');
+ * if (result.success) {
+ *   console.log('Data persentase berhasil diupdate');
+ * }
+ */
+export const updateCapacityPercentage = async (percentage, deviceId = 'ESP32_001') => {
+  try {
+    // Referensi dokumen sensor untuk update real-time
+    const docRef = doc(db, CAPACITY_COLLECTION, CAPACITY_DOC_ID);
+    
+    // Update data sensor dengan persentase terbaru dari ESP32
+    const updateData = {
+      percentage: percentage,            // Persentase langsung dari ESP32
+      lastUpdated: serverTimestamp(),   // Timestamp pembacaan untuk tracking
+      deviceId: deviceId                // ID ESP32 untuk identifikasi perangkat
+    };
+    
+    await updateDoc(docRef, updateData);
+    
+    // Mirror update to original RTDB path
+    const rtdbUpdateData = {
+      percentage: percentage,
+      lastUpdated: Date.now(),
+      deviceId: deviceId
+    };
+    
+    const rtdbRef = ref(realtimeDb, `${RTDB_PATH}/${CAPACITY_DOC_ID}`);
+    await update(rtdbRef, rtdbUpdateData);
+    
+    // Mirror update to sequence path
+    await sequenceService.updateByFirebaseId('capacity', CAPACITY_DOC_ID, {
+      percentage: percentage,
+      deviceId: deviceId
+    });
+    
+    return {
+      success: true,
+      message: 'Percentage updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating capacity percentage:', error);
     return {
       success: false,
       error: error.message
@@ -341,10 +414,11 @@ export const subscribeToCapacityUpdates = (callback) => {
 };
 
 /**
- * Kalkulasi status kapasitas kotak berdasarkan pembacaan sensor ultrasonik.
+ * Kalkulasi status kapasitas kotak berdasarkan data dari ESP32.
  * 
- * Fungsi ini mengkonversi data mentah sensor (ketinggian dalam cm) menjadi
- * status yang mudah dipahami pengguna dengan indikator visual dan pesan.
+ * Fungsi ini mengkonversi data sensor (ketinggian atau persentase langsung)
+ * menjadi status yang mudah dipahami pengguna dengan indikator visual dan pesan.
+ * Mendukung dua mode: height mode dan percentage mode dengan opsi konversi balik.
  * 
  * Logika Kalkulasi Status:
  * - 90-100%: PENUH (Merah) - Kotak hampir penuh, perlu dikosongkan
@@ -352,30 +426,64 @@ export const subscribeToCapacityUpdates = (callback) => {
  * - 30-69%:  TERISI SEBAGIAN (Biru) - Kotak tersedia untuk paket baru
  * - 0-29%:   KOSONG (Hijau) - Kotak kosong, siap menerima paket
  * 
- * Sistem Peringatan:
- * - Status PENUH memicu notifikasi untuk admin
- * - Status HAMPIR PENUH memberi peringatan dini
- * - Warna dikalibrasi untuk UI/UX yang intuitif
+ * Mode Operasi:
+ * - Height Mode: Kalkulasi persentase dari height/maxHeight
+ * - Percentage Mode: Gunakan persentase langsung dari ESP32
+ * - Percentage Mode + Conversion: Gunakan persentase ESP32 + konversi balik ke height
  * 
  * @function calculateCapacityStatus
- * @param {number} height - Ketinggian paket terukur dalam cm
+ * @param {number} height - Ketinggian paket terukur dalam cm (optional jika ada percentage)
  * @param {number} [maxHeight=30] - Kapasitas maksimum kotak dalam cm
+ * @param {number} [directPercentage] - Persentase langsung dari ESP32 (0-100)
+ * @param {boolean} [enableHeightConversion=true] - Aktifkan konversi balik percentage → height
  * @returns {Object} Status object dengan format:
  *   - percentage: number - Persentase kapasitas (0-100)
+ *   - height: number - Ketinggian (dari sensor atau hasil konversi)
+ *   - calculatedHeight: number - Ketinggian hasil konversi balik (jika ada)
  *   - status: string - Status dalam bahasa Indonesia
  *   - message: string - Pesan deskriptif untuk pengguna
  *   - color: string - Kode warna hex untuk indikator visual
  * 
  * @example
- * // Sensor membaca ketinggian 25cm dari kotak 30cm
- * const status = calculateCapacityStatus(25, 30);
- * console.log(status.percentage); // 83.33
- * console.log(status.status);     // "Hampir Penuh"
- * console.log(status.color);      // "#F59E0B" (kuning)
+ * // Mode Height: Sensor membaca ketinggian 25cm dari kotak 30cm
+ * const status1 = calculateCapacityStatus(25, 30);
+ * console.log(status1.percentage); // 83.33
+ * 
+ * // Mode Percentage: ESP32 mengirim persentase langsung 75%
+ * const status2 = calculateCapacityStatus(null, 30, 75);
+ * console.log(status2.percentage); // 75
+ * 
+ * // Mode Percentage + Conversion: ESP32 75% + konversi balik ke height
+ * const status3 = calculateCapacityStatus(null, 30, 75, true);
+ * console.log(status3.calculatedHeight); // 22.5
  */
-export const calculateCapacityStatus = (height, maxHeight = 30) => {
-  // Hitung persentase kapasitas berdasarkan ketinggian paket
-  const percentage = (height / maxHeight) * 100;
+export const calculateCapacityStatus = (height, maxHeight = 30, directPercentage = null, enableHeightConversion = true) => {
+  let percentage;
+  let actualHeight = height;
+  let calculatedHeight = null;
+  
+  // Tentukan persentase berdasarkan mode yang digunakan
+  if (directPercentage !== null && directPercentage !== undefined) {
+    // Mode Persentase: Gunakan nilai langsung dari ESP32
+    percentage = directPercentage;
+    
+    // Konversi balik ke ketinggian jika diaktifkan
+    if (enableHeightConversion) {
+      calculatedHeight = (percentage / 100) * maxHeight;
+      // Jika tidak ada height asli, gunakan hasil konversi
+      if (actualHeight === null || actualHeight === undefined) {
+        actualHeight = calculatedHeight;
+      }
+    }
+  } else if (height !== null && height !== undefined) {
+    // Mode Ketinggian: Hitung persentase dari ketinggian/maxHeight
+    percentage = (height / maxHeight) * 100;
+    actualHeight = height;
+  } else {
+    // Fallback: Default ke 0% jika tidak ada data
+    percentage = 0;
+    actualHeight = 0;
+  }
   
   let status, message, color;
   
@@ -403,7 +511,9 @@ export const calculateCapacityStatus = (height, maxHeight = 30) => {
   }
   
   return {
-    percentage: Math.min(percentage, 100), // Maksimal 100% untuk konsistensi UI
+    percentage: Math.min(Math.max(percentage, 0), 100), // Clamp antara 0-100% untuk konsistensi UI
+    height: actualHeight, // Ketinggian (asli atau hasil konversi)
+    calculatedHeight, // Ketinggian hasil konversi balik (null jika tidak ada)
     status,
     message,
     color

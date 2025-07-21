@@ -326,22 +326,6 @@ function Profile() {
                   </Text>
                 </View>
 
-                {/* Baris kode RFID (hanya tampil jika ada) */}
-                {userProfile.rfidCode && (
-                  <View
-                    style={[
-                      styles.profileRow,
-                      { borderBottomColor: colors.gray100 },
-                    ]}
-                  >
-                    <Text style={[styles.label, { color: colors.gray600 }]}>
-                      Kode RFID:
-                    </Text>
-                    <Text style={[styles.value, styles.rfidCode, { color: colors.gray900 }]}>
-                      {userProfile.rfidCode}
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           )}
@@ -469,10 +453,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 2,
     textAlign: "right",
-  },
-  rfidCode: {
-    fontFamily: "monospace",
-    fontSize: 12,
   },
   userId: {
     fontFamily: "monospace",

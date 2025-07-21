@@ -160,8 +160,7 @@ function testUserQRModalScenario() {
     const userProfile = {
       email: "user1@gmail.com",
       nama: "Test User",
-      role: "user",
-      rfidCode: "A1B2C3D4"
+      role: "user"
     };
     
     console.log(`User profile: ${userProfile.email}`);
@@ -170,8 +169,7 @@ function testUserQRModalScenario() {
     const qrData = {
       email: userProfile.email,
       nama: userProfile.nama,
-      type: "user_qr",
-      rfid: userProfile.rfidCode
+      type: "user_qr"
     };
     
     console.log('Encrypting user profile for QR code...');
@@ -188,7 +186,6 @@ function testUserQRModalScenario() {
     
     console.log('✅ QR code decrypted successfully');
     console.log(`   Email matches: ${decryptedQR.email === userProfile.email}`);
-    console.log(`   RFID matches: ${decryptedQR.rfid === userProfile.rfidCode}`);
     console.log(`   Type: ${decryptedQR.type}`);
     console.log(`   Timestamp: ${new Date(decryptedQR.timestamp).toLocaleString()}`);
     console.log(`   Version: ${decryptedQR.version}`);
@@ -199,15 +196,13 @@ function testUserQRModalScenario() {
     const userProfile2 = {
       email: "user2@gmail.com",
       nama: "Another User",
-      role: "user",
-      rfidCode: "E5F6G7H8"
+      role: "user"
     };
     
     const qrData2 = {
       email: userProfile2.email,
       nama: userProfile2.nama,
-      type: "user_qr",
-      rfid: userProfile2.rfidCode
+      type: "user_qr"
     };
     
     const encryptedQR2 = AESV3Instances.userQR.encrypt(qrData2);

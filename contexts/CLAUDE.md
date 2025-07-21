@@ -19,7 +19,6 @@ contexts/
 - **Key Features**:
   - Firebase authentication integration
   - User profile management
-  - RFID code management
   - Session persistence
   - Auto-login functionality
 - **State**:
@@ -33,7 +32,6 @@ contexts/
   - `register(userData)` - User registration
   - `logout()` - Secure logout
   - `updateProfile(data)` - Update user profile
-  - `updateRfid(rfidCode)` - RFID code assignment
 - **Dependencies**: `authService`, `userService`, `AsyncStorage`
 
 ### NotificationContext.jsx
@@ -187,7 +185,6 @@ const styles = StyleSheet.create({
 - **Token Management**: Secure handling of authentication tokens
 - **Session Timeout**: Automatic logout on session expiration
 - **Profile Validation**: User profile validation and sanitization
-- **RFID Security**: Secure RFID code storage and validation
 
 ### Data Protection
 - **Sensitive Data**: Proper handling of sensitive user information

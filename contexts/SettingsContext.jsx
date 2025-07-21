@@ -45,9 +45,13 @@ export const useSettings = () => {
     return {
       theme: "light",            // Default ke tema light
       encryptionMode: "plain",   // Default ke mode plain
+      capacityDisplayMode: "height", // Default ke mode height
+      enableHeightConversion: true, // Default ke konversi aktif
       loading: false,            // Tidak ada loading jika tidak ada context
       changeTheme: () => {},     // Function kosong sebagai fallback
       changeEncryptionMode: () => {}, // Function kosong sebagai fallback
+      changeCapacityDisplayMode: () => {}, // Function kosong sebagai fallback
+      changeHeightConversion: () => {}, // Function kosong sebagai fallback
     };
   }
   return context;
@@ -68,6 +72,12 @@ export const SettingsProvider = ({ children }) => {
   
   // State untuk menyimpan mode enkripsi QR Code ("encrypted" atau "plain")
   const [encryptionMode, setEncryptionMode] = useState("plain");
+  
+  // State untuk menyimpan mode tampilan kapasitas ("height" atau "percentage")
+  const [capacityDisplayMode, setCapacityDisplayMode] = useState("height");
+  
+  // State untuk menyimpan opsi konversi balik dari percentage ke height
+  const [enableHeightConversion, setEnableHeightConversion] = useState(true);
   
   // State loading untuk proses inisialisasi pengaturan dari AsyncStorage
   const [loading, setLoading] = useState(true);
@@ -96,12 +106,30 @@ export const SettingsProvider = ({ children }) => {
       if (savedEncryptionMode && (savedEncryptionMode === "encrypted" || savedEncryptionMode === "plain")) {
         setEncryptionMode(savedEncryptionMode);
       }
-      // Jika tidak ada tema tersimpan atau nilai tidak valid, gunakan default "light"
+      
+      // Ambil mode tampilan kapasitas yang tersimpan dari AsyncStorage
+      const savedCapacityDisplayMode = await AsyncStorage.getItem("capacity_display_mode");
+      
+      // Validasi nilai mode tampilan kapasitas yang valid ("height" atau "percentage")
+      if (savedCapacityDisplayMode && (savedCapacityDisplayMode === "height" || savedCapacityDisplayMode === "percentage")) {
+        setCapacityDisplayMode(savedCapacityDisplayMode);
+      }
+      
+      // Ambil opsi konversi height yang tersimpan dari AsyncStorage
+      const savedEnableHeightConversion = await AsyncStorage.getItem("enable_height_conversion");
+      
+      // Validasi nilai boolean untuk konversi height
+      if (savedEnableHeightConversion !== null) {
+        setEnableHeightConversion(savedEnableHeightConversion === "true");
+      }
+      // Jika tidak ada pengaturan tersimpan atau nilai tidak valid, gunakan default values
     } catch (error) {
       // Error handling jika gagal membaca dari AsyncStorage
       console.error("Error loading settings:", error);
       setTheme("light"); // Fallback ke tema light
       setEncryptionMode("plain"); // Fallback ke mode plain
+      setCapacityDisplayMode("height"); // Fallback ke mode height
+      setEnableHeightConversion(true); // Fallback ke konversi aktif
     } finally {
       // Set loading selesai terlepas dari hasil operasi
       setLoading(false);
@@ -161,6 +189,58 @@ export const SettingsProvider = ({ children }) => {
   };
 
   /**
+   * Mengubah mode tampilan kapasitas dan menyimpannya secara persisten
+   * 
+   * Function ini akan mengupdate state mode tampilan kapasitas dan menyimpan pilihan
+   * ke AsyncStorage agar tetap tersimpan setelah aplikasi ditutup.
+   * 
+   * @param {string} newMode - Mode tampilan baru ("height" atau "percentage")
+   */
+  const changeCapacityDisplayMode = async (newMode) => {
+    try {
+      // Validasi mode tampilan kapasitas yang valid
+      if (newMode === "height" || newMode === "percentage") {
+        // Update state mode tampilan kapasitas untuk trigger re-render
+        setCapacityDisplayMode(newMode);
+        
+        // Simpan pilihan mode tampilan kapasitas ke AsyncStorage untuk persistensi
+        await AsyncStorage.setItem("capacity_display_mode", newMode);
+      }
+      // Jika mode tidak valid, abaikan permintaan
+    } catch (error) {
+      // Error handling jika gagal menyimpan ke AsyncStorage
+      console.error("Error saving capacity display mode:", error);
+      // Tetap update state meskipun gagal menyimpan ke storage
+    }
+  };
+
+  /**
+   * Mengubah opsi konversi height dan menyimpannya secara persisten
+   * 
+   * Function ini akan mengupdate state konversi height dan menyimpan pilihan
+   * ke AsyncStorage agar tetap tersimpan setelah aplikasi ditutup.
+   * 
+   * @param {boolean} enabled - Status konversi height (true/false)
+   */
+  const changeHeightConversion = async (enabled) => {
+    try {
+      // Validasi nilai boolean
+      if (typeof enabled === "boolean") {
+        // Update state konversi height untuk trigger re-render
+        setEnableHeightConversion(enabled);
+        
+        // Simpan pilihan konversi height ke AsyncStorage untuk persistensi
+        await AsyncStorage.setItem("enable_height_conversion", enabled.toString());
+      }
+      // Jika nilai tidak valid, abaikan permintaan
+    } catch (error) {
+      // Error handling jika gagal menyimpan ke AsyncStorage
+      console.error("Error saving height conversion setting:", error);
+      // Tetap update state meskipun gagal menyimpan ke storage
+    }
+  };
+
+  /**
    * useEffect untuk inisialisasi pengaturan
    * 
    * Memuat pengaturan tersimpan dari AsyncStorage saat komponen mount.
@@ -175,9 +255,13 @@ export const SettingsProvider = ({ children }) => {
   const value = {
     theme: theme || "light",                           // Pastikan selalu ada nilai tema (fallback ke "light")
     encryptionMode: encryptionMode || "plain",         // Pastikan selalu ada nilai mode enkripsi (fallback ke "plain")
+    capacityDisplayMode: capacityDisplayMode || "height", // Pastikan selalu ada nilai mode tampilan kapasitas (fallback ke "height")
+    enableHeightConversion: enableHeightConversion !== undefined ? enableHeightConversion : true, // Pastikan selalu ada nilai konversi height (fallback ke true)
     loading,                                           // Status loading untuk proses inisialisasi
     changeTheme,                                      // Function untuk mengubah tema
     changeEncryptionMode,                             // Function untuk mengubah mode enkripsi
+    changeCapacityDisplayMode,                        // Function untuk mengubah mode tampilan kapasitas
+    changeHeightConversion,                           // Function untuk mengubah opsi konversi height
   };
 
   // Return Provider component dengan value context

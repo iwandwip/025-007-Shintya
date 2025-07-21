@@ -387,10 +387,10 @@ export const NotificationProvider = ({ children }) => {
    * Notifikasi untuk akses paket yang berhasil
    * 
    * Menampilkan notifikasi ketika pengguna berhasil mengakses paket
-   * melalui RFID atau metode akses lainnya.
+   * melalui QR code atau metode akses lainnya.
    * 
    * @param {Object} packageData - Data paket yang diakses
-   * @param {string} accessMethod - Metode akses yang digunakan (RFID, QR, dll)
+   * @param {string} accessMethod - Metode akses yang digunakan (QR, app, dll)
    * @returns {number|undefined} ID notifikasi atau undefined jika bukan user
    */
   const showPackageAccessNotification = (packageData, accessMethod) => {

@@ -89,7 +89,7 @@ const CONFIG = {
       firestore: 'users', 
       rtdb: 'original/users',
       sequence: 'users',
-      description: 'User profiles and RFID data'
+      description: 'User profiles and data'
     },
     { 
       firestore: 'lokerControl', 
@@ -108,12 +108,6 @@ const CONFIG = {
       rtdb: 'original/capacity',
       sequence: 'capacity',
       description: 'Ultrasonic sensor capacity data'
-    },
-    { 
-      firestore: 'rfid_pairing', 
-      rtdb: 'original/rfid_pairing',
-      sequence: 'rfid_pairing',
-      description: 'RFID card pairing session data'
     },
     { 
       firestore: 'scannerModeHistory', 

@@ -143,7 +143,7 @@ export const AuthProvider = ({ children }) => {
    * Refresh data profil pengguna dari Firestore
    * 
    * Function ini berguna untuk memperbarui data profil setelah ada perubahan
-   * pada data pengguna (seperti update RFID, nama, atau informasi lainnya).
+   * pada data pengguna (seperti nama atau informasi lainnya).
    */
   const refreshProfile = async () => {
     if (currentUser) {

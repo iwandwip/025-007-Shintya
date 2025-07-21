@@ -1,6 +1,6 @@
 # SHINTYA APP - PROJECT STRUCTURE & DATABASE SCHEMA
 
-**Shintya App** - React Native mobile application untuk comprehensive package delivery tracking system dengan ESP32 hardware integration. Sistem menggunakan RFID-based package identification, real-time ultrasonic capacity monitoring, dan secure multi-loker package access management dengan COD support.
+**Shintya App** - React Native mobile application untuk comprehensive package delivery tracking system dengan ESP32 hardware integration. Sistem menggunakan real-time ultrasonic capacity monitoring dan secure multi-loker package access management dengan COD support.
 
 ```
    +=============================================================================+
@@ -8,9 +8,9 @@
                                                                            |
    |  📱 React Native App  <->  ☁️  Firebase  <->  🔌 ESP32  <->  📦 Package Box    |
                                                                            |
-   |     Package Tracking   |    Real-time DB    |   RFID     |   5 Lokers    |
-   |     COD Management     |    Firestore       |   Sensors  |   Delivery     |
-   |     Loker Control      |    Authentication  |   LCD      |   Management   |
+   |     Package Tracking   |    Real-time DB    |   Sensors  |   5 Lokers    |
+   |     COD Management     |    Firestore       |   LCD      |   Delivery     |
+   |     Loker Control      |    Authentication  |   Control  |   Management   |
    +=============================================================================+
 ```
 
@@ -41,19 +41,19 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |    ----------------+      ----------------+      ----------------+        |
 |  |  📱 MOBILE APP   |    |  ☁️  FIREBASE    |    |  🔌 ESP32 HW     |        |
 |                    |    |                 |    |                 |        |
-|  | • React Native  |<-->| • Realtime DB   |<-->| • RFID RC522    |        |
-|  | • Expo SDK 53   |    | • Firestore     |    | • Ultrasonic    |        |
-|  | • Multi-Role    |    | • Authentication|    | • LCD Display   |        |
-|  | • RFID Pairing  |    | • Cloud Storage |    | • WiFi Module   |        |
-|  | • COD System    |    | • Admin SDK     |    | • Button Ctrl   |        |
+|  | • React Native  |<-->| • Realtime DB   |<-->| • Ultrasonic    |        |
+|  | • Expo SDK 53   |    | • Firestore     |    | • LCD Display   |        |
+|  | • Multi-Role    |    | • Authentication|    | • WiFi Module   |        |
+|  | • COD System    |    | • Cloud Storage |    | • Button Ctrl   |        |
+|  | • Loker Control |    | • Admin SDK     |    | • Servo Control |        |
 |    ----------------+      ----------------+      ----------------+        |
 |                                                                          |
 |    --------------------------------------------------------------------+   |
 |                   CORE FEATURES                                          |
 |  |  📦 Package Tracking System  📊 Real-time Capacity Monitor          |  |
-|  |  🏷️  RFID Integration        💰 COD Payment Management              |  |
-|  |  🔒 Multi-Loker Control      ⚡ Smart Caching System               |  |
-|  |  📱 Professional UI/UX       🛠️  Developer Testing Tools          |  |
+|  |  🔒 Multi-Loker Control      💰 COD Payment Management              |  |
+|  |  ⚡ Smart Caching System     🛠️  Developer Testing Tools          |  |
+|  |  📱 Professional UI/UX       🎛️  Hardware Integration             |  |
 |    --------------------------------------------------------------------+   |
   ----------------------------------------------------------------------------+
 ```
@@ -115,8 +115,8 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |  | ESP32 Simulator         | Firebase Cleanup      | EAS Build      |  |
 |  | • Interactive CLI       | • Database Reset      | • Development  |  |
 |  | • Hardware Sim          | • User Management     | • Preview      |  |
-|  | • RFID Testing          | • Activity Cleanup    | • Production   |  |
-|  | • Sensor Mocking        | • Test Data Seeder    |                |  |
+|  | • Sensor Testing        | • Activity Cleanup    | • Production   |  |
+|  | • Loker Simulation      | • Test Data Seeder    |                |  |
 |  |                         |                       |                |  |
 |  | Package Management      | Performance Tools     | Debug Tools    |  |
 |  | • CRUD Operations       | • Smart Caching       | • Error Bounds |  |
@@ -141,7 +141,7 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |      ├── index.jsx                ← Root redirect logic                  |
 |      ├── (auth)/                  ← Authentication group (public)        |
 |      │   ├── _layout.jsx          ← Auth layout wrapper                  |
-|      │   ├── login.jsx            ← Login screen dengan RFID pairing     |
+|      │   ├── login.jsx            ← Login screen with authentication     |
 |      │   ├── register.jsx         ← Registration screen                  |
 |      │   └── forgot-password.jsx  ← Password recovery                    |
 |      └── (tabs)/                  ← Main app tabs group (authenticated)   |
@@ -149,7 +149,7 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |          ├── index.jsx            ← Dashboard dengan stats & recent      |
 |          ├── list-resi.jsx        ← Package management CRUD              |
 |          ├── kapasitas-paket.jsx  ← Real-time capacity monitoring        |
-|          ├── profile.jsx          ← User profile & RFID management       |
+|          ├── profile.jsx          ← User profile management              |
 |          └── edit-profile.jsx     ← Profile editing (hidden tab)         |
 |                                                                          |
 |  🔒 ROUTE PROTECTION                                                      |
@@ -177,10 +177,10 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |  📏 TAB 3: CAPACITY         👤 TAB 4: PROFILE                             |
 |    ----------------+         ----------------+                            |
 |  | • Real-time monitoring | • User profile info        |                   |
-|  | • Visual indicators    | • RFID card management     |                   |
-|  | • Capacity percentage  | • Settings & preferences   |                   |
-|  | • Box status display   | • Activity history         |                   |
-|  | • Sensor data charts   | • Account settings         |                   |
+|  | • Visual indicators    | • Settings & preferences   |                   |
+|  | • Capacity percentage  | • Activity history         |                   |
+|  | • Box status display   | • Account settings         |                   |
+|  | • Sensor data charts   | • Theme management         |                   |
 |    ----------------+         ----------------+                            |
   ----------------------------------------------------------------------------+
 ```
@@ -202,7 +202,7 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |  |                                                                       |
 |  | userService.js           ← User profile management                     |
 |  | • profile CRUD operations dengan validation                           |
-|  | • RFID code management dan pairing                                    |
+|  | • user account management dan settings                                |
 |  | • activity tracking dengan comprehensive logging                      |
 |  |                                                                       |
 |  | firebase.js              ← Firebase configuration                     |
@@ -240,11 +240,6 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |  |   Hampir Penuh → Penuh) dengan percentage calculation                 |
 |  | • Historical data tracking dengan trend analysis                      |
 |  |                                                                       |
-|  | pairingService.js        ← RFID card pairing management               |
-|  | • 30-second timeout sessions dengan random 8-char hex generation      |
-|  | • Session state management dengan automatic cleanup                   |
-|  | • Multi-user pairing support dengan conflict resolution               |
-|  |                                                                       |
 |  | lokerControlService.js   ← Remote loker control system                |
 |  | • Remote buka/tutup functionality dengan Firebase commands            |
 |  | • Automatic reset after 10 seconds untuk security                     |
@@ -256,7 +251,7 @@ Shintya App menggunakan multi-role architecture dengan dua level akses: **Admin*
 |    ----------------+                                                      |
 |  | activityService.js       ← User activity logging                      |
 |  | • Comprehensive audit trail dengan timestamps                         |
-|  | • Activity categorization (login, package_action, rfid_pairing)       |
+|  | • Activity categorization (login, package_action, loker_control)      |
 |  | • Real-time activity feed dengan pagination                           |
 |  |                                                                       |
 |  | timelineService.js       ← Delivery timeline management               |
@@ -310,7 +305,6 @@ const packageStatusUtils = {
   nama: string,            // Full name (Indonesian)
   noTelp: string,          // Phone number (Indonesian format: 08xxxxxxxxx)
   role: 'user' | 'admin',  // User role untuk access control
-  rfidCode: string,        // Associated RFID card code (8-char hex)
   priority: 'normal' | 'high', // User priority level
   deleted: boolean,        // Soft delete flag
   createdAt: timestamp,    // Account creation time
@@ -353,19 +347,6 @@ const packageStatusUtils = {
 }
 ```
 
-#### **Collection: `rfid_pairing`**
-```javascript
-{
-  isActive: boolean,       // Pairing session active status
-  userId: string,          // User requesting pairing
-  rfidCode: string,        // Generated 8-character hex RFID code
-  status: string,          // Session status: "waiting", "paired", "cancelled", "timeout"
-  startTime: string,       // Session start time (ISO format)
-  endTime: string,         // Session end time (timeout or completion)
-  cancelledTime: string,   // Manual cancellation time
-  receivedTime: string     // RFID code received time
-}
-```
 
 #### **Collection: `packages` (Timeline-based Structure)**
 ```javascript
@@ -376,7 +357,7 @@ const packageStatusUtils = {
   deliveryDate: string,    // Scheduled delivery date
   status: string,          // Status: 'pending', 'delivered', 'picked_up', 'returned'
   pickupDate: string,      // Actual pickup date
-  accessMethod: string,    // Access method: 'rfid', 'qr_code', 'manual'
+  accessMethod: string,    // Access method: 'qr_code', 'manual', 'remote'
   weight: number,          // Package weight
   dimensions: string,      // Package dimensions
   priority: string,        // Delivery priority
@@ -390,10 +371,9 @@ const packageStatusUtils = {
   id: string,              // Auto-generated activity ID
   userId: string,          // User who performed the activity
   type: string,            // Activity type: "package_created", "status_changed", 
-                          // "rfid_paired", "loker_accessed", "login", etc.
+                          // "loker_accessed", "login", "profile_updated", etc.
   message: string,         // Human-readable description in Indonesian
   packageId: string,       // Related package ID (optional)
-  rfidCode: string,        // Related RFID code (optional)
   metadata: {              // Additional activity data
     previousStatus: string,  // For status changes
     newStatus: string,      // For status changes
@@ -425,9 +405,7 @@ monitoring/
 └── systemStatus/
     └── hardware/
         ├── isInUse: boolean           // Hardware busy status
-        ├── sessionType: string        // "rfid" | "weighing" | "idle"
-        ├── rfid: string              // Current RFID reading
-        ├── userRfid: string          // User's paired RFID
+        ├── sessionType: string        // "monitoring" | "weighing" | "idle"
         ├── weight: number            // Current weight reading
         ├── height: number            // Current height reading (0-30cm)
         ├── measurementComplete: boolean // Measurement completion flag
@@ -441,10 +419,6 @@ control/
 │   ├── maxHeight: number             // Maximum capacity (30cm)
 │   ├── percentage: number            // Calculated percentage
 │   └── lastReading: timestamp        // Last sensor reading
-├── rfidReader/
-│   ├── isListening: boolean          // RFID reader active status
-│   ├── lastCardRead: string          // Last RFID card read
-│   └── readTimestamp: timestamp      // Last read timestamp
 └── lokers/
     ├── loker_1/
     │   ├── isOpen: boolean           // Physical loker open status
@@ -464,7 +438,7 @@ control/
 │   ├── _layout.jsx                        # Main app layout dengan context providers
 │   ├── (auth)/                            # Authentication screens (public access)
 │   │   ├── _layout.jsx                    # Auth layout wrapper dengan background
-│   │   ├── login.jsx                      # Login screen dengan RFID pairing option
+│   │   ├── login.jsx                      # Login screen with authentication
 │   │   ├── register.jsx                   # Registration screen dengan form validation
 │   │   └── forgot-password.jsx            # Password recovery dengan email reset
 │   └── (tabs)/                            # Main app screens (authenticated users only)
@@ -473,7 +447,7 @@ control/
 │       ├── list-resi.jsx                  # Complete package list management dengan CRUD
 │       ├── kapasitas-paket.jsx            # Real-time capacity monitoring dengan visual indicators
 │       ├── edit-profile.jsx               # User profile editing (hidden tab, accessed via profile)
-│       └── profile.jsx                    # User profile display dengan RFID management
+│       └── profile.jsx                    # User profile display and management
 
 ├── components/                             # 🧩 Reusable UI Components (25+ Components)
 │   ├── AuthGuard.jsx                      # Route protection dengan redirect logic
@@ -502,7 +476,7 @@ control/
 │       └── HelpModal.jsx                  # User assistance dengan documentation dan troubleshooting
 
 ├── contexts/                               # 🌐 Global State Management (Optimized Performance)
-│   ├── AuthContext.jsx                    # User authentication, profile data, session persistence, dan RFID management
+│   ├── AuthContext.jsx                    # User authentication, profile data, session persistence
 │   ├── SettingsContext.jsx                # App settings, configuration, dan user preferences
 │   ├── NotificationContext.jsx            # Toast notifications, alerts, dan user feedback system
 │   └── ThemeContext.jsx                   # Theme management (light/dark mode support)
@@ -510,12 +484,11 @@ control/
 ├── services/                               # 💼 Business Logic Layer (12 Specialized Services)
 │   ├── firebase.js                        # Firebase initialization, configuration, dan connection management
 │   ├── authService.js                     # Complete authentication operations (login, register, password reset, session management)
-│   ├── userService.js                     # User profile management, RFID operations, dan account settings
+│   ├── userService.js                     # User profile management, account settings
 │   ├── resiService.js                     # Package receipt CRUD operations, COD support, automatic loker assignment (1-5)
 │   ├── userPackageService.js              # User-specific package history, timeline-based tracking, dan status management
 │   ├── packageStatusManager.js            # Smart caching system dengan TTL, request throttling, dan background sync optimization
 │   ├── capacityService.js                 # Ultrasonic sensor data processing untuk real-time box capacity monitoring (0-30cm range)
-│   ├── pairingService.js                  # RFID card pairing dengan 30-second timeout sessions dan random 8-char hex code generation
 │   ├── lokerControlService.js             # Remote loker control (buka/tutup) dengan automatic reset after 10 seconds
 │   ├── activityService.js                 # Comprehensive user activity logging dan audit trail system
 │   ├── timelineService.js                 # Delivery timeline dan period management untuk package scheduling
@@ -545,8 +518,7 @@ control/
 
 ├── 🧪 TESTING & DEVELOPMENT TOOLS
 ├── testing/
-│   ├── esp32-simulator.js                 # Interactive ESP32 hardware simulator (Node.js based)
-│   └── esp32-framework.cpp                # C++ testing framework untuk hardware validation
+│   └── esp32-simulator.js                 # Interactive ESP32 hardware simulator (Node.js based)
 ├── firebase-cleanup/
 │   ├── cleanup.js                         # Interactive database cleanup tool dengan user safety
 │   └── .gitignore                         # Cleanup tool gitignore
@@ -599,7 +571,7 @@ control/
 |  | Touch-Friendly UI     ← 44px minimum touch targets                    |
 |  | Accessibility Ready   ← Screen reader support                         |
 |  | Dark Mode Support     ← Light/dark theme switching                    |
-|  | RFID Visual Cues      ← Special indicators untuk RFID operations      |
+|  | Visual Indicators     ← Special status indicators for operations      |
 |    ----------------+                                                      |
   ----------------------------------------------------------------------------+
 ```
@@ -682,10 +654,10 @@ control/
 │  🎭 Role: Admin                            │
 │  [Edit Profil]                             │
 ├─────────────────────────────────────────────┤
-│  🏷️ RFID Management                        │
-│  Kartu RFID: AB12CD34                      │
-│  Status: ✅ Terpasang                      │
-│  [Ganti Kartu RFID]                        │
+│  ⚙️ Settings & Preferences                 │
+│  🔧 Package Notifications: Aktif           │
+│  📊 Display Stats: Ya                      │
+│  [Manage Settings]                         │
 ├─────────────────────────────────────────────┤
 │  ⚙️ Pengaturan                             │
 │  🎨 Tema: Terang                           │
@@ -695,7 +667,7 @@ control/
 │  📊 Aktivitas Terbaru                      │
 │  • Login - 5 menit lalu                    │
 │  • Tambah paket SH240001 - 1 jam lalu     │
-│  • Pairing RFID - 2 jam lalu              │
+│  • Update profile - 2 jam lalu            │
 ├─────────────────────────────────────────────┤
 │  🚪 [Keluar]                               │
 └─────────────────────────────────────────────┘
@@ -753,12 +725,12 @@ control/
 🔴 Penuh           - Full/red indicators dengan overflow warning
 ```
 
-#### **RFID Integration Elements**
+#### **Hardware Integration Elements**
 ```
-🏷️ RFID Card Status - Visual card representation dengan status
-⏱️ Pairing Timeout  - 30-second countdown dengan progress bar
-✅ Pairing Success  - Green confirmation dengan sound indicator
-❌ Pairing Failed   - Red error dengan retry button
+🔧 System Status    - Hardware connection status indicators
+⏱️ Auto-reset Timer - 10-second countdown untuk loker operations
+✅ Operation Success - Green confirmation dengan feedback
+❌ Operation Failed  - Red error dengan retry options
 ```
 
 ---

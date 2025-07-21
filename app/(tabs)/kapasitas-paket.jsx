@@ -35,6 +35,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
+import { Settings } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
@@ -46,6 +47,7 @@ import {
   calculateCapacityStatus 
 } from "../../services/capacityService";
 import MaxCapacityModal from "../../components/ui/MaxCapacityModal";
+import CapacitySettingsModal from "../../components/ui/CapacitySettingsModal";
 
 /**
  * Komponen utama halaman Kapasitas Paket
@@ -54,7 +56,7 @@ import MaxCapacityModal from "../../components/ui/MaxCapacityModal";
 function KapasitasPaket() {
   // Context dan hooks untuk autentikasi, tema, dan safe area
   const { userProfile, refreshProfile } = useAuth();
-  const { theme, loading: settingsLoading } = useSettings();
+  const { theme, capacityDisplayMode, enableHeightConversion, loading: settingsLoading } = useSettings();
   const insets = useSafeAreaInsets();
   const colors = getThemeByRole(false); // Selalu menggunakan tema user
   
@@ -63,9 +65,10 @@ function KapasitasPaket() {
   
   // State untuk data kapasitas dengan nilai default
   const [kapasitasData, setKapasitasData] = useState({
-    height: 0,           // Ketinggian saat ini dari sensor (cm)
+    height: 0,           // Ketinggian saat ini dari sensor (cm) atau hasil konversi
+    percentage: 0,       // Persentase langsung dari ESP32 atau terkalkulasi
+    calculatedHeight: null, // Ketinggian hasil konversi balik (jika ada)
     maxHeight: 30,       // Batas maksimal box (cm)
-    percentage: 0,       // Persentase terisi (dihitung otomatis)
     status: "Kosong",    // Status kapasitas (Kosong/Terisi Sebagian/Hampir Penuh/Penuh)
     message: "Box kosong, siap menerima paket", // Pesan deskriptif
     color: "#22C55E",    // Warna indikator (hijau untuk kosong)
@@ -78,6 +81,9 @@ function KapasitasPaket() {
   
   // State untuk modal pengaturan kapasitas maksimal
   const [showMaxCapacityModal, setShowMaxCapacityModal] = useState(false);
+  
+  // State untuk modal pengaturan mode tampilan kapasitas
+  const [showCapacitySettingsModal, setShowCapacitySettingsModal] = useState(false);
 
   /**
    * Memuat data kapasitas dari Firebase
@@ -88,15 +94,24 @@ function KapasitasPaket() {
       // Ambil data kapasitas dari service
       const result = await getCapacityData();
       if (result.success) {
-        const { height, maxHeight, lastUpdated, deviceId } = result.data;
-        // Hitung status berdasarkan ketinggian dan batas maksimal
-        const statusInfo = calculateCapacityStatus(height, maxHeight);
+        const { height, percentage: directPercentage, maxHeight, lastUpdated, deviceId } = result.data;
+        
+        // Hitung status berdasarkan mode tampilan yang dipilih
+        let statusInfo;
+        if (capacityDisplayMode === 'percentage' && directPercentage !== undefined) {
+          // Mode Persentase: Gunakan persentase langsung dari ESP32 dengan opsi konversi
+          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion);
+        } else {
+          // Mode Ketinggian: Hitung dari height/maxHeight
+          statusInfo = calculateCapacityStatus(height, maxHeight);
+        }
         
         // Update state dengan data terbaru dan status yang dihitung
         setKapasitasData({
-          height,
+          height: statusInfo.height,          // Ketinggian (asli atau hasil konversi)
+          percentage: directPercentage || statusInfo.percentage,  // Persentase dari ESP32 atau terkalkulasi
+          calculatedHeight: statusInfo.calculatedHeight, // Ketinggian hasil konversi balik
           maxHeight,
-          percentage: statusInfo.percentage,  // Persentase terisi (0-100%)
           status: statusInfo.status,          // Status dalam bahasa Indonesia
           message: statusInfo.message,        // Pesan deskriptif
           color: statusInfo.color,            // Warna untuk UI
@@ -122,15 +137,24 @@ function KapasitasPaket() {
     // Setup real-time listener untuk update otomatis dari sensor ESP32
     const unsubscribe = subscribeToCapacityUpdates((result) => {
       if (result.success) {
-        const { height, maxHeight, lastUpdated, deviceId } = result.data;
-        // Hitung ulang status setiap kali ada update dari sensor
-        const statusInfo = calculateCapacityStatus(height, maxHeight);
+        const { height, percentage: directPercentage, maxHeight, lastUpdated, deviceId } = result.data;
+        
+        // Hitung status berdasarkan mode tampilan yang dipilih
+        let statusInfo;
+        if (capacityDisplayMode === 'percentage' && directPercentage !== undefined) {
+          // Mode Persentase: Gunakan persentase langsung dari ESP32 dengan opsi konversi
+          statusInfo = calculateCapacityStatus(null, maxHeight, directPercentage, enableHeightConversion);
+        } else {
+          // Mode Ketinggian: Hitung dari height/maxHeight
+          statusInfo = calculateCapacityStatus(height, maxHeight);
+        }
         
         // Update state dengan data real-time dari ESP32
         setKapasitasData({
-          height,
+          height: statusInfo.height,          // Ketinggian (asli atau hasil konversi)
+          percentage: directPercentage || statusInfo.percentage,
+          calculatedHeight: statusInfo.calculatedHeight, // Ketinggian hasil konversi balik
           maxHeight,
-          percentage: statusInfo.percentage,
           status: statusInfo.status,
           message: statusInfo.message,
           color: statusInfo.color,
@@ -142,7 +166,7 @@ function KapasitasPaket() {
     
     // Cleanup subscription saat component unmount
     return () => unsubscribe();
-  }, []);
+  }, [capacityDisplayMode, enableHeightConversion]); // Reload data when display mode or conversion setting changes
 
   /**
    * Effect untuk reload data saat screen difokuskan
@@ -151,7 +175,7 @@ function KapasitasPaket() {
   useFocusEffect(
     React.useCallback(() => {
       loadKapasitas();
-    }, [])
+    }, [capacityDisplayMode, enableHeightConversion]) // Reload when display mode or conversion setting changes
   );
 
   /**
@@ -284,14 +308,29 @@ function KapasitasPaket() {
           />
         }
       >
-        {/* Header dengan judul dan deskripsi */}
+        {/* Header dengan judul, deskripsi, dan icon pengaturan */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.gray900 }]}>
-            Kapasitas Paket
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>
-            Monitoring ketinggian paket dengan sensor ultrasonik
-          </Text>
+          <View style={styles.headerContent}>
+            <View style={styles.headerTexts}>
+              <Text style={[styles.headerTitle, { color: colors.gray900 }]}>
+                Kapasitas Paket
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.gray600 }]}>
+                Monitoring ketinggian paket dengan sensor ultrasonik
+              </Text>
+            </View>
+            {/* Icon Pengaturan Mode Kapasitas */}
+            <TouchableOpacity
+              style={[styles.settingsButton, { backgroundColor: colors.gray100 }]}
+              onPress={() => setShowCapacitySettingsModal(true)}
+              activeOpacity={0.7}
+            >
+              <Settings 
+                size={20} 
+                color={colors.gray600} 
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Kartu Status Utama - Menampilkan status kapasitas dengan visual */}
@@ -358,17 +397,26 @@ function KapasitasPaket() {
 
           {/* Grid 3 kolom untuk detail angka */}
           <View style={styles.detailGrid}>
-            {/* Ketinggian saat ini dari sensor ultrasonik */}
+            {/* Ketinggian saat ini dari sensor ultrasonik atau hasil konversi */}
             <View style={[styles.detailItem, { borderColor: colors.gray100 }]}>
               <Text style={[styles.detailLabel, { color: colors.gray600 }]}>
-                Ketinggian Saat Ini
+                {capacityDisplayMode === 'percentage' && enableHeightConversion && kapasitasData.calculatedHeight 
+                  ? "Tinggi (Konversi)" 
+                  : "Ketinggian Saat Ini"
+                }
               </Text>
               <Text style={[styles.detailValue, { color: kapasitasData.color }]}>
-                {kapasitasData.height}
+                {kapasitasData.height ? kapasitasData.height.toFixed(1) : '0.0'}
               </Text>
               <Text style={[styles.detailUnit, { color: colors.gray500 }]}>
                 cm
               </Text>
+              {/* Indikator jika ini hasil konversi */}
+              {capacityDisplayMode === 'percentage' && enableHeightConversion && kapasitasData.calculatedHeight && (
+                <View style={[styles.conversionIndicator, { backgroundColor: colors.blue100 }]}>
+                  <Text style={styles.conversionIcon}>🔄</Text>
+                </View>
+              )}
             </View>
 
             {/* Batas maksimal box (biasanya 30cm) - Clickable */}
@@ -486,6 +534,12 @@ function KapasitasPaket() {
         currentMaxHeight={kapasitasData.maxHeight}
         onUpdate={handleMaxCapacityUpdate}
       />
+      
+      {/* Modal untuk pengaturan mode tampilan kapasitas */}
+      <CapacitySettingsModal
+        visible={showCapacitySettingsModal}
+        onClose={() => setShowCapacitySettingsModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -514,6 +568,15 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  headerTexts: {
+    flex: 1,
+    marginRight: 16,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
@@ -521,6 +584,13 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statusCard: {
     borderRadius: 12,
@@ -609,6 +679,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clickableIcon: {
+    fontSize: 10,
+  },
+  conversionIndicator: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  conversionIcon: {
     fontSize: 10,
   },
   detailLabel: {

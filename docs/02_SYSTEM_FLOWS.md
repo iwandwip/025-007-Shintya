@@ -1,16 +1,16 @@
 # SHINTYA APP - SYSTEM FLOWS & HARDWARE INTEGRATION
 
-**Sistem Data Flow dan Hardware Integration** untuk Shintya App - Real-time package delivery tracking dengan ESP32 hardware integration, RFID-based package identification, dan intelligent multi-loker COD management system.
+**Sistem Data Flow dan Hardware Integration** untuk Shintya App - Real-time package delivery tracking dengan ESP32 hardware integration dan intelligent multi-loker COD management system.
 
 ```
    +=============================================================================+
                       🔄 SHINTYA SYSTEM FLOWS                             |
                                                                            |
-   |  📦 Package Flow  <->  🏷️ RFID System  <->  📏 Capacity  <->  💰 COD Control  |
+   |  📦 Package Flow  <->  📏 Capacity Monitor  <->  💰 COD Control  <->  🔧 System Mgmt  |
                                                                            |
-   |    Tracking System   |   Pairing Flow   |   Monitoring   |   Loker System  |
-   |    Status Updates    |   Authentication |   Real-time    |   Remote Control|
-   |    Timeline Mgmt     |   Card Access    |   Sensors      |   Payment Flow  |
+   |    Tracking System   |   Real-time Monitor  |   Loker System  |   Remote Control |
+   |    Status Updates    |   Sensor Data       |   Remote Control|   Admin Tools    |
+   |    Timeline Mgmt     |   Visual Feedback   |   Payment Flow  |   User Management|
    +=============================================================================+
 ```
 
@@ -19,11 +19,10 @@
 # 📋 TABLE OF CONTENTS
 
 - [2.1 Package Delivery Flow](#21-package-delivery-flow)
-- [2.2 RFID Integration Flow](#22-rfid-integration-flow)
-- [2.3 Real-time Capacity Monitoring Flow](#23-real-time-capacity-monitoring-flow)
-- [2.4 COD Loker Control Flow](#24-cod-loker-control-flow)
-- [2.5 User Authentication & Role Management Flow](#25-user-authentication-role-management-flow)
-- [2.6 Hardware Communication Flow](#26-hardware-communication-flow)
+- [2.2 Real-time Capacity Monitoring Flow](#22-real-time-capacity-monitoring-flow)
+- [2.3 COD Loker Control Flow](#23-cod-loker-control-flow)
+- [2.4 User Authentication & Role Management Flow](#24-user-authentication-role-management-flow)
+- [2.5 Hardware Communication Flow](#25-hardware-communication-flow)
 
 ---
 
@@ -164,44 +163,8 @@ const updatePackageStatus = async (packageId, newStatus, userId, userRole) => {
 };
 ```
 
-## 2.2 RFID Integration Flow
-
-### **Complete RFID Pairing System**
-```
-  ----------------------------------------------------------------------------+
-                        RFID PAIRING & AUTHENTICATION                      |
-  ----------------------------------------------------------------------------+
-                                                                          |
-|  📱 MOBILE APP      ☁️  FIREBASE       🔌 ESP32        🏷️ RFID CARD        |
-                                                                          |
-|    ------------+      ------------+      ------------+      ------------+  |
-|  | User starts |--->| Create      |--->| ESP32       |--->| Generate    |  |
-|  | RFID pairing|    | pairing     |    | receives    |    | 8-char hex  |  |
-|  | from profile|    | session     |    | command     |    | code        |  |
-|    ------------+      ------------+      ------------+      ------------+  |
-|                                                                 |         |
-|         ⏱️ 30-second timeout starts                              v         |
-|                                                         ------------+     |
-|    ------------+      ------------+      ------------+  | Write code  |     |
-|  | Display     |<---| Real-time   |<---| ESP32 waits |-| to RFID     |     |
-|  | "Tempelkan  |    | session     |    | for card    |  | card        |     |
-|  | kartu..."   |    | monitoring  |    | presence    |    ------------+     |
-|    ------------+      ------------+      ------------+              |     |
-|                                                                 |         |
-|                         v                  v                  v         |
-|    ------------+      ------------+      ------------+      ------------+  |
-|  | Show success|--->| Update user |--->| Firebase    |--->| Card now    |  |
-|  | message     |    | profile     |    | Realtime    |    | paired to   |  |
-|  | "Berhasil!" |    | rfidCode    |    | DB update   |    | user        |  |
-|    ------------+      ------------+      ------------+      ------------+  |
-|                                                                          |
-|  ❌ FAILURE SCENARIOS:                                                      |
-|  • Timeout (30s): "Waktu habis, coba lagi"                                |
-|  • Hardware offline: "ESP32 tidak terhubung"                              |
-|  • Card read error: "Gagal baca kartu"                                    |
-|  • Code write error: "Gagal tulis kartu"                                  |
-  ----------------------------------------------------------------------------+
-```
+## 2.2 Real-time Capacity Monitoring Flow
+### **Real-time Monitoring System**
 
 ### **RFID Authentication Flow**
 ```

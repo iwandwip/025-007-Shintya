@@ -145,8 +145,7 @@ function testUserQRModalErrorScenario() {
     const userProfile = {
       email: "user1@gmail.com",
       nama: "Test User",
-      role: "user",
-      rfidCode: "A1B2C3D4"
+      role: "user"
     };
     
     console.log(`User profile: ${userProfile.email}`);
