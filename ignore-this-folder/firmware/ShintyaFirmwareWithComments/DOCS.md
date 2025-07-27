@@ -47,78 +47,78 @@
 
 ### **library.h**
 **Isi:**
-- Library includes (FirebaseClient, LCD, sensors, actuators)
-- Hardware pin definitions dan I2C addresses
-- Global variables (currentDistance, scannedBarcode, lokerControlCommands[])
-- Data structures (UsersTypedef, RececiptsTypedef, LokerControlTypedef)
-- Network configuration (WiFi, Firebase credentials)
-- Constants (MAX_USERS=10, MAX_PACKAGES=30, MAX_DISTANCE=45)
+- Library includes: FirebaseClient, LiquidCrystal_I2C, NewPing, Adafruit libraries, dll
+- Hardware pin definitions: SONAR_TRIG_PIN=33, RX_GM67=26, RELAY_SELECT_PIN=27, dll
+- Global variables: currentDistance, scannedBarcode, lokerControlCommands[5], entrySwitches[6]
+- Data structures: UsersTypedef{email,nama}, RececiptsTypedef{nama,noResi,nomorLoker,status,tipePaket,userEmail}
+- Network configuration: WIFI_SSID, API_KEY, FIREBASE_PROJECT_ID credentials
+- Constants: MAX_USERS=10, MAX_PACKAGES=30, MAX_DISTANCE=45, VOLUME=30
 
 **Fungsi:** Global configuration dan variable declarations
 
 ### **RTOS.ino**
 **Isi:**
-- `TaskDatabase(void *pvParameters)`: Core 0 task function
-- `TaskControl(void *pvParameters)`: Core 1 task function  
-- `setupRTOS()`: Creates dan assigns tasks to cores
-- Task handles (DatabaseHandle, ControlHandle)
+- `TaskDatabase(void *pvParameters)`: Infinite loop untuk network ops, call initializeNetworkConnection(), updateDatabaseData() setiap 2s
+- `TaskControl(void *pvParameters)`: Infinite loop untuk hardware control, init semua devices, main control loop
+- `setupRTOS()`: Create 2 tasks dengan xTaskCreatePinnedToCore(), assign ke Core 0 dan Core 1
+- Task handles: DatabaseHandle dan ControlHandle untuk task management
 
 **Fungsi:** RTOS task management dan core assignment
 
 ### **sensor.ino**
 **Isi:**
-- `initializeSensors()`: I2C, Serial2, PCF8574 initialization
-- `scanBarcodeFromSerial()`: Read barcode dari Serial2
-- `readDistanceSensor()`: Ultrasonic ping measurement
-- `initializeKeypad()`: I2C keypad setup
-- `processKeypadInput()`: Handle keypad input
-- `processSerialCommands()`: Debug commands via Serial
-- `readLimitSwitches()`: PCF8574 digital read untuk 12 switches
+- `initializeSensors()`: Setup komunikasi I2C, Serial2 untuk barcode, dan PCF8574 expander
+- `scanBarcodeFromSerial()`: Baca string barcode dari GM67 via Serial2 hingga '\r'
+- `readDistanceSensor()`: Kirim ping ultrasonic, return jarak dalam cm (0-45cm range)
+- `initializeKeypad()`: Setup keypad I2C dan load character mapping
+- `processKeypadInput()`: Detect tombol keypad yang ditekan, filter 'F' dan 'N'
+- `processSerialCommands()`: Parse perintah debug dari Serial Monitor (r, o1-o5, c1-c5, etc)
+- `readLimitSwitches()`: Baca status 12 limit switches via PCF8574, update global arrays
 
 **Fungsi:** Input device management dan sensor reading
 
 ### **actuator.ino** 
 **Isi:**
-- `initializeAudioSystem()`: DFPlayer Mini setup
-- `playAudioCommand()`: Audio control (volume, play, pause)
-- `initializeRelay()`: Relay pin setup
-- `controlRelayOutput()`: Relay on/off control
-- `controlAllLokers()`: Loop control untuk 5 loker servos
-- `openLokerCompartment()` / `closeLokerCompartment()`: Individual loker control
-- `controlMainDoor()`: Main door servo control (channels 5-6)
-- `initializeServoController()`: PCA9685 setup
-- `convertAngleToPulse()`: Angle to PWM conversion
-- `processRemoteLokerCommands()`: Firebase remote commands
+- `initializeAudioSystem()`: Setup DFPlayer Mini, set volume dan output device ke SD card
+- `playAudioCommand()`: Parse string command untuk volume (s0-s30), pause (p), atau play file (1-100)
+- `initializeRelay()`: Set pin 27 sebagai OUTPUT dan default state HIGH (door locked)
+- `controlRelayOutput()`: Set relay LOW/HIGH berdasarkan relayControlCommand global variable
+- `controlAllLokers()`: Loop 5 loker, check lokerControlCommands[] dan execute buka/tutup
+- `openLokerCompartment()` / `closeLokerCompartment()`: Control individual servo berdasarkan limit switch state
+- `controlMainDoor()`: Control dual servo (channels 5-6) untuk main door berdasarkan mainDoorControl
+- `initializeServoController()`: Setup PCA9685, set frequency 60Hz, init servo positions
+- `convertAngleToPulse()`: Convert angle (0-180°) ke PWM pulse width untuk servo control
+- `processRemoteLokerCommands()`: Baca lokerControl[] array dari Firebase, generate serial commands
 
 **Fungsi:** Output device control dan actuator management
 
 ### **display.ino**
 **Isi:**
-- `initializeLCDDisplay()`: LCD init, backlight, title display
-- `displayTextOnLCD()`: Smart LCD update dengan anti-flicker
-- `lastDisplayedText[4]`: Buffer untuk prevent unnecessary updates
-- `displaySystemData()`: Placeholder untuk system info
+- `initializeLCDDisplay()`: Init LCD I2C, nyalakan backlight, tampilkan nama dan NIM developer
+- `displayTextOnLCD()`: Update LCD hanya jika text berubah, format ke 20 char, prevent flicker
+- `lastDisplayedText[4]`: Buffer array untuk compare text lama vs baru pada 4 baris LCD
+- `displaySystemData()`: Placeholder function untuk display barcode atau system data (unused)
 
 **Fungsi:** LCD management dengan optimized rendering
 
 ### **menu.ino**
 **Isi:**
-- `enum MenuState`: 9 menu states definition
-- Menu state variables (currentMenuState, selectedCourier, trackingInput)
-- `menu()`: Main state machine dengan switch-case
-- Navigation logic untuk semua menu states
-- User input processing dan state transitions
+- `enum MenuState`: Define 9 menu states dari MAIN sampai OPEN_DOOR
+- Menu state variables: currentMenuState, selectedCourier, trackingInput, packageType, dll
+- `menu()`: Main state machine dengan switch-case, handle semua 9 states
+- Navigation logic: button press detection, keypad input, state transitions
+- Package flow logic: resi validation, COD vs Non-COD handling, QR access
 
 **Fungsi:** User interface state machine dan navigation
 
 ### **Network.ino**
 **Isi:**
-- `initializeNetworkConnection()`: WiFi connection setup
-- `initializeFirebaseDatabase()`: Firebase app initialization
-- `updateDatabaseData()`: Periodic data sync (every 5 seconds)
-- `updateTrackingData()`: Package data processing
-- `initializeDummyPackages()`: Test data initialization
-- JSON deserialization untuk users/receipts/lokerControl
+- `initializeNetworkConnection()`: Connect ke WiFi, loop hingga WL_CONNECTED, print IP address
+- `initializeFirebaseDatabase()`: Setup SSL client, initialize Firebase app dengan credentials
+- `updateDatabaseData()`: GET 3 collections dari Firestore, deserialize JSON ke local arrays
+- `updateTrackingData()`: Update packageDatabase[] dari receipts[] (currently commented out)
+- `initializeDummyPackages()`: Populate packageDatabase[] dengan 6 sample tracking numbers
+- JSON deserialization: Parse Firestore response ke users[], receipts[], lokerControl[]
 
 **Fungsi:** Network communication dan database synchronization
 
