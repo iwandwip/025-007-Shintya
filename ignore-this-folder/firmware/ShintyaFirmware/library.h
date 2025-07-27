@@ -22,27 +22,27 @@ char buff[100];
 #define SONAR_TRIG_PIN 33
 #define MAX_DISTANCE 45
 NewPing sonar(SONAR_TRIG_PIN, SONAR_ECHO_PIN, MAX_DISTANCE);
-int jarak = 0;
-unsigned long prevJarak = 0;  // Waktu sebelumnya
+int currentDistance = 0;
+unsigned long previousDistanceTime = 0;
 
 //==============GM67=================================
 #define RX_GM67 26
 #define TX_GM67 25
-String barcode = "||||||||||||||||||||";
-#define barcodeReady Serial2.available()
-bool barcodeBaru = false;
+String scannedBarcode = "||||||||||||||||||||";
+#define isBarcodeReady Serial2.available()
+bool isNewBarcodeScanned = false;
 
-#define maxPaket 30
+#define MAX_PACKAGES 30
 
 
 
 //===================limit switch =======================
-String input;
-bool limitMasuk[6];
-bool limitKeluar[6];
+String serialInput;
+bool entrySwitches[6];
+bool exitSwitches[6];
 
 
-String controlLoker[5] = {
+String lokerControlCommands[5] = {
   "tutup",
   "tutup",
   "tutup",
@@ -50,9 +50,9 @@ String controlLoker[5] = {
   "tutup"
 };
 
-String controlTutup = "";
+String mainDoorControl = "";
 
-Adafruit_PCF8574 pcfIn, pcfOut;
+Adafruit_PCF8574 pcfEntryInput, pcfExitOutput;
 
 
 //=================== keypad =======================
@@ -71,20 +71,20 @@ Adafruit_PWMServoDriver servo = Adafruit_PWMServoDriver(0x40);
 #define SERVOMIN 125  // this is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX 575  // this is the 'maximum' pulse length count (out of 4096)
 
-int servoNumber = 0;
+int activeServoNumber = 0;
 
 //====================== relay ===================================
 
-#define selPin 27
-String controlRelay = "buka";
+#define RELAY_SELECT_PIN 27
+String relayControlCommand = "buka";
 
 // =================== Speaker ===================================
 
 
 DFRobotDFPlayerMini myDFPlayer;
 
-#define txSpeaker 17
-#define rxSpeaker 16
+#define SPEAKER_TX_PIN 17
+#define SPEAKER_RX_PIN 16
 
 enum sound {
   soundResiCocok = 1,
@@ -184,11 +184,11 @@ struct RececiptsTypedef {
   String userEmail;
 };
 
-struct dataPaket {
-  String resi;
-  String type;
-  int loker;
-} paket[maxPaket];
+struct PackageData {
+  String trackingNumber;
+  String packageType;
+  int assignedLoker;
+} packageDatabase[MAX_PACKAGES];
 
 struct LokerControlTypedef {
   int nomorLoker;
@@ -204,10 +204,10 @@ UsersTypedef users[MAX_USERS];
 RececiptsTypedef receipts[MAX_RECEIPTS];
 LokerControlTypedef lokerControl[MAX_LOKER_CONTROL];
 
-#define maxUser 10
-char isUserDitemukan = false, isQRDitemukan = false;
+#define MAX_USERS 10
+bool isUserFound = false, isQRCodeDetected = false;
 
-String userEmail[maxUser] = {
+String registeredUserEmails[MAX_USERS] = {
   "",
   "pwshintya@gmail.com",
   "putri@gmail.com",

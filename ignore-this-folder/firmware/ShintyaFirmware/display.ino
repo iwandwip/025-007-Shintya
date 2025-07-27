@@ -1,48 +1,48 @@
-void setupDisplay() {
+void initializeLCDDisplay() {
   lcd.init();
   lcd.backlight();
-  String title;
-  title = "SHINTYA PUTRI WIJAYA";
-  lcd.setCursor(10 - title.length() / 2, 1);
-  lcd.print(title);
-  title = "2141160117";
-  lcd.setCursor(10 - title.length() / 2, 2);
-  lcd.print(title);
-  // speak(String(soundJudul));
+  String displayTitle;
+  displayTitle = "SHINTYA PUTRI WIJAYA";
+  lcd.setCursor(10 - displayTitle.length() / 2, 1);
+  lcd.print(displayTitle);
+  displayTitle = "2141160117";
+  lcd.setCursor(10 - displayTitle.length() / 2, 2);
+  lcd.print(displayTitle);
+  // playAudioCommand(String(soundJudul));
   // vTaskDelay(10000);
   lcd.clear();
 }
 
-String lastPrintedString[4];  // Buffer untuk menyimpan teks yang terakhir ditampilkan (4 baris LCD)
+String lastDisplayedText[4];  // Buffer to store the last displayed text (4 LCD rows)
 
-void lcd_print(int x, int y, String buffer) {
-  // Hanya perbarui jika ada perubahan pada teks
-  if (lastPrintedString[y] != buffer) {
-    lastPrintedString[y] = buffer;  // Simpan teks baru
+void displayTextOnLCD(int xPosition, int yPosition, String textBuffer) {
+  // Only update if there's a change in text
+  if (lastDisplayedText[yPosition] != textBuffer) {
+    lastDisplayedText[yPosition] = textBuffer;  // Save new text
 
-    // Kosongkan layar dengan spasi kosong untuk menghindari sisa teks lama
-    String emptyString = String("                    ");  // 20 karakter kosong
-    lcd.setCursor(x, y);
-    lcd.print(emptyString);  // Hapus teks lama
+    // Clear screen with empty spaces to avoid old text remnants
+    String clearString = String("                    ");  // 20 empty characters
+    lcd.setCursor(xPosition, yPosition);
+    lcd.print(clearString);  // Clear old text
 
-    // Pastikan panjang buffer tepat 20 karakter
-    while (buffer.length() < 20) {  // Tambahkan spasi hingga panjang buffer menjadi 20 karakter
-      buffer += " ";
+    // Ensure buffer length is exactly 20 characters
+    while (textBuffer.length() < 20) {  // Add spaces until buffer length becomes 20 characters
+      textBuffer += " ";
     }
 
-    // Batasi panjang buffer ke 20 karakter jika lebih
-    if (buffer.length() > 20) {
-      buffer = buffer.substring(0, 20);
+    // Limit buffer length to 20 characters if more
+    if (textBuffer.length() > 20) {
+      textBuffer = textBuffer.substring(0, 20);
     }
 
-    char buff[21];  // 20 karakter + null terminator
-    snprintf(buff, 21, "%s", buffer.c_str());
-    lcd.setCursor(x, y);
-    lcd.print(buff);  // Menampilkan teks yang baru
+    char displayBuffer[21];  // 20 characters + null terminator
+    snprintf(displayBuffer, 21, "%s", textBuffer.c_str());
+    lcd.setCursor(xPosition, yPosition);
+    lcd.print(displayBuffer);  // Display the new text
   }
 }
 
-void displayData() {
-  // sprintf(buff , "B:%s" , barcode);
-  // lcd_print(0, 0, barcode);
+void displaySystemData() {
+  // sprintf(buff , "B:%s" , scannedBarcode);
+  // displayTextOnLCD(0, 0, scannedBarcode);
 }

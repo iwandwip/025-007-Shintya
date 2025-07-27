@@ -1,37 +1,37 @@
 void TaskDatabase(void *pvParameters) {
-  setupNetwork();
-  setupDatabase();
+  initializeNetworkConnection();
+  initializeFirebaseDatabase();
   while (true) {
-    updateData();
+    updateDatabaseData();
     vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
 }
 
 void TaskControl(void *pvParameters) {
-  setupSpeaker();
-  setupDisplay();
-  setupSensor();
-  setupServo();
-  setupKeypad();
-  setupRelay();
-  setupButton();
-  speak(String(soundPilihMetode));
-  setupDummyPaket();
+  initializeAudioSystem();
+  initializeLCDDisplay();
+  initializeSensors();
+  initializeServoController();
+  initializeKeypad();
+  initializeRelay();
+  initializeButtons();
+  playAudioCommand(String(soundPilihMetode));
+  initializeDummyPackages();
   while (true) {
     // updateDataResi();
     // displayData();
     // readKeypad();
-    readLimit();
-    lokerController();
-    tutupController();
-    relayController();
-    lokerControllerFromDB();
+    readLimitSwitches();
+    controlAllLokers();
+    controlMainDoor();
+    controlRelayOutput();
+    processRemoteLokerCommands();
     menu();
     // readButton();
-    jarak = readJarak();
+    currentDistance = readDistanceSensor();
     // printJarak();
 
-    command();
+    processSerialCommands();
     // vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
@@ -45,7 +45,7 @@ void TaskControl(void *pvParameters) {
 TaskHandle_t DatabaseHandle;
 TaskHandle_t ControlHandle;
 
-// Fungsi setup RTOS
+// Initialize RTOS tasks
 void setupRTOS() {
   // Membuat task untuk Database Firebase di Core 0
   xTaskCreatePinnedToCore(

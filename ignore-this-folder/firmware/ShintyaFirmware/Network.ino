@@ -1,24 +1,24 @@
 
-void setupNetwork() {
-  // Mulai koneksi ke Wi-Fi
+void initializeNetworkConnection() {
+  // Start Wi-Fi connection
   Serial.println("Connecting to WiFi...");
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  // Tunggu sampai terhubung
+  // Wait until connected
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);  // Tunggu 1 detik
+    delay(1000);  // Wait 1 second
     Serial.print(".");
   }
 
-  // Jika berhasil terhubung, tampilkan IP Address
+  // If successfully connected, display IP Address
   Serial.println();
   Serial.println("WiFi Connected");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 }
 
-void setupDatabase() {
+void initializeFirebaseDatabase() {
   Firebase.printf("Firebase Client v%s\n", FIREBASE_CLIENT_VERSION);
 
   set_ssl_client_insecure_and_buffer(ssl_client);
@@ -35,13 +35,13 @@ void setupDatabase() {
 
 
 
-void updateData() {
+void updateDatabaseData() {
   // To maintain the authentication and async tasks
   app.loop();
 
-  static uint32_t firestoreTimer;
-  if (millis() - firestoreTimer >= 5000 && app.ready()) {
-    firestoreTimer = millis();
+  static uint32_t firestoreUpdateTimer;
+  if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
+    firestoreUpdateTimer = millis();
 
     String usersJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "users", GetDocumentOptions(DocumentMask("")));
     String receiptsJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "receipts", GetDocumentOptions(DocumentMask("")));
@@ -55,73 +55,73 @@ void updateData() {
     // serializeJsonPretty(receiptsDocument, Serial);
     // serializeJsonPretty(lokerControlDocument, Serial);
 
-    int userIndex = 0;
-    int receiptIndex = 0;
-    int lokerControlIndex = 0;
+    int currentUserIndex = 0;
+    int currentReceiptIndex = 0;
+    int currentLokerControlIndex = 0;
 
     for (JsonVariant v : usersDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
-      if (userIndex < MAX_USERS) {
-        users[userIndex].email = obj["fields"]["email"]["stringValue"].as<String>();
-        users[userIndex].nama = obj["fields"]["nama"]["stringValue"].as<String>();
+      if (currentUserIndex < MAX_USERS) {
+        users[currentUserIndex].email = obj["fields"]["email"]["stringValue"].as<String>();
+        users[currentUserIndex].nama = obj["fields"]["nama"]["stringValue"].as<String>();
       }
-      userIndex++;
+      currentUserIndex++;
     }
 
     for (JsonVariant v : receiptsDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
-      if (receiptIndex < MAX_RECEIPTS) {
-        receipts[receiptIndex].nama = obj["fields"]["nama"]["stringValue"].as<String>();
-        receipts[receiptIndex].noResi = obj["fields"]["noResi"]["stringValue"].as<String>();
-        receipts[receiptIndex].nomorLoker = obj["fields"]["nomorLoker"]["integerValue"].as<int>();
-        receipts[receiptIndex].status = obj["fields"]["status"]["stringValue"].as<String>();
-        receipts[receiptIndex].tipePaket = obj["fields"]["tipePaket"]["stringValue"].as<String>();
-        receipts[receiptIndex].userEmail = obj["fields"]["userEmail"]["stringValue"].as<String>();
+      if (currentReceiptIndex < MAX_RECEIPTS) {
+        receipts[currentReceiptIndex].nama = obj["fields"]["nama"]["stringValue"].as<String>();
+        receipts[currentReceiptIndex].noResi = obj["fields"]["noResi"]["stringValue"].as<String>();
+        receipts[currentReceiptIndex].nomorLoker = obj["fields"]["nomorLoker"]["integerValue"].as<int>();
+        receipts[currentReceiptIndex].status = obj["fields"]["status"]["stringValue"].as<String>();
+        receipts[currentReceiptIndex].tipePaket = obj["fields"]["tipePaket"]["stringValue"].as<String>();
+        receipts[currentReceiptIndex].userEmail = obj["fields"]["userEmail"]["stringValue"].as<String>();
       }
-      receiptIndex++;
+      currentReceiptIndex++;
     }
 
     for (JsonVariant v : lokerControlDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
-      if (lokerControlIndex < MAX_LOKER_CONTROL) {
-        lokerControl[lokerControlIndex].nomorLoker = obj["fields"]["nomorLoker"]["integerValue"].as<int>();
-        lokerControl[lokerControlIndex].buka = obj["fields"]["buka"]["integerValue"].as<int>();
-        lokerControl[lokerControlIndex].tutup = obj["fields"]["tutup"]["integerValue"].as<int>();
+      if (currentLokerControlIndex < MAX_LOKER_CONTROL) {
+        lokerControl[currentLokerControlIndex].nomorLoker = obj["fields"]["nomorLoker"]["integerValue"].as<int>();
+        lokerControl[currentLokerControlIndex].buka = obj["fields"]["buka"]["integerValue"].as<int>();
+        lokerControl[currentLokerControlIndex].tutup = obj["fields"]["tutup"]["integerValue"].as<int>();
       }
-      lokerControlIndex++;
+      currentLokerControlIndex++;
     }
   }
 }
 
 
 
-void updateDataResi() {
+void updateTrackingData() {
   if (app.ready()) {
-    for (int i = 0; i <= maxPaket; i++) {
-      // paket[i].resi = receipts[i].noResi;
-      // paket[i].type = receipts[i].tipePaket;
-      // if (paket[i].type == "COD") paket[i].loker = receipts[i].nomorLoker;
+    for (int i = 0; i <= MAX_PACKAGES; i++) {
+      // packageDatabase[i].trackingNumber = receipts[i].noResi;
+      // packageDatabase[i].packageType = receipts[i].tipePaket;
+      // if (packageDatabase[i].packageType == "COD") packageDatabase[i].assignedLoker = receipts[i].nomorLoker;
     }
   }
 }
 
-void setupDummyPaket() {
-  paket[0].resi = "004420188204";
-  paket[0].loker = 1;
-  paket[0].type = "COD";
-  paket[1].resi = "SPXID04700838417A";
-  paket[1].loker = 2;
-  paket[1].type = "COD";
-  paket[2].resi = "11002158312640";
-  paket[2].loker = 3;
-  paket[2].type = "COD";
-  paket[3].resi = "SPXID050573568463";
-  paket[3].loker = 4;
-  paket[3].type = "COD";
-  paket[4].resi = "JD0441796666";
-  paket[4].loker = 5;
-  paket[4].type = "NON-COD";
-  paket[5].resi = "SPXID045314957071";
-  paket[5].type = "COD";
-  paket[5].loker = 1;
+void initializeDummyPackages() {
+  packageDatabase[0].trackingNumber = "004420188204";
+  packageDatabase[0].assignedLoker = 1;
+  packageDatabase[0].packageType = "COD";
+  packageDatabase[1].trackingNumber = "SPXID04700838417A";
+  packageDatabase[1].assignedLoker = 2;
+  packageDatabase[1].packageType = "COD";
+  packageDatabase[2].trackingNumber = "11002158312640";
+  packageDatabase[2].assignedLoker = 3;
+  packageDatabase[2].packageType = "COD";
+  packageDatabase[3].trackingNumber = "SPXID050573568463";
+  packageDatabase[3].assignedLoker = 4;
+  packageDatabase[3].packageType = "COD";
+  packageDatabase[4].trackingNumber = "JD0441796666";
+  packageDatabase[4].assignedLoker = 5;
+  packageDatabase[4].packageType = "NON-COD";
+  packageDatabase[5].trackingNumber = "SPXID045314957071";
+  packageDatabase[5].packageType = "COD";
+  packageDatabase[5].assignedLoker = 1;
 }

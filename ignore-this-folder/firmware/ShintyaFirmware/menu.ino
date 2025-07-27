@@ -1,401 +1,400 @@
-enum menuData {
-  menuUtama,
-  menuPilihKurir,
-  menuInputResi,
-  menuScanResi,
-  menuCompareResi,
-  menuResiDitemukan,
-  menuMasukanPaket,
-  menuBukaLoker,
-  menuTutupLoker,
-  menuBukaPintu
+enum MenuState {
+  MENU_MAIN,
+  MENU_SELECT_COURIER,
+  MENU_INPUT_TRACKING,
+  MENU_SCAN_TRACKING,
+  MENU_COMPARE_TRACKING,
+  MENU_TRACKING_FOUND,
+  MENU_INSERT_PACKAGE,
+  MENU_OPEN_LOKER,
+  MENU_CLOSE_LOKER,
+  MENU_OPEN_DOOR
 };
-menuData menuIdx = menuUtama;
-int kurir = 0;
-String kurirStr[4] = {
+MenuState currentMenuState = MENU_MAIN;
+int selectedCourier = 0;
+String courierNames[4] = {
   "Belum Ada",
   "Shopeee",
   "J&T",
   "SiCepat"
-
 };
-String inputResi;
-int paketIdx;
-String type;
-bool paketDiterima = false;
+String trackingInput;
+int currentPackageIndex;
+String packageType;
+bool isPackageReceived = false;
 
 void menu() {
-  switch (menuIdx) {
-    case menuUtama:
+  switch (currentMenuState) {
+    case MENU_MAIN:
       {
-        lcd_print(0, 0, "        " + String(100 - (jarak * 100 / 45)) + "%");
-        lcd_print(0, 1, "         ||         ");
-        lcd_print(0, 2, "  INPUT  ||   SCAN  ");
-        lcd_print(0, 3, "  RESI   ||   RESI  ");
+        displayTextOnLCD(0, 0, "        " + String(100 - (currentDistance * 100 / 45)) + "%");
+        displayTextOnLCD(0, 1, "         ||         ");
+        displayTextOnLCD(0, 2, "  INPUT  ||   SCAN  ");
+        displayTextOnLCD(0, 3, "  RESI   ||   RESI  ");
         if (button1) {
           lcd.clear();
-          speak(String(soundPilihKurir));
+          playAudioCommand(String(soundPilihKurir));
           while (button1)
             ;  // Menunggu button1 dilepas
-          menuIdx = menuPilihKurir;
+          currentMenuState = MENU_SELECT_COURIER;
         } else if (button2) {
           lcd.clear();
-          speak("15");
+          playAudioCommand("15");
           while (button2)
             ;  // Menunggu button2 dilepas
-          menuIdx = menuScanResi;
+          currentMenuState = MENU_SCAN_TRACKING;
         }
         if (keyPad.isPressed()) {
           lcd.clear();
-          if (keyPad.getChar() == '#') menuIdx = menuBukaPintu;
+          if (keyPad.getChar() == '#') currentMenuState = MENU_OPEN_DOOR;
         }
         break;
       }
 
-    case menuBukaPintu:
+    case MENU_OPEN_DOOR:
       {
-        lcd_print(0, 0, "");
-        lcd_print(0, 1, "    Silahkan Scan");
-        lcd_print(0, 2, "       QR Code!");
-        lcd_print(0, 3, "");
+        displayTextOnLCD(0, 0, "");
+        displayTextOnLCD(0, 1, "    Silahkan Scan");
+        displayTextOnLCD(0, 2, "       QR Code!");
+        displayTextOnLCD(0, 3, "");
         if (Serial2.available()) {
           String qrcode = Serial2.readStringUntil('\r');
-          isQRDitemukan = true;
-          for (int i = 0; i < maxUser; i++) {
-            if (qrcode == userEmail[i]) {
-              isUserDitemukan = true;
+          isQRCodeDetected = true;
+          for (int i = 0; i < MAX_USERS; i++) {
+            if (qrcode == registeredUserEmails[i]) {
+              isUserFound = true;
             }
           }
         }
-        if (isUserDitemukan && isQRDitemukan) {
-          lcd_print(0, 0, "");
-          lcd_print(0, 1, "   User Ditemukan!");
-          lcd_print(0, 2, "    Pintu Terbuka");
-          lcd_print(0, 3, "");
-          digitalWrite(selPin, LOW);
+        if (isUserFound && isQRCodeDetected) {
+          displayTextOnLCD(0, 0, "");
+          displayTextOnLCD(0, 1, "   User Ditemukan!");
+          displayTextOnLCD(0, 2, "    Pintu Terbuka");
+          displayTextOnLCD(0, 3, "");
+          digitalWrite(RELAY_SELECT_PIN, LOW);
           vTaskDelay(5000);
-          digitalWrite(selPin, HIGH);
-          // input = "cr";
-          isUserDitemukan = false;
-          isQRDitemukan = false;
-          menuIdx = menuUtama;
-        } else if (!isUserDitemukan && isQRDitemukan) {
-          lcd_print(0, 0, "");
-          lcd_print(0, 1, "  User Tidak Valid! ");
-          lcd_print(0, 2, "");
-          lcd_print(0, 3, "");
-          digitalWrite(selPin, HIGH);
+          digitalWrite(RELAY_SELECT_PIN, HIGH);
+          // serialInput = "cr";
+          isUserFound = false;
+          isQRCodeDetected = false;
+          currentMenuState = MENU_MAIN;
+        } else if (!isUserFound && isQRCodeDetected) {
+          displayTextOnLCD(0, 0, "");
+          displayTextOnLCD(0, 1, "  User Tidak Valid! ");
+          displayTextOnLCD(0, 2, "");
+          displayTextOnLCD(0, 3, "");
+          digitalWrite(RELAY_SELECT_PIN, HIGH);
           vTaskDelay(5000);
-          isUserDitemukan = false;
-          isQRDitemukan = false;
-          menuIdx = menuUtama;
+          isUserFound = false;
+          isQRCodeDetected = false;
+          currentMenuState = MENU_MAIN;
         }
 
         break;
       }
 
-    case menuPilihKurir:
+    case MENU_SELECT_COURIER:
       {
-        lcd_print(0, 0, "Pilih Kurir :");
-        lcd_print(0, 1, "1.Shopeee");
-        lcd_print(0, 2, "2.J&T");
-        lcd_print(0, 3, "3.Sicepat");
+        displayTextOnLCD(0, 0, "Pilih Kurir :");
+        displayTextOnLCD(0, 1, "1.Shopeee");
+        displayTextOnLCD(0, 2, "2.J&T");
+        displayTextOnLCD(0, 3, "3.Sicepat");
 
         if (keyPad.isPressed()) {
           char key = keyPad.getChar();
           if (key == 'B') {
-            speak(String(soundPilihMetode));
+            playAudioCommand(String(soundPilihMetode));
             while (keyPad.getChar() == 'B')
               ;
-            menuIdx = menuUtama;
+            currentMenuState = MENU_MAIN;
           }
 
           if (key == '1') {
             lcd.clear();
-            speak(String(soundInputResi));
-            kurir = 1;
-            barcode = "SPXID";
-            while (keyPad.getChar() == '1') menuIdx = menuInputResi;
+            playAudioCommand(String(soundInputResi));
+            selectedCourier = 1;
+            scannedBarcode = "SPXID";
+            while (keyPad.getChar() == '1') currentMenuState = MENU_INPUT_TRACKING;
           }
           if (key == '2') {
             lcd.clear();
-            speak(String(soundInputResi));
-            kurir = 2;
-            barcode = "JD";
-            while (keyPad.getChar() == '2') menuIdx = menuInputResi;
+            playAudioCommand(String(soundInputResi));
+            selectedCourier = 2;
+            scannedBarcode = "JD";
+            while (keyPad.getChar() == '2') currentMenuState = MENU_INPUT_TRACKING;
           }
           if (key == '3') {
             lcd.clear();
-            speak(String(soundInputResi));
-            kurir = 3;
-            barcode = "";
-            while (keyPad.getChar() == '3') menuIdx = menuInputResi;
+            playAudioCommand(String(soundInputResi));
+            selectedCourier = 3;
+            scannedBarcode = "";
+            while (keyPad.getChar() == '3') currentMenuState = MENU_INPUT_TRACKING;
           }
         }
         break;
       }
 
-    case menuScanResi:
+    case MENU_SCAN_TRACKING:
       {
-        if (barcodeReady) {
-          barcodeBaru = true;
-          readBarcode();
+        if (isBarcodeReady) {
+          isNewBarcodeScanned = true;
+          scanBarcodeFromSerial();
         }
-        lcd_print(0, 0, "Kode Resi : ");
-        lcd_print(0, 1, barcode);
-        lcd_print(0, 2, !barcodeBaru ? "Barcode Kosong!" : "Barcode Terdeteksi");
-        lcd_print(0, 3, !barcodeBaru ? "Silahkan Scan!" : "Tekan Tombol Biru!");
+        displayTextOnLCD(0, 0, "Kode Resi : ");
+        displayTextOnLCD(0, 1, scannedBarcode);
+        displayTextOnLCD(0, 2, !isNewBarcodeScanned ? "Barcode Kosong!" : "Barcode Terdeteksi");
+        displayTextOnLCD(0, 3, !isNewBarcodeScanned ? "Silahkan Scan!" : "Tekan Tombol Biru!");
 
         if (keyPad.isPressed() && keyPad.getChar() == 'B') {
-          barcode = "||||||||||||||||||||";
-          speak(String(soundPilihMetode));
-          barcodeBaru = false;
-          while (keyPad.getChar() == 'B') menuIdx = menuUtama;
+          scannedBarcode = "||||||||||||||||||||";
+          playAudioCommand(String(soundPilihMetode));
+          isNewBarcodeScanned = false;
+          while (keyPad.getChar() == 'B') currentMenuState = MENU_MAIN;
         }
 
-        if (button2 && barcodeBaru) {
+        if (button2 && isNewBarcodeScanned) {
           while (button2)
             ;
-          menuIdx = menuCompareResi;
+          currentMenuState = MENU_COMPARE_TRACKING;
         }
         break;
       }
 
-    case menuCompareResi:
+    case MENU_COMPARE_TRACKING:
       {
-        speak(String(soundCekResi));
-        lcd_print(0, 0, "Mengecek Resi...");
-        lcd_print(0, 1, barcode);
-        lcd_print(0, 2, "Silahkan Tunggu!!");
-        lcd_print(0, 3, "");
+        playAudioCommand(String(soundCekResi));
+        displayTextOnLCD(0, 0, "Mengecek Resi...");
+        displayTextOnLCD(0, 1, scannedBarcode);
+        displayTextOnLCD(0, 2, "Silahkan Tunggu!!");
+        displayTextOnLCD(0, 3, "");
         bool resiDitemukan = false;
         vTaskDelay(2500);
-        for (int i = 0; i < maxPaket; i++) {
-          if (barcode == receipts[i].noResi) {
+        for (int i = 0; i < MAX_PACKAGES; i++) {
+          if (scannedBarcode == receipts[i].noResi) {
             resiDitemukan = true;
-            paketIdx = i;
-            type = receipts[i].tipePaket;
+            currentPackageIndex = i;
+            packageType = receipts[i].tipePaket;
             break;
           }
         }
 
         if (resiDitemukan) {
-          speak(String(soundResiCocok));
-          lcd_print(0, 0, "Resi Ditemukan!");
-          lcd_print(0, 1, barcode);
-          lcd_print(0, 2, "TYPE : " +  receipts[paketIdx].tipePaket);
-          lcd_print(0, 3, "Membuka Kotak...");
-          input = "ot";
-          menuIdx = menuMasukanPaket;
+          playAudioCommand(String(soundResiCocok));
+          displayTextOnLCD(0, 0, "Resi Ditemukan!");
+          displayTextOnLCD(0, 1, scannedBarcode);
+          displayTextOnLCD(0, 2, "TYPE : " + receipts[currentPackageIndex].tipePaket);
+          displayTextOnLCD(0, 3, "Membuka Kotak...");
+          serialInput = "ot";
+          currentMenuState = MENU_INSERT_PACKAGE;
         } else {
-          speak(String(soundResiTidakCocok));
-          lcd_print(0, 0, "Resi Tidak Ditemukan!");
-          lcd_print(0, 1, barcode);
-          lcd_print(0, 2, "Itu Bukan Paket Saya!");
-          lcd_print(0, 3, "Terima Kasih!");
-          input = "ct";
+          playAudioCommand(String(soundResiTidakCocok));
+          displayTextOnLCD(0, 0, "Resi Tidak Ditemukan!");
+          displayTextOnLCD(0, 1, scannedBarcode);
+          displayTextOnLCD(0, 2, "Itu Bukan Paket Saya!");
+          displayTextOnLCD(0, 3, "Terima Kasih!");
+          serialInput = "ct";
           vTaskDelay(5000);
-          barcode = "||||||||||||||||||||";
-          barcodeBaru = false;
-          menuIdx = menuUtama;
-          speak(String(soundPilihMetode));
+          scannedBarcode = "||||||||||||||||||||";
+          isNewBarcodeScanned = false;
+          currentMenuState = MENU_MAIN;
+          playAudioCommand(String(soundPilihMetode));
         }
 
         break;
       }
 
-    case menuInputResi:
+    case MENU_INPUT_TRACKING:
       {
-        lcd_print(0, 0, "Kurir " + kurirStr[kurir]);
-        lcd_print(0, 1, "Resi : ");
+        displayTextOnLCD(0, 0, "Kurir " + courierNames[selectedCourier]);
+        displayTextOnLCD(0, 1, "Resi : ");
 
-        // Gabungkan barcode dan inputResi secara dinamis
+        // Gabungkan scannedBarcode dan trackingInput secara dinamis
         String cursor = "";
-        for (int i = 0; i < barcode.length() + inputResi.length(); i++) cursor += " ";
+        for (int i = 0; i < scannedBarcode.length() + trackingInput.length(); i++) cursor += " ";
         // Tampilkan buffResi di LCD
-        lcd_print(0, 2, barcode + inputResi);
+        displayTextOnLCD(0, 2, scannedBarcode + trackingInput);
 
         // Update panjang buffResi di baris ke-3
-        lcd_print(0, 3, cursor + "^");
+        displayTextOnLCD(0, 3, cursor + "^");
 
         if (keyPad.isPressed()) {
           char key = keyPad.getChar();  // Membaca tombol yang ditekan
           if (key == '#') {
-            barcode = barcode + inputResi;
-            speak(String(soundCekResi));
-            menuIdx = menuCompareResi;
+            scannedBarcode = scannedBarcode + trackingInput;
+            playAudioCommand(String(soundCekResi));
+            currentMenuState = MENU_COMPARE_TRACKING;
             while (keyPad.getChar() == '#')
               ;
           } else if (key == '*') {
-            barcode = "||||||||||||||||||||";
-            speak(String(soundPilihMetode));
-            menuIdx = menuUtama;
+            scannedBarcode = "||||||||||||||||||||";
+            playAudioCommand(String(soundPilihMetode));
+            currentMenuState = MENU_MAIN;
             lcd.clear();
             while (keyPad.getChar() == '*')
               ;
           }
-          // Menangani input berdasarkan tombol yang ditekan
+          // Menangani serialInput berdasarkan tombol yang ditekan
           if (key == 'D') {
-            if (inputResi.length() > 0) {
-              inputResi.remove(inputResi.length() - 1);
+            if (trackingInput.length() > 0) {
+              trackingInput.remove(trackingInput.length() - 1);
             }
           } else if (key == 'C') {
-            inputResi = "";
+            trackingInput = "";
           } else if (key != 'N' && key != 'F') {
-            if (inputResi.length() < 20) {
-              inputResi += key;
+            if (trackingInput.length() < 20) {
+              trackingInput += key;
             }
           }
         }
         break;
         vTaskDelay(5000);
       }
-    case menuTutupLoker:
+    case MENU_CLOSE_LOKER:
       {
 
-        lcd_print(0, 0, "Loker " + String(receipts[paketIdx].nomorLoker) + " Tertutup");
+        displayTextOnLCD(0, 0, "Loker " + String(receipts[currentPackageIndex].nomorLoker) + " Tertutup");
 
-        switch (receipts[paketIdx].nomorLoker) {
+        switch (receipts[currentPackageIndex].nomorLoker) {
           case 1:
             {
-              input = "c1";
+              serialInput = "c1";
               break;
             }
           case 2:
             {
-              input = "c2";
+              serialInput = "c2";
               break;
             }
           case 3:
             {
-              input = "c3";
+              serialInput = "c3";
               break;
             }
           case 4:
             {
-              input = "c4";
+              serialInput = "c4";
 
               break;
             }
           case 5:
             {
-              input = "c5";
+              serialInput = "c5";
               break;
             }
           default:
             {
-              input = "Unknown Loker";  // Menangani jika loker tidak sesuai dengan 1-5
+              serialInput = "Unknown Loker";  // Menangani jika loker tidak sesuai dengan 1-5
               break;
             }
         }
-        if (!limitMasuk[receipts[paketIdx].nomorLoker - 1] == 0) {
-          speak(String((receipts[paketIdx].nomorLoker * 2) + 1));
+        if (!entrySwitches[receipts[currentPackageIndex].nomorLoker - 1] == 0) {
+          playAudioCommand(String((receipts[currentPackageIndex].nomorLoker * 2) + 1));
           vTaskDelay(2000);
-          lcd_print(0, 0, "Terima Kasih");
-          lcd_print(0, 1, "");
-          lcd_print(0, 2, "");
-          lcd_print(0, 3, "");
+          displayTextOnLCD(0, 0, "Terima Kasih");
+          displayTextOnLCD(0, 1, "");
+          displayTextOnLCD(0, 2, "");
+          displayTextOnLCD(0, 3, "");
           vTaskDelay(2000);
-          speak(String(soundPilihMetode));
-          menuIdx = menuUtama;
+          playAudioCommand(String(soundPilihMetode));
+          currentMenuState = MENU_MAIN;
         }
         break;
       }
-    case menuBukaLoker:
+    case MENU_OPEN_LOKER:
       {
-        lcd_print(0, 0, "Loker " + String(receipts[paketIdx].nomorLoker) + " Terbuka");
-        if (!limitKeluar[receipts[paketIdx].nomorLoker - 1] == 0) {
+        displayTextOnLCD(0, 0, "Loker " + String(receipts[currentPackageIndex].nomorLoker) + " Terbuka");
+        if (!exitSwitches[receipts[currentPackageIndex].nomorLoker - 1] == 0) {
           int start = millis();
-          lcd_print(0, 1, "Silahkan Ambil Uang!");
-          lcd_print(0, 2, "");
-          lcd_print(0, 3, "");
+          displayTextOnLCD(0, 1, "Silahkan Ambil Uang!");
+          displayTextOnLCD(0, 2, "");
+          displayTextOnLCD(0, 3, "");
           vTaskDelay(5000);
-          menuIdx = menuTutupLoker;
+          currentMenuState = MENU_CLOSE_LOKER;
         }
         break;
       }
 
-    case menuMasukanPaket:
+    case MENU_INSERT_PACKAGE:
       {
-        if (!limitMasuk[5] == 0) {
-          lcd_print(0, 0, "");
-          lcd_print(0, 1, "  Silahkan Masukan");
-          lcd_print(0, 2, "       Paket!");
-          lcd_print(0, 3, "");
+        if (!entrySwitches[5] == 0) {
+          displayTextOnLCD(0, 0, "");
+          displayTextOnLCD(0, 1, "  Silahkan Masukan");
+          displayTextOnLCD(0, 2, "       Paket!");
+          displayTextOnLCD(0, 3, "");
 
-          if (paketDiterima == false) {
-            if (jarak != 0 && jarak < 20) {
-              input = "ct";
-              paketDiterima = true;
+          if (isPackageReceived == false) {
+            if (currentDistance != 0 && currentDistance < 20) {
+              serialInput = "ct";
+              isPackageReceived = true;
             }
           }
         }
 
-        if (!limitKeluar[5] == 0 && paketDiterima) {
-          paketDiterima = false;
-          lcd_print(0, 0, "");
-          lcd_print(0, 1, " Paket Diterima!  ");
-          lcd_print(0, 2, "");
-          lcd_print(0, 3, "");
+        if (!exitSwitches[5] == 0 && isPackageReceived) {
+          isPackageReceived = false;
+          displayTextOnLCD(0, 0, "");
+          displayTextOnLCD(0, 1, " Paket Diterima!  ");
+          displayTextOnLCD(0, 2, "");
+          displayTextOnLCD(0, 3, "");
 
-          if (type == "COD") {
-            barcode = "|||||||||||||||||||";
-            barcodeBaru = false;
-            speak(String((receipts[paketIdx].nomorLoker * 2)));
+          if (packageType == "COD") {
+            scannedBarcode = "|||||||||||||||||||";
+            isNewBarcodeScanned = false;
+            playAudioCommand(String((receipts[currentPackageIndex].nomorLoker * 2)));
 
-            switch (receipts[paketIdx].nomorLoker) {
+            switch (receipts[currentPackageIndex].nomorLoker) {
               case 1:
                 {
-                  input = "o1";
+                  serialInput = "o1";
                   break;
                 }
               case 2:
                 {
-                  input = "o2";
+                  serialInput = "o2";
                   vTaskDelay(5000);
                   break;
                 }
               case 3:
                 {
-                  input = "o3";
+                  serialInput = "o3";
                   vTaskDelay(5000);
                   break;
                 }
               case 4:
                 {
-                  input = "o4";
+                  serialInput = "o4";
                   vTaskDelay(5000);
 
                   break;
                 }
               case 5:
                 {
-                  input = "o5";
+                  serialInput = "o5";
                   vTaskDelay(5000);
                   break;
                 }
               default:
                 {
-                  input = "Unknown Loker";  // Menangani jika loker tidak sesuai dengan 1-5
+                  serialInput = "Unknown Loker";  // Menangani jika loker tidak sesuai dengan 1-5
                   break;
                 }
             }
             lcd.clear();
-            menuIdx = menuBukaLoker;
+            currentMenuState = MENU_OPEN_LOKER;
 
-          } else if (type == "Non-COD") {
-            barcode = "|||||||||||||||||||";
-            barcodeBaru = false;
-            speak(String(soundTerimaKasih));
+          } else if (packageType == "Non-COD") {
+            scannedBarcode = "|||||||||||||||||||";
+            isNewBarcodeScanned = false;
+            playAudioCommand(String(soundTerimaKasih));
             vTaskDelay(2000);
-            menuIdx = menuUtama;
-            speak(String(soundPilihMetode));
+            currentMenuState = MENU_MAIN;
+            playAudioCommand(String(soundPilihMetode));
           }
         }
       }
     default:
       {
-        // Default case to handle invalid menuIdx
+        // Default case to handle invalid currentMenuState
         break;
       }
   }

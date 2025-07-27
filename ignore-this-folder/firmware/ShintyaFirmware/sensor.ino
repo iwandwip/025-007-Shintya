@@ -1,28 +1,28 @@
-void setupSensor() {
+void initializeSensors() {
   Wire.begin();
   Serial2.begin(9600, SERIAL_8N1, RX_GM67, TX_GM67);
-  pcfIn.begin(0x20, &Wire);
-  pcfOut.begin(0x21, &Wire);
+  pcfEntryInput.begin(0x20, &Wire);
+  pcfExitOutput.begin(0x21, &Wire);
 }
 
-void readBarcode() {
-  barcode = Serial2.readStringUntil('\r');
-  Serial.println("barcode : " + barcode);
+void scanBarcodeFromSerial() {
+  scannedBarcode = Serial2.readStringUntil('\r');
+  Serial.println("barcode : " + scannedBarcode);
 }
 
-int readJarak() {
-  int measure = sonar.ping_cm();
-  if (measure == 0) return MAX_DISTANCE;
-  else return measure;
+int readDistanceSensor() {
+  int measuredDistance = sonar.ping_cm();
+  if (measuredDistance == 0) return MAX_DISTANCE;
+  else return measuredDistance;
 }
 
-void printJarak() {
-  Serial.print("Jarak Sensor : ");
-  Serial.print(jarak);
+void printCurrentDistance() {
+  Serial.print("Distance Sensor : ");
+  Serial.print(currentDistance);
   Serial.println(" cm\t");
 }
 
-void setupKeypad() {
+void initializeKeypad() {
 
   if (keyPad.begin() == false) {
     Serial.println("\nERROR: cannot communicate to keypad.\nPlease reboot.\n");
@@ -33,52 +33,52 @@ void setupKeypad() {
   keyPad.loadKeyMap(keymap);
 }
 
-void readKeypad() {
+void processKeypadInput() {
   if (keyPad.isPressed()) {
-    char input = keyPad.getChar();
-    if (input != 'F' && input != 'N')
-      Serial.println(input);
+    char keyInput = keyPad.getChar();
+    if (keyInput != 'F' && keyInput != 'N')
+      Serial.println(keyInput);
   }
 }
 
-void command() {
+void processSerialCommands() {
   if (Serial.available()) {
-    input = Serial.readStringUntil('\n');
-    Serial.println(input);
-    speak(input);
+    serialInput = Serial.readStringUntil('\n');
+    Serial.println(serialInput);
+    playAudioCommand(serialInput);
   }
-  if (input == "r") ESP.restart();
-  else if (input == "o1") controlLoker[0] = "buka";
-  else if (input == "c1") controlLoker[0] = "tutup";
-  else if (input == "o2") controlLoker[1] = "buka";
-  else if (input == "c2") controlLoker[1] = "tutup";
-  else if (input == "o3") controlLoker[2] = "buka";
-  else if (input == "c3") controlLoker[2] = "tutup";
-  else if (input == "o4") controlLoker[3] = "buka";
-  else if (input == "c4") controlLoker[3] = "tutup";
-  else if (input == "o5") controlLoker[4] = "buka";
-  else if (input == "c5") controlLoker[4] = "tutup";
-  else if (input == "ot") controlTutup = "buka";
-  else if (input == "ct") controlTutup = "tutup";
-  else if (input == "st") controlTutup = "stop";
-  else if (input == "or") controlRelay = "buka";
-  else if (input == "cr") controlRelay = "tutup";
+  if (serialInput == "r") ESP.restart();
+  else if (serialInput == "o1") lokerControlCommands[0] = "buka";
+  else if (serialInput == "c1") lokerControlCommands[0] = "tutup";
+  else if (serialInput == "o2") lokerControlCommands[1] = "buka";
+  else if (serialInput == "c2") lokerControlCommands[1] = "tutup";
+  else if (serialInput == "o3") lokerControlCommands[2] = "buka";
+  else if (serialInput == "c3") lokerControlCommands[2] = "tutup";
+  else if (serialInput == "o4") lokerControlCommands[3] = "buka";
+  else if (serialInput == "c4") lokerControlCommands[3] = "tutup";
+  else if (serialInput == "o5") lokerControlCommands[4] = "buka";
+  else if (serialInput == "c5") lokerControlCommands[4] = "tutup";
+  else if (serialInput == "ot") mainDoorControl = "buka";
+  else if (serialInput == "ct") mainDoorControl = "tutup";
+  else if (serialInput == "st") mainDoorControl = "stop";
+  else if (serialInput == "or") relayControlCommand = "buka";
+  else if (serialInput == "cr") relayControlCommand = "tutup";
 }
 
-void readLimit() {
-  limitMasuk[0] = !pcfIn.digitalRead(5);
-  limitMasuk[1] = !pcfIn.digitalRead(1);
-  limitMasuk[2] = !pcfIn.digitalRead(2);
-  limitMasuk[3] = !pcfIn.digitalRead(3);
-  limitMasuk[4] = !pcfIn.digitalRead(4);
-  limitMasuk[5] = !pcfIn.digitalRead(6);
-  limitKeluar[0] = !pcfOut.digitalRead(5);
-  limitKeluar[1] = !pcfOut.digitalRead(1);
-  limitKeluar[2] = !pcfOut.digitalRead(2);
-  limitKeluar[3] = !pcfOut.digitalRead(3);
-  limitKeluar[4] = !pcfOut.digitalRead(4);
-  limitKeluar[5] = !pcfOut.digitalRead(6);
-  //  sprintf(buff , "%d%d%d%d%d | %d%d%d%d%d\n" , limitMasuk[0] ,limitMasuk[1] , limitMasuk[2] , limitMasuk[3] , limitMasuk[4] , limitKeluar[0] ,limitKeluar[1] , limitKeluar[2] , limitKeluar[3] , limitKeluar[4]  );
-  //  sprintf(buff , "%d | %d\n" , limitMasuk[5]  , limitKeluar[5] );
+void readLimitSwitches() {
+  entrySwitches[0] = !pcfEntryInput.digitalRead(5);
+  entrySwitches[1] = !pcfEntryInput.digitalRead(1);
+  entrySwitches[2] = !pcfEntryInput.digitalRead(2);
+  entrySwitches[3] = !pcfEntryInput.digitalRead(3);
+  entrySwitches[4] = !pcfEntryInput.digitalRead(4);
+  entrySwitches[5] = !pcfEntryInput.digitalRead(6);
+  exitSwitches[0] = !pcfExitOutput.digitalRead(5);
+  exitSwitches[1] = !pcfExitOutput.digitalRead(1);
+  exitSwitches[2] = !pcfExitOutput.digitalRead(2);
+  exitSwitches[3] = !pcfExitOutput.digitalRead(3);
+  exitSwitches[4] = !pcfExitOutput.digitalRead(4);
+  exitSwitches[5] = !pcfExitOutput.digitalRead(6);
+  //  sprintf(buff , "%d%d%d%d%d | %d%d%d%d%d\n" , entrySwitches[0] ,entrySwitches[1] , entrySwitches[2] , entrySwitches[3] , entrySwitches[4] , exitSwitches[0] ,exitSwitches[1] , exitSwitches[2] , exitSwitches[3] , exitSwitches[4]  );
+  //  sprintf(buff , "%d | %d\n" , entrySwitches[5]  , exitSwitches[5] );
   //  Serial.print(buff);
 }
