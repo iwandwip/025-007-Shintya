@@ -17,7 +17,7 @@ void initializeAudioSystem() {
     Serial.println("Unable to begin:");
     Serial.println("1.Please recheck the connection!");
     Serial.println("2.Please insert the SD card!");
-    while (true) // Loop tak terbatas jika inisialisasi gagal
+    while (true)  // Loop tak terbatas jika inisialisasi gagal
       ;
   }
   Serial.println(F("DFPlayer Mini online."));
@@ -26,7 +26,7 @@ void initializeAudioSystem() {
   myDFPlayer.setTimeOut(500);
 
   // Mengatur volume awal (0~30)
-  myDFPlayer.volume(VOLUME);  
+  myDFPlayer.volume(VOLUME);
   // Mengatur equalizer ke mode normal
   myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
   // myDFPlayer.EQ(DFPLAYER_EQ_BASS); // Contoh: equalizer bass

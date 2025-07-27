@@ -5,10 +5,10 @@
  * dan menginisialisasi expander I/O PCF8574 untuk limit switch.
  */
 void initializeSensors() {
-  Wire.begin(); // Memulai komunikasi I2C
-  Serial2.begin(9600, SERIAL_8N1, RX_GM67, TX_GM67); // Memulai komunikasi serial untuk barcode scanner
-  pcfEntryInput.begin(0x20, &Wire); // Inisialisasi PCF8574 untuk limit switch masuk (alamat 0x20)
-  pcfExitOutput.begin(0x21, &Wire);  // Inisialisasi PCF8574 untuk limit switch keluar (alamat 0x21)
+  Wire.begin();                                       // Memulai komunikasi I2C
+  Serial2.begin(9600, SERIAL_8N1, RX_GM67, TX_GM67);  // Memulai komunikasi serial untuk barcode scanner
+  pcfEntryInput.begin(0x20, &Wire);                   // Inisialisasi PCF8574 untuk limit switch masuk (alamat 0x20)
+  pcfExitOutput.begin(0x21, &Wire);                   // Inisialisasi PCF8574 untuk limit switch keluar (alamat 0x21)
 }
 
 /**
@@ -18,8 +18,8 @@ void initializeSensors() {
  * dan menyimpannya ke variabel `scannedBarcode`. Hasilnya juga dicetak ke Serial.
  */
 void scanBarcodeFromSerial() {
-  scannedBarcode = Serial2.readStringUntil('\r'); // Membaca string barcode
-  Serial.println("barcode : " + scannedBarcode); // Mencetak barcode ke Serial
+  scannedBarcode = Serial2.readStringUntil('\r');  // Membaca string barcode
+  Serial.println("barcode : " + scannedBarcode);   // Mencetak barcode ke Serial
 }
 
 /**
@@ -32,17 +32,17 @@ void scanBarcodeFromSerial() {
  * @return Jarak terukur dalam sentimeter atau `MAX_DISTANCE` jika 0.
  */
 int readDistanceSensor() {
-  int measuredDistance = sonar.ping_cm(); // Mengukur jarak dalam cm
-  if (measuredDistance == 0) return MAX_DISTANCE; // Jika 0, kembalikan MAX_DISTANCE
-  else return measuredDistance; // Kembalikan jarak terukur
+  int measuredDistance = sonar.ping_cm();          // Mengukur jarak dalam cm
+  if (measuredDistance == 0) return MAX_DISTANCE;  // Jika 0, kembalikan MAX_DISTANCE
+  else return measuredDistance;                    // Kembalikan jarak terukur
 }
 
 /**
  * @brief Mencetak jarak saat ini dari sensor ultrasonik ke Serial Monitor.
  */
 void printCurrentDistance() {
-  Serial.print("Distance Sensor : "); // Mencetak label
-  Serial.print(currentDistance);      // Mencetak jarak saat ini
+  Serial.print("Distance Sensor : ");  // Mencetak label
+  Serial.print(currentDistance);       // Mencetak jarak saat ini
   Serial.println(" cm\t");             // Mencetak satuan dan tab
 }
 
@@ -54,11 +54,11 @@ void printCurrentDistance() {
  */
 void initializeKeypad() {
   if (keyPad.begin() == false) {
-    Serial.println("\nERROR: cannot communicate to keypad.\nPlease reboot.\n"); // Pesan error
-    while (1) // Loop tak terbatas
+    Serial.println("\nERROR: cannot communicate to keypad.\nPlease reboot.\n");  // Pesan error
+    while (1)                                                                    // Loop tak terbatas
       ;
   }
-  keyPad.loadKeyMap(keymap); // Memuat peta kunci untuk keypad
+  keyPad.loadKeyMap(keymap);  // Memuat peta kunci untuk keypad
 }
 
 /**
@@ -70,9 +70,9 @@ void initializeKeypad() {
  */
 void processKeypadInput() {
   if (keyPad.isPressed()) {
-    char keyInput = keyPad.getChar(); // Membaca karakter tombol yang ditekan
-    if (keyInput != 'F' && keyInput != 'N') // Jika bukan 'F' atau 'N'
-      Serial.println(keyInput); // Cetak karakter tombol
+    char keyInput = keyPad.getChar();        // Membaca karakter tombol yang ditekan
+    if (keyInput != 'F' && keyInput != 'N')  // Jika bukan 'F' atau 'N'
+      Serial.println(keyInput);              // Cetak karakter tombol
   }
 }
 
@@ -85,27 +85,27 @@ void processKeypadInput() {
  */
 void processSerialCommands() {
   if (Serial.available()) {
-    serialInput = Serial.readStringUntil('\n'); // Membaca string perintah
-    Serial.println(serialInput); // Mencetak perintah yang diterima
-    playAudioCommand(serialInput); // Memutar audio berdasarkan perintah (jika berlaku)
+    serialInput = Serial.readStringUntil('\n');  // Membaca string perintah
+    Serial.println(serialInput);                 // Mencetak perintah yang diterima
+    playAudioCommand(serialInput);               // Memutar audio berdasarkan perintah (jika berlaku)
   }
   // Logika untuk berbagai perintah serial
-  if (serialInput == "r") ESP.restart(); // Restart ESP32
-  else if (serialInput == "o1") lokerControlCommands[0] = "buka"; // Buka loker 1
-  else if (serialInput == "c1") lokerControlCommands[0] = "tutup"; // Tutup loker 1
-  else if (serialInput == "o2") lokerControlCommands[1] = "buka"; // Buka loker 2
-  else if (serialInput == "c2") lokerControlCommands[1] = "tutup"; // Tutup loker 2
-  else if (serialInput == "o3") lokerControlCommands[2] = "buka"; // Buka loker 3
-  else if (serialInput == "c3") lokerControlCommands[2] = "tutup"; // Tutup loker 3
-  else if (serialInput == "o4") lokerControlCommands[3] = "buka"; // Buka loker 4
-  else if (serialInput == "c4") lokerControlCommands[3] = "tutup"; // Tutup loker 4
-  else if (serialInput == "o5") lokerControlCommands[4] = "buka"; // Buka loker 5
-  else if (serialInput == "c5") lokerControlCommands[4] = "tutup"; // Tutup loker 5
-  else if (serialInput == "ot") mainDoorControl = "buka"; // Buka pintu utama
-  else if (serialInput == "ct") mainDoorControl = "tutup"; // Tutup pintu utama
-  else if (serialInput == "st") mainDoorControl = "stop"; // Hentikan pintu utama
-  else if (serialInput == "or") relayControlCommand = "buka"; // Buka relay
-  else if (serialInput == "cr") relayControlCommand = "tutup"; // Tutup relay
+  if (serialInput == "r") ESP.restart();                            // Restart ESP32
+  else if (serialInput == "o1") lokerControlCommands[0] = "buka";   // Buka loker 1
+  else if (serialInput == "c1") lokerControlCommands[0] = "tutup";  // Tutup loker 1
+  else if (serialInput == "o2") lokerControlCommands[1] = "buka";   // Buka loker 2
+  else if (serialInput == "c2") lokerControlCommands[1] = "tutup";  // Tutup loker 2
+  else if (serialInput == "o3") lokerControlCommands[2] = "buka";   // Buka loker 3
+  else if (serialInput == "c3") lokerControlCommands[2] = "tutup";  // Tutup loker 3
+  else if (serialInput == "o4") lokerControlCommands[3] = "buka";   // Buka loker 4
+  else if (serialInput == "c4") lokerControlCommands[3] = "tutup";  // Tutup loker 4
+  else if (serialInput == "o5") lokerControlCommands[4] = "buka";   // Buka loker 5
+  else if (serialInput == "c5") lokerControlCommands[4] = "tutup";  // Tutup loker 5
+  else if (serialInput == "ot") mainDoorControl = "buka";           // Buka pintu utama
+  else if (serialInput == "ct") mainDoorControl = "tutup";          // Tutup pintu utama
+  else if (serialInput == "st") mainDoorControl = "stop";           // Hentikan pintu utama
+  else if (serialInput == "or") relayControlCommand = "buka";       // Buka relay
+  else if (serialInput == "cr") relayControlCommand = "tutup";      // Tutup relay
 }
 
 /**

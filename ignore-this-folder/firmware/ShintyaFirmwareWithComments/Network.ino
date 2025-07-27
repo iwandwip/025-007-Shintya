@@ -59,7 +59,7 @@ void updateDatabaseData() {
   // Untuk menjaga otentikasi dan tugas asinkron
   app.loop();
 
-  static uint32_t firestoreUpdateTimer; // Timer untuk pembaruan Firestore
+  static uint32_t firestoreUpdateTimer;  // Timer untuk pembaruan Firestore
   // Perbarui setiap 5 detik jika aplikasi siap
   if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
     firestoreUpdateTimer = millis();

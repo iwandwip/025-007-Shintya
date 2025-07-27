@@ -8,24 +8,24 @@ void initializeLCDDisplay() {
   lcd.init();       // Inisialisasi LCD
   lcd.backlight();  // Nyalakan lampu latar LCD
   String displayTitle;
-  
+
   // Menampilkan judul "SHINTYA PUTRI WIJAYA"
   displayTitle = "SHINTYA PUTRI WIJAYA";
-  lcd.setCursor(10 - displayTitle.length() / 2, 1); // Atur posisi kursor di tengah baris 1
-  lcd.print(displayTitle); // Tampilkan judul
-  
+  lcd.setCursor(10 - displayTitle.length() / 2, 1);  // Atur posisi kursor di tengah baris 1
+  lcd.print(displayTitle);                           // Tampilkan judul
+
   // Menampilkan NIM "2141160117"
   displayTitle = "2141160117";
-  lcd.setCursor(10 - displayTitle.length() / 2, 2); // Atur posisi kursor di tengah baris 2
-  lcd.print(displayTitle); // Tampilkan NIM
-  
+  lcd.setCursor(10 - displayTitle.length() / 2, 2);  // Atur posisi kursor di tengah baris 2
+  lcd.print(displayTitle);                           // Tampilkan NIM
+
   // playAudioCommand(String(soundJudul)); // Contoh: memutar audio judul (dikomentari)
   // vTaskDelay(10000); // Contoh: jeda 10 detik (dikomentari)
-  lcd.clear(); // Bersihkan layar LCD
+  lcd.clear();  // Bersihkan layar LCD
 }
 
 // Buffer untuk menyimpan teks terakhir yang ditampilkan pada setiap baris LCD (4 baris)
-String lastDisplayedText[4];  
+String lastDisplayedText[4];
 
 /**
  * @brief Menampilkan teks pada layar LCD dengan pembaruan cerdas.
@@ -46,8 +46,8 @@ void displayTextOnLCD(int xPosition, int yPosition, String textBuffer) {
 
     // Bersihkan layar dengan spasi kosong untuk menghindari sisa teks lama
     String clearString = String("                    ");  // 20 karakter kosong
-    lcd.setCursor(xPosition, yPosition); // Atur posisi kursor
-    lcd.print(clearString);  // Bersihkan teks lama
+    lcd.setCursor(xPosition, yPosition);                  // Atur posisi kursor
+    lcd.print(clearString);                               // Bersihkan teks lama
 
     // Pastikan panjang buffer teks tepat 20 karakter
     while (textBuffer.length() < 20) {  // Tambahkan spasi hingga panjang buffer menjadi 20 karakter
@@ -59,10 +59,10 @@ void displayTextOnLCD(int xPosition, int yPosition, String textBuffer) {
       textBuffer = textBuffer.substring(0, 20);
     }
 
-    char displayBuffer[21];  // Buffer karakter: 20 karakter + null terminator
-    snprintf(displayBuffer, 21, "%s", textBuffer.c_str()); // Format teks ke buffer karakter
-    lcd.setCursor(xPosition, yPosition); // Atur posisi kursor
-    lcd.print(displayBuffer);  // Tampilkan teks baru
+    char displayBuffer[21];                                 // Buffer karakter: 20 karakter + null terminator
+    snprintf(displayBuffer, 21, "%s", textBuffer.c_str());  // Format teks ke buffer karakter
+    lcd.setCursor(xPosition, yPosition);                    // Atur posisi kursor
+    lcd.print(displayBuffer);                               // Tampilkan teks baru
   }
 }
 

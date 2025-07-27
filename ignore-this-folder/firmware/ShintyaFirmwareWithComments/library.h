@@ -82,9 +82,9 @@ char keymap[19] = "147*2580369#ABCDNF";  // N = NoKey, F = Fail
 // Objek Adafruit_PWMServoDriver untuk kontrol servo (PCA9685) dengan alamat I2C 0x40
 Adafruit_PWMServoDriver servo = Adafruit_PWMServoDriver(0x40);
 // Nilai pulse minimum untuk servo (dari 4096)
-#define SERVOMIN 125  
+#define SERVOMIN 125
 // Nilai pulse maksimum untuk servo (dari 4096)
-#define SERVOMAX 575  
+#define SERVOMAX 575
 
 // Variabel untuk menyimpan nomor servo yang aktif
 int activeServoNumber = 0;
@@ -128,7 +128,7 @@ enum sound {
 };
 
 // Mendefinisikan volume audio awal (0 - 30)
-#define VOLUME 30  
+#define VOLUME 30
 
 // ================ button ====================================
 // Mendefinisikan pin untuk tombol 1 dan tombol 2

@@ -10,8 +10,8 @@ void TaskDatabase(void *pvParameters) {
   initializeNetworkConnection();  // Inisialisasi koneksi jaringan
   initializeFirebaseDatabase();   // Inisialisasi database Firebase
   while (true) {
-    updateDatabaseData();         // Perbarui data dari database
-    vTaskDelay(2000 / portTICK_PERIOD_MS); // Tunda selama 2 detik
+    updateDatabaseData();                   // Perbarui data dari database
+    vTaskDelay(2000 / portTICK_PERIOD_MS);  // Tunda selama 2 detik
   }
 }
 
@@ -24,27 +24,27 @@ void TaskDatabase(void *pvParameters) {
  * @param pvParameters Parameter yang diteruskan ke task (tidak digunakan dalam kasus ini).
  */
 void TaskControl(void *pvParameters) {
-  initializeAudioSystem();    // Inisialisasi sistem audio
-  initializeLCDDisplay();     // Inisialisasi layar LCD
-  initializeSensors();        // Inisialisasi semua sensor
-  initializeServoController(); // Inisialisasi kontroler servo
-  initializeKeypad();         // Inisialisasi keypad
-  initializeRelay();          // Inisialisasi relay
-  initializeButtons();        // Inisialisasi tombol
-  playAudioCommand(String(soundPilihMetode)); // Putar audio "Pilih Metode"
-  initializeDummyPackages();  // Inisialisasi data paket dummy
+  initializeAudioSystem();                     // Inisialisasi sistem audio
+  initializeLCDDisplay();                      // Inisialisasi layar LCD
+  initializeSensors();                         // Inisialisasi semua sensor
+  initializeServoController();                 // Inisialisasi kontroler servo
+  initializeKeypad();                          // Inisialisasi keypad
+  initializeRelay();                           // Inisialisasi relay
+  initializeButtons();                         // Inisialisasi tombol
+  playAudioCommand(String(soundPilihMetode));  // Putar audio "Pilih Metode"
+  initializeDummyPackages();                   // Inisialisasi data paket dummy
   while (true) {
     // updateDataResi(); // Contoh: memperbarui data resi (dikomentari)
     // displayData();    // Contoh: menampilkan data (dikomentari)
     // readKeypad();     // Contoh: membaca keypad (dikomentari)
-    readLimitSwitches();      // Baca status limit switch
-    controlAllLokers();       // Kontrol semua loker
-    controlMainDoor();        // Kontrol pintu utama
-    controlRelayOutput();     // Kontrol output relay
-    processRemoteLokerCommands(); // Proses perintah loker jarak jauh
-    menu();                   // Jalankan logika menu
+    readLimitSwitches();           // Baca status limit switch
+    controlAllLokers();            // Kontrol semua loker
+    controlMainDoor();             // Kontrol pintu utama
+    controlRelayOutput();          // Kontrol output relay
+    processRemoteLokerCommands();  // Proses perintah loker jarak jauh
+    menu();                        // Jalankan logika menu
     // readButton();     // Contoh: membaca tombol (dikomentari)
-    currentDistance = readDistanceSensor(); // Baca jarak dari sensor ultrasonik
+    currentDistance = readDistanceSensor();  // Baca jarak dari sensor ultrasonik
     // printJarak();     // Contoh: mencetak jarak (dikomentari)
 
     processSerialCommands();  // Proses perintah serial
@@ -88,5 +88,5 @@ void setupRTOS() {
   );
 
 
-  Serial.println("Setup RTOS Finish !!"); // Cetak pesan bahwa setup RTOS selesai
+  Serial.println("Setup RTOS Finish !!");  // Cetak pesan bahwa setup RTOS selesai
 }
