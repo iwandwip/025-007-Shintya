@@ -1,35 +1,864 @@
 # DOKUMENTASI FIRMWARE ESP32 SMART PACKET BOX COD
-### Analisis Mendalam Struktur Kode dan Implementasi
+### Analisis Mendalam Struktur Kode dan Implementasi Berdasarkan Entry Point
 
 ---
 
 ## DAFTAR ISI
 
-1. [Gambaran Umum dan Arsitektur Sistem](#1-gambaran-umum-dan-arsitektur-sistem)
-2. [Titik Masuk Program dan Inisialisasi](#2-titik-masuk-program-dan-inisialisasi)
-3. [Manajemen Task RTOS](#3-manajemen-task-rtos)
-4. [Fungsi Inisialisasi Hardware](#4-fungsi-inisialisasi-hardware)
-5. [Fungsi Input Sensor](#5-fungsi-input-sensor)
-6. [Fungsi Kontrol Aktuator](#6-fungsi-kontrol-aktuator)
-7. [Manajemen Tampilan LCD](#7-manajemen-tampilan-lcd)
-8. [State Machine Menu](#8-state-machine-menu)
-9. [Operasi Jaringan dan Database](#9-operasi-jaringan-dan-database)
-10. [Variabel Global dan Struktur Data](#10-variabel-global-dan-struktur-data)
-11. [Ketergantungan Pemanggilan Fungsi](#11-ketergantungan-pemanggilan-fungsi)
-12. [Alur Sistem dan Pohon Keputusan](#12-alur-sistem-dan-pohon-keputusan)
-13. [Analisis Lengkap Implementasi Code](#13-analisis-lengkap-implementasi-code)
+1. [ENTRY POINT PROGRAM - setup() dan loop()](#1-entry-point-program---setup-dan-loop)
+2. [TRACING FUNGSI DARI setup()](#2-tracing-fungsi-dari-setup)
+3. [TRACING FUNGSI DARI loop()](#3-tracing-fungsi-dari-loop)
+4. [HIRARKI PEMANGGILAN TASKDATABASE (Core 0)](#4-hirarki-pemanggilan-taskdatabase-core-0)
+5. [HIRARKI PEMANGGILAN TASKCONTROL (Core 1)](#5-hirarki-pemanggilan-taskcontrol-core-1)
+6. [MAPPING LENGKAP FUNGSI KE FILE](#6-mapping-lengkap-fungsi-ke-file)
+7. [ALUR LENGKAP INISIALISASI SISTEM](#7-alur-lengkap-inisialisasi-sistem)
+8. [ALUR LENGKAP RUNTIME OPERATION](#8-alur-lengkap-runtime-operation)
+9. [DEPENDENCY TREE LENGKAP](#9-dependency-tree-lengkap)
+10. [ANALISIS DETAIL IMPLEMENTASI PER FILE](#10-analisis-detail-implementasi-per-file)
 
 ---
 
-## 1. GAMBARAN UMUM DAN ARSITEKTUR SISTEM
+## 1. ENTRY POINT PROGRAM - setup() dan loop()
 
-### Komponen Hardware
+### **Entry Point Utama: ShintyaFirmwareWithComments.ino**
+
+Program ESP32 dimulai dari dua fungsi utama yang wajib ada dalam framework Arduino:
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+  setupRTOS();
+}
+
+void loop() {
+  // Kosong - semua logika ditangani oleh RTOS tasks
+}
 ```
-ESP32 (Dual-Core Processor)
-├── Core 0: Operasi Database/Jaringan
-├── Core 1: Operasi Kontrol Hardware
-├── I2C Bus: LCD(0x27), Keypad(0x22), PCA9685(0x40), PCF8574(0x20,0x21)
-├── Interface Serial: Serial(Debug), Serial1(Audio), Serial2(Barcode)
+
+### **Struktur Entry Point:**
+```
+📁 ShintyaFirmwareWithComments.ino (ENTRY POINT)
+├── 🔧 setup()
+│   ├── Serial.begin(115200)           // Built-in Arduino function
+│   └── setupRTOS()                    // 📂 RTOS.ino
+└── 🔄 loop()
+    └── [KOSONG]                       // Semua logika di RTOS tasks
+```
+
+**Penjelasan:**
+- **setup()**: Dipanggil sekali saat ESP32 boot
+- **loop()**: Dipanggil berulang, tapi sengaja dikosongkan karena menggunakan RTOS
+- **setupRTOS()**: Fungsi kunci yang membuat dual-core tasks
+
+---
+
+## 2. TRACING FUNGSI DARI setup()
+
+### **Level 1: setup() → setupRTOS()**
+
+**File:** `ShintyaFirmwareWithComments.ino` → `RTOS.ino`
+
+```cpp
+void setup() {
+  Serial.begin(115200);  // ✅ Arduino built-in
+  setupRTOS();           // ➡️ PANGGIL FUNGSI: setupRTOS() di RTOS.ino
+}
+```
+
+### **Level 2: setupRTOS() → xTaskCreatePinnedToCore()**
+
+**File:** `RTOS.ino`
+
+```cpp
+void setupRTOS() {
+  // ➡️ PANGGIL FUNGSI: xTaskCreatePinnedToCore() - FreeRTOS built-in
+  xTaskCreatePinnedToCore(
+    TaskDatabase,     // ➡️ PANGGIL FUNGSI: TaskDatabase() di RTOS.ino
+    "TaskDatabase",   
+    10000,            
+    NULL,             
+    1,                
+    &DatabaseHandle,  
+    0                 // Core 0
+  );
+
+  // ➡️ PANGGIL FUNGSI: xTaskCreatePinnedToCore() - FreeRTOS built-in  
+  xTaskCreatePinnedToCore(
+    TaskControl,      // ➡️ PANGGIL FUNGSI: TaskControl() di RTOS.ino
+    "TaskControl",    
+    10000,            
+    NULL,             
+    1,                
+    &ControlHandle,   
+    1                 // Core 1
+  );
+}
+```
+
+**Hasil Setup:**
+- Membuat **2 RTOS Tasks** yang berjalan parallel
+- **TaskDatabase** → Berjalan di Core 0 (Network operations)
+- **TaskControl** → Berjalan di Core 1 (Hardware operations)
+
+---
+
+## 3. TRACING FUNGSI DARI loop()
+
+### **Loop() Function Analysis**
+
+**File:** `ShintyaFirmwareWithComments.ino`
+
+```cpp
+void loop() {
+  // KOSONG - Tidak ada kode di sini
+}
+```
+
+**Penjelasan Mengapa Kosong:**
+- Dalam sistem RTOS, loop() utama tidak digunakan
+- Semua operasi berjalan di **TaskDatabase()** dan **TaskControl()**
+- Framework Arduino tetap memanggil loop() tapi tidak ada yang dieksekusi
+
+**Real Loop Operations:**
+```
+loop() [KOSONG] 
+├── ❌ Tidak ada operasi di sini
+└── ✅ Operasi real di:
+    ├── TaskDatabase() [Core 0] - Loop infinite
+    └── TaskControl() [Core 1] - Loop infinite
+```
+
+---
+
+## 4. HIRARKI PEMANGGILAN TASKDATABASE (Core 0)
+
+### **TaskDatabase() - Network Operations di Core 0**
+
+**File:** `RTOS.ino`
+
+```cpp
+void TaskDatabase(void *pvParameters) {
+  // === INISIALISASI PHASE ===
+  initializeNetworkConnection();  // ➡️ PANGGIL: Network.ino
+  initializeFirebaseDatabase();   // ➡️ PANGGIL: Network.ino
+  
+  // === RUNTIME LOOP ===
+  while (true) {
+    updateDatabaseData();                   // ➡️ PANGGIL: Network.ino
+    vTaskDelay(2000 / portTICK_PERIOD_MS); // ✅ FreeRTOS built-in
+  }
+}
+```
+
+### **Detailed Trace TaskDatabase:**
+
+#### **Level 1: TaskDatabase → Inisialisasi Functions**
+
+```
+📂 RTOS.ino: TaskDatabase()
+├── 📂 Network.ino: initializeNetworkConnection()
+│   ├── WiFi.begin(WIFI_SSID, WIFI_PASSWORD)     // ✅ ESP32 WiFi lib
+│   ├── while (WiFi.status() != WL_CONNECTED)    // ✅ ESP32 WiFi lib
+│   └── WiFi.localIP()                           // ✅ ESP32 WiFi lib
+│
+└── 📂 Network.ino: initializeFirebaseDatabase()
+    ├── Firebase.printf()                        // ✅ Firebase lib  
+    ├── set_ssl_client_insecure_and_buffer()     // ✅ Firebase lib
+    ├── initializeApp()                          // ✅ Firebase lib
+    └── app.getApp<Firestore::Documents>()       // ✅ Firebase lib
+```
+
+#### **Level 2: TaskDatabase → Runtime Loop Functions**
+
+```
+📂 RTOS.ino: TaskDatabase() [WHILE TRUE LOOP]
+└── 📂 Network.ino: updateDatabaseData()
+    ├── app.loop()                               // ✅ Firebase lib
+    ├── Docs.get() untuk "users"                 // ✅ Firebase lib
+    ├── Docs.get() untuk "receipts"              // ✅ Firebase lib  
+    ├── Docs.get() untuk "lokerControl"          // ✅ Firebase lib
+    ├── deserializeJson(usersDocument)           // ✅ ArduinoJson lib
+    ├── deserializeJson(receiptsDocument)        // ✅ ArduinoJson lib
+    ├── deserializeJson(lokerControlDocument)    // ✅ ArduinoJson lib
+    └── for loops untuk parsing data ke arrays   // ✅ C++ built-in
+```
+
+**Dependency Files untuk TaskDatabase:**
+- `RTOS.ino` - Task definition
+- `Network.ino` - Semua network functions
+- `library.h` - Konstanta dan variabel global
+
+---
+
+## 5. HIRARKI PEMANGGILAN TASKCONTROL (Core 1)
+
+### **TaskControl() - Hardware Operations di Core 1**
+
+**File:** `RTOS.ino`
+
+```cpp
+void TaskControl(void *pvParameters) {
+  // === INISIALISASI PHASE ===
+  initializeAudioSystem();                     // ➡️ PANGGIL: actuator.ino
+  initializeLCDDisplay();                      // ➡️ PANGGIL: display.ino
+  initializeSensors();                         // ➡️ PANGGIL: sensor.ino
+  initializeServoController();                 // ➡️ PANGGIL: actuator.ino
+  initializeKeypad();                          // ➡️ PANGGIL: sensor.ino
+  initializeRelay();                           // ➡️ PANGGIL: actuator.ino
+  initializeButtons();                         // ➡️ PANGGIL: actuator.ino
+  playAudioCommand(String(soundPilihMetode));  // ➡️ PANGGIL: actuator.ino
+  initializeDummyPackages();                   // ➡️ PANGGIL: Network.ino
+  
+  // === RUNTIME LOOP ===
+  while (true) {
+    readLimitSwitches();           // ➡️ PANGGIL: sensor.ino
+    controlAllLokers();            // ➡️ PANGGIL: actuator.ino
+    controlMainDoor();             // ➡️ PANGGIL: actuator.ino
+    controlRelayOutput();          // ➡️ PANGGIL: actuator.ino
+    processRemoteLokerCommands();  // ➡️ PANGGIL: actuator.ino
+    menu();                        // ➡️ PANGGIL: menu.ino
+    currentDistance = readDistanceSensor();  // ➡️ PANGGIL: sensor.ino
+    processSerialCommands();       // ➡️ PANGGIL: sensor.ino
+  }
+}
+```
+
+### **Detailed Trace TaskControl Inisialisasi:**
+
+#### **Level 1: TaskControl → Initialization Functions**
+
+```
+📂 RTOS.ino: TaskControl()
+├── 📂 actuator.ino: initializeAudioSystem()
+│   ├── Serial1.begin()                          // ✅ ESP32 Serial lib
+│   ├── myDFPlayer.begin(Serial1)                // ✅ DFPlayerMini lib
+│   ├── myDFPlayer.setTimeOut(500)               // ✅ DFPlayerMini lib
+│   ├── myDFPlayer.volume(VOLUME)                // ✅ DFPlayerMini lib
+│   └── myDFPlayer.outputDevice()                // ✅ DFPlayerMini lib
+│
+├── 📂 display.ino: initializeLCDDisplay()
+│   ├── lcd.init()                               // ✅ LiquidCrystal_I2C lib
+│   ├── lcd.backlight()                          // ✅ LiquidCrystal_I2C lib
+│   ├── lcd.setCursor()                          // ✅ LiquidCrystal_I2C lib
+│   ├── lcd.print()                              // ✅ LiquidCrystal_I2C lib
+│   └── lcd.clear()                              // ✅ LiquidCrystal_I2C lib
+│
+├── 📂 sensor.ino: initializeSensors()
+│   ├── Wire.begin()                             // ✅ ESP32 Wire lib
+│   ├── Serial2.begin()                          // ✅ ESP32 Serial lib
+│   ├── pcfEntryInput.begin(0x20, &Wire)         // ✅ PCF8574 lib
+│   └── pcfExitOutput.begin(0x21, &Wire)         // ✅ PCF8574 lib
+│
+├── 📂 actuator.ino: initializeServoController()
+│   ├── servo.begin()                            // ✅ Adafruit_PWMServoDriver lib
+│   ├── servo.setPWMFreq(60)                     // ✅ Adafruit_PWMServoDriver lib
+│   └── servo.setPWM()                           // ✅ Adafruit_PWMServoDriver lib
+│
+├── 📂 sensor.ino: initializeKeypad()
+│   ├── keyPad.begin()                           // ✅ SparkFun_Qwiic_Keypad lib
+│   └── keyPad.loadKeyMap(keymap)                // ✅ SparkFun_Qwiic_Keypad lib
+│
+├── 📂 actuator.ino: initializeRelay()
+│   ├── pinMode(RELAY_SELECT_PIN, OUTPUT)        // ✅ Arduino built-in
+│   └── digitalWrite(RELAY_SELECT_PIN, HIGH)     // ✅ Arduino built-in
+│
+├── 📂 actuator.ino: initializeButtons()
+│   ├── pinMode(button1pin, INPUT)               // ✅ Arduino built-in
+│   └── pinMode(button2pin, INPUT)               // ✅ Arduino built-in
+│
+├── 📂 actuator.ino: playAudioCommand()
+│   └── myDFPlayer.play(songIndex)               // ✅ DFPlayerMini lib
+│
+└── 📂 Network.ino: initializeDummyPackages()
+    └── packageDatabase[i].field = value         // ✅ C++ assignment
+```
+
+### **Detailed Trace TaskControl Runtime Loop:**
+
+#### **Level 2: TaskControl → Runtime Loop Functions**
+
+```
+📂 RTOS.ino: TaskControl() [WHILE TRUE LOOP]
+├── 📂 sensor.ino: readLimitSwitches()
+│   ├── pcfEntryInput.digitalRead(pin)           // ✅ PCF8574 lib
+│   └── pcfExitOutput.digitalRead(pin)           // ✅ PCF8574 lib
+│
+├── 📂 actuator.ino: controlAllLokers()
+│   ├── FOR LOOP (i=0; i<5; i++)                 // ✅ C++ built-in
+│   ├── ➡️ PANGGIL: openLokerCompartment(i)      // 📂 actuator.ino
+│   └── ➡️ PANGGIL: closeLokerCompartment(i)     // 📂 actuator.ino
+│
+├── 📂 actuator.ino: controlMainDoor()
+│   ├── ➡️ PANGGIL: openMainDoor()               // 📂 actuator.ino
+│   ├── ➡️ PANGGIL: closeMainDoor()              // 📂 actuator.ino
+│   └── ➡️ PANGGIL: stopMainDoor()               // 📂 actuator.ino
+│
+├── 📂 actuator.ino: controlRelayOutput()
+│   └── digitalWrite(RELAY_SELECT_PIN, state)    // ✅ Arduino built-in
+│
+├── 📂 actuator.ino: processRemoteLokerCommands()
+│   └── FOR LOOP checking lokerControl[]         // ✅ C++ built-in
+│
+├── 📂 menu.ino: menu()
+│   ├── SWITCH (currentMenuState)                // ✅ C++ built-in
+│   ├── ➡️ PANGGIL: displayTextOnLCD()           // 📂 display.ino
+│   ├── ➡️ PANGGIL: playAudioCommand()           // 📂 actuator.ino
+│   ├── ➡️ PANGGIL: scanBarcodeFromSerial()      // 📂 sensor.ino
+│   └── State-specific logic                     // ✅ C++ built-in
+│
+├── 📂 sensor.ino: readDistanceSensor()
+│   └── sonar.ping_cm()                          // ✅ NewPing lib
+│
+└── 📂 sensor.ino: processSerialCommands()
+    ├── Serial.available()                       // ✅ ESP32 Serial lib
+    ├── Serial.readStringUntil('\n')             // ✅ ESP32 Serial lib
+    └── ➡️ PANGGIL: playAudioCommand()            // 📂 actuator.ino
+```
+
+---
+
+## 6. MAPPING LENGKAP FUNGSI KE FILE
+
+### **📁 ShintyaFirmwareWithComments.ino - ENTRY POINT**
+```cpp
+✅ setup()                    // Entry point utama
+✅ loop()                     // Loop utama (kosong)
+```
+
+### **📁 RTOS.ino - TASK MANAGEMENT**
+```cpp
+✅ setupRTOS()                // Membuat dual-core tasks
+✅ TaskDatabase()             // Core 0 - Network operations
+✅ TaskControl()              // Core 1 - Hardware operations
+```
+
+### **📁 Network.ino - NETWORKING & DATABASE**
+```cpp
+✅ initializeNetworkConnection()      // Setup WiFi connection
+✅ initializeFirebaseDatabase()       // Setup Firebase client
+✅ updateDatabaseData()               // Sync data dari Firebase
+✅ updateTrackingData()               // Update tracking data (unused)
+✅ initializeDummyPackages()          // Load test data
+```
+
+### **📁 sensor.ino - INPUT SENSORS**
+```cpp
+✅ initializeSensors()                // Setup I2C, Serial2, PCF8574
+✅ scanBarcodeFromSerial()            // Baca barcode dari GM67
+✅ readDistanceSensor()               // Baca jarak ultrasonik
+✅ printCurrentDistance()             // Debug print jarak
+✅ initializeKeypad()                 // Setup keypad I2C
+✅ processKeypadInput()               // Handle keypad input (unused)
+✅ processSerialCommands()            // Command parser dari Serial
+✅ readLimitSwitches()                // Baca semua limit switch
+```
+
+### **📁 actuator.ino - OUTPUT ACTUATORS**
+```cpp
+✅ initializeAudioSystem()            // Setup DFPlayer Mini
+✅ initializeButtons()                // Setup tombol input
+✅ readButtonStates()                 // Debug print tombol (unused)
+✅ playAudioCommand()                 // Kontrol audio playback
+✅ initializeRelay()                  // Setup relay output
+✅ controlRelayOutput()               // Kontrol relay on/off
+✅ controlAllLokers()                 // Loop kontrol semua loker
+✅ openLokerCompartment()             // Buka loker spesifik
+✅ stopLokerCompartment()             // Stop loker spesifik
+✅ closeLokerCompartment()            // Tutup loker spesifik
+✅ openMainDoor()                     // Buka pintu utama
+✅ closeMainDoor()                    // Tutup pintu utama
+✅ stopMainDoor()                     // Stop pintu utama
+✅ controlMainDoor()                  // Router pintu utama
+✅ initializeServoController()        // Setup PCA9685
+✅ convertAngleToPulse()              // Konversi sudut ke PWM
+✅ processRemoteLokerCommands()       // Proses command Firebase
+```
+
+### **📁 display.ino - LCD DISPLAY**
+```cpp
+✅ initializeLCDDisplay()             // Setup LCD I2C + splash screen
+✅ displayTextOnLCD()                 // Anti-flicker LCD output
+✅ displaySystemData()                // Debug display (unused)
+```
+
+### **📁 menu.ino - STATE MACHINE**
+```cpp
+✅ menu()                             // State machine utama
++ ENUM MenuState                      // Definisi semua state
++ Global variables untuk menu state   // currentMenuState, dll
+```
+
+### **📁 library.h - CONFIGURATION & GLOBALS**
+```cpp
++ Semua #include statements           // Library imports
++ Pin definitions                     // Hardware pin mapping
++ Constants                           // MAX_USERS, MAX_PACKAGES, dll
++ Network credentials                 // WiFi, Firebase config
++ Global variables                    // Hardware objects, arrays
++ Struct definitions                  // UsersTypedef, RececiptsTypedef, dll
+```
+
+---
+
+## 7. ALUR LENGKAP INISIALISASI SISTEM
+
+### **Boot Sequence Detail:**
+
+```
+🔌 ESP32 POWER ON
+│
+├── 📁 ShintyaFirmwareWithComments.ino
+│   └── ⚡ setup()
+│       ├── Serial.begin(115200)          // Debug console 115200 baud
+│       └── setupRTOS()                   // ➡️ RTOS.ino
+│           │
+│           ├── xTaskCreatePinnedToCore() // Create Core 0 task
+│           │   └── TaskDatabase()        // ➡️ RTOS.ino [Core 0]
+│           │       │
+│           │       ├── initializeNetworkConnection()  // ➡️ Network.ino
+│           │       │   ├── WiFi.begin()
+│           │       │   ├── while(WiFi.status() != WL_CONNECTED)
+│           │       │   └── WiFi.localIP()
+│           │       │
+│           │       ├── initializeFirebaseDatabase()   // ➡️ Network.ino
+│           │       │   ├── Firebase.printf()
+│           │       │   ├── set_ssl_client_insecure_and_buffer()
+│           │       │   ├── initializeApp()
+│           │       │   └── app.getApp<Firestore::Documents>()
+│           │       │
+│           │       └── while(true) loop:
+│           │           ├── updateDatabaseData()       // ➡️ Network.ino
+│           │           └── vTaskDelay(2000ms)
+│           │
+│           └── xTaskCreatePinnedToCore() // Create Core 1 task  
+│               └── TaskControl()         // ➡️ RTOS.ino [Core 1]
+│                   │
+│                   ├── INISIALISASI HARDWARE:
+│                   │   ├── initializeAudioSystem()     // ➡️ actuator.ino
+│                   │   │   ├── Serial1.begin(9600)
+│                   │   │   ├── myDFPlayer.begin()
+│                   │   │   ├── myDFPlayer.setTimeOut(500)
+│                   │   │   ├── myDFPlayer.volume()
+│                   │   │   └── myDFPlayer.outputDevice()
+│                   │   │
+│                   │   ├── initializeLCDDisplay()      // ➡️ display.ino
+│                   │   │   ├── lcd.init()
+│                   │   │   ├── lcd.backlight()
+│                   │   │   ├── Display "SHINTYA PUTRI WIJAYA"
+│                   │   │   ├── Display "2141160117"
+│                   │   │   └── lcd.clear()
+│                   │   │
+│                   │   ├── initializeSensors()         // ➡️ sensor.ino
+│                   │   │   ├── Wire.begin()            // I2C master
+│                   │   │   ├── Serial2.begin(9600)     // GM67 barcode
+│                   │   │   ├── pcfEntryInput.begin(0x20)
+│                   │   │   └── pcfExitOutput.begin(0x21)
+│                   │   │
+│                   │   ├── initializeServoController() // ➡️ actuator.ino
+│                   │   │   ├── servo.begin()           // PCA9685
+│                   │   │   ├── servo.setPWMFreq(60)
+│                   │   │   └── servo.setPWM() untuk posisi initial
+│                   │   │
+│                   │   ├── initializeKeypad()          // ➡️ sensor.ino
+│                   │   │   ├── keyPad.begin()
+│                   │   │   └── keyPad.loadKeyMap()
+│                   │   │
+│                   │   ├── initializeRelay()           // ➡️ actuator.ino
+│                   │   │   ├── pinMode(RELAY_SELECT_PIN, OUTPUT)
+│                   │   │   └── digitalWrite(HIGH) // Default OFF
+│                   │   │
+│                   │   ├── initializeButtons()         // ➡️ actuator.ino
+│                   │   │   ├── pinMode(button1pin, INPUT)
+│                   │   │   └── pinMode(button2pin, INPUT)
+│                   │   │
+│                   │   ├── playAudioCommand()          // ➡️ actuator.ino
+│                   │   │   └── myDFPlayer.play(soundPilihMetode)
+│                   │   │
+│                   │   └── initializeDummyPackages()   // ➡️ Network.ino
+│                   │       └── Load test data ke packageDatabase[]
+│                   │
+│                   └── while(true) loop:
+│                       ├── readLimitSwitches()         // ➡️ sensor.ino
+│                       ├── controlAllLokers()          // ➡️ actuator.ino
+│                       ├── controlMainDoor()           // ➡️ actuator.ino
+│                       ├── controlRelayOutput()        // ➡️ actuator.ino
+│                       ├── processRemoteLokerCommands() // ➡️ actuator.ino
+│                       ├── menu()                      // ➡️ menu.ino
+│                       ├── readDistanceSensor()        // ➡️ sensor.ino
+│                       └── processSerialCommands()     // ➡️ sensor.ino
+│
+└── 📁 ShintyaFirmwareWithComments.ino
+    └── 🔄 loop()
+        └── [KOSONG] // Tidak ada operasi di loop() utama
+```
+
+---
+
+## 8. ALUR LENGKAP RUNTIME OPERATION
+
+### **Dual-Core Parallel Operations:**
+
+```
+⏰ RUNTIME - Kedua Core Berjalan Parallel
+
+🖥️ CORE 0 - DATABASE TASK (每2秒)
+│
+├── 📂 Network.ino: updateDatabaseData()
+│   ├── app.loop()                           // Maintain Firebase connection
+│   ├── if (millis() - timer >= 5000):       // Every 5 seconds
+│   │   ├── Docs.get("users")                // GET koleksi users
+│   │   ├── Docs.get("receipts")             // GET koleksi receipts  
+│   │   ├── Docs.get("lokerControl")         // GET koleksi lokerControl
+│   │   ├── deserializeJson(users)           // Parse JSON users
+│   │   ├── deserializeJson(receipts)        // Parse JSON receipts
+│   │   ├── deserializeJson(lokerControl)    // Parse JSON lokerControl
+│   │   └── Update local arrays:             // Sync ke local memory
+│   │       ├── users[MAX_USERS]
+│   │       ├── receipts[MAX_RECEIPTS]
+│   │       └── lokerControl[5]
+│   └── vTaskDelay(2000ms)                   // Wait 2 seconds
+
+🔧 CORE 1 - HARDWARE TASK (Continuous)
+│
+├── 📂 sensor.ino: readLimitSwitches()
+│   ├── entrySwitches[0-5] = !pcfEntryInput.digitalRead()
+│   └── exitSwitches[0-5] = !pcfExitOutput.digitalRead()
+│
+├── 📂 actuator.ino: controlAllLokers()
+│   ├── for (i=0; i<5; i++):
+│   │   ├── if (lokerControlCommands[i] == "tutup")
+│   │   │   └── closeLokerCompartment(i)     // ➡️ actuator.ino
+│   │   │       └── servo.setPWM(angle_75_or_100)
+│   │   └── else if (lokerControlCommands[i] == "buka")
+│   │       └── openLokerCompartment(i)      // ➡️ actuator.ino
+│   │           └── servo.setPWM(angle_135_or_100)
+│
+├── 📂 actuator.ino: controlMainDoor()
+│   ├── if (mainDoorControl == "tutup")
+│   │   └── closeMainDoor()                  // ➡️ actuator.ino
+│   ├── else if (mainDoorControl == "buka")
+│   │   └── openMainDoor()                   // ➡️ actuator.ino
+│   └── else stopMainDoor()                  // ➡️ actuator.ino
+│
+├── 📂 actuator.ino: controlRelayOutput()
+│   └── digitalWrite(RELAY_SELECT_PIN, state)
+│
+├── 📂 actuator.ino: processRemoteLokerCommands()
+│   ├── for (i=0; i<5; i++):
+│   │   ├── if (lokerControl[i].buka != false)
+│   │   │   └── serialInput = "o" + String(i+1)
+│   │   └── if (lokerControl[i].tutup != false)
+│   │       └── serialInput = "c" + String(i+1)
+│
+├── 📂 menu.ino: menu()                      // ⭐ STATE MACHINE UTAMA
+│   ├── switch (currentMenuState):
+│   │   ├── MENU_MAIN:
+│   │   │   ├── displayTextOnLCD() untuk kapasitas  // ➡️ display.ino
+│   │   │   ├── if (button1) → MENU_SELECT_COURIER
+│   │   │   ├── if (button2) → MENU_SCAN_TRACKING
+│   │   │   └── if (keyPad '#') → MENU_OPEN_DOOR
+│   │   │
+│   │   ├── MENU_SELECT_COURIER:
+│   │   │   ├── displayTextOnLCD() menu kurir       // ➡️ display.ino
+│   │   │   ├── if (keyPad '1') → Shopee
+│   │   │   ├── if (keyPad '2') → J&T
+│   │   │   └── if (keyPad '3') → SiCepat
+│   │   │
+│   │   ├── MENU_INPUT_TRACKING:
+│   │   │   ├── displayTextOnLCD() input resi       // ➡️ display.ino
+│   │   │   ├── keyPad input → trackingInput
+│   │   │   └── if (keyPad '#') → MENU_COMPARE_TRACKING
+│   │   │
+│   │   ├── MENU_SCAN_TRACKING:
+│   │   │   ├── scanBarcodeFromSerial()             // ➡️ sensor.ino
+│   │   │   ├── displayTextOnLCD() barcode status   // ➡️ display.ino
+│   │   │   └── if (button2) → MENU_COMPARE_TRACKING
+│   │   │
+│   │   ├── MENU_COMPARE_TRACKING:
+│   │   │   ├── playAudioCommand(soundCekResi)      // ➡️ actuator.ino
+│   │   │   ├── for loop search di receipts[]
+│   │   │   ├── if (found):
+│   │   │   │   ├── serialInput = "ot" // buka pintu
+│   │   │   │   └── → MENU_INSERT_PACKAGE
+│   │   │   └── else → MENU_MAIN
+│   │   │
+│   │   ├── MENU_INSERT_PACKAGE:
+│   │   │   ├── if (currentDistance < 20) // paket detected
+│   │   │   │   └── serialInput = "ct" // tutup pintu
+│   │   │   ├── if (packageType == "COD")
+│   │   │   │   └── → MENU_OPEN_LOKER
+│   │   │   └── else → MENU_MAIN
+│   │   │
+│   │   ├── MENU_OPEN_LOKER:
+│   │   │   ├── displayTextOnLCD() loker terbuka     // ➡️ display.ino
+│   │   │   └── if (exitSwitch triggered) → MENU_CLOSE_LOKER
+│   │   │
+│   │   ├── MENU_CLOSE_LOKER:
+│   │   │   ├── displayTextOnLCD() loker tertutup    // ➡️ display.ino
+│   │   │   └── if (entrySwitch triggered) → MENU_MAIN
+│   │   │
+│   │   └── MENU_OPEN_DOOR:
+│   │       ├── Serial2.available() untuk QR code
+│   │       ├── validate dengan registeredUserEmails[]
+│   │       ├── if (valid):
+│   │       │   ├── digitalWrite(RELAY_SELECT_PIN, LOW) // 5 detik
+│   │       │   └── → MENU_MAIN
+│   │       └── else → MENU_MAIN
+│
+├── 📂 sensor.ino: readDistanceSensor()
+│   └── currentDistance = sonar.ping_cm()
+│
+└── 📂 sensor.ino: processSerialCommands()
+    ├── if Serial.available():
+    │   └── serialInput = Serial.readStringUntil('\n')
+    ├── Command parsing:
+    │   ├── "r" → ESP.restart()
+    │   ├── "o1"-"o5" → lokerControlCommands[i] = "buka"
+    │   ├── "c1"-"c5" → lokerControlCommands[i] = "tutup"
+    │   ├── "ot"/"ct" → mainDoorControl = "buka"/"tutup"
+    │   └── "or"/"cr" → relayControlCommand = "buka"/"tutup"
+    └── playAudioCommand(serialInput)           // ➡️ actuator.ino
+```
+
+---
+
+## 9. DEPENDENCY TREE LENGKAP
+
+### **Complete Function Call Hierarchy:**
+
+```
+🚀 ESP32 BOOT
+│
+├── 📁 ShintyaFirmwareWithComments.ino: setup()
+│   ├── Serial.begin(115200)                     [Arduino Built-in]
+│   └── 📁 RTOS.ino: setupRTOS()
+│       ├── xTaskCreatePinnedToCore()            [FreeRTOS Built-in]
+│       │   └── 📁 RTOS.ino: TaskDatabase()      [Core 0 Thread]
+│       │       ├── 📁 Network.ino: initializeNetworkConnection()
+│       │       │   ├── WiFi.begin()             [ESP32 WiFi Library]
+│       │       │   ├── WiFi.status()            [ESP32 WiFi Library]
+│       │       │   └── WiFi.localIP()           [ESP32 WiFi Library]
+│       │       ├── 📁 Network.ino: initializeFirebaseDatabase()
+│       │       │   ├── Firebase.printf()        [Firebase Library]
+│       │       │   ├── set_ssl_client_insecure_and_buffer() [Firebase Library]
+│       │       │   ├── initializeApp()          [Firebase Library]
+│       │       │   └── app.getApp()             [Firebase Library]
+│       │       └── WHILE(TRUE):
+│       │           ├── 📁 Network.ino: updateDatabaseData()
+│       │           │   ├── app.loop()           [Firebase Library]
+│       │           │   ├── Docs.get()           [Firebase Library]
+│       │           │   ├── deserializeJson()    [ArduinoJson Library]
+│       │           │   └── for loops            [C++ Built-in]
+│       │           └── vTaskDelay()             [FreeRTOS Built-in]
+│       │
+│       └── xTaskCreatePinnedToCore()            [FreeRTOS Built-in]
+│           └── 📁 RTOS.ino: TaskControl()       [Core 1 Thread]
+│               ├── INITIALIZATION SEQUENCE:
+│               │   ├── 📁 actuator.ino: initializeAudioSystem()
+│               │   │   ├── Serial1.begin()      [ESP32 Serial Library]
+│               │   │   ├── myDFPlayer.begin()   [DFPlayerMini Library]
+│               │   │   ├── myDFPlayer.setTimeOut() [DFPlayerMini Library]
+│               │   │   ├── myDFPlayer.volume()  [DFPlayerMini Library]
+│               │   │   └── myDFPlayer.outputDevice() [DFPlayerMini Library]
+│               │   │
+│               │   ├── 📁 display.ino: initializeLCDDisplay()
+│               │   │   ├── lcd.init()           [LiquidCrystal_I2C Library]
+│               │   │   ├── lcd.backlight()      [LiquidCrystal_I2C Library]
+│               │   │   ├── lcd.setCursor()      [LiquidCrystal_I2C Library]
+│               │   │   ├── lcd.print()          [LiquidCrystal_I2C Library]
+│               │   │   └── lcd.clear()          [LiquidCrystal_I2C Library]
+│               │   │
+│               │   ├── 📁 sensor.ino: initializeSensors()
+│               │   │   ├── Wire.begin()         [ESP32 Wire Library]
+│               │   │   ├── Serial2.begin()      [ESP32 Serial Library]
+│               │   │   ├── pcfEntryInput.begin() [PCF8574 Library]
+│               │   │   └── pcfExitOutput.begin() [PCF8574 Library]
+│               │   │
+│               │   ├── 📁 actuator.ino: initializeServoController()
+│               │   │   ├── servo.begin()        [Adafruit_PWMServoDriver Library]
+│               │   │   ├── servo.setPWMFreq()   [Adafruit_PWMServoDriver Library]
+│               │   │   └── servo.setPWM()       [Adafruit_PWMServoDriver Library]
+│               │   │
+│               │   ├── 📁 sensor.ino: initializeKeypad()
+│               │   │   ├── keyPad.begin()       [SparkFun_Qwiic_Keypad Library]
+│               │   │   └── keyPad.loadKeyMap()  [SparkFun_Qwiic_Keypad Library]
+│               │   │
+│               │   ├── 📁 actuator.ino: initializeRelay()
+│               │   │   ├── pinMode()            [Arduino Built-in]
+│               │   │   └── digitalWrite()       [Arduino Built-in]
+│               │   │
+│               │   ├── 📁 actuator.ino: initializeButtons()
+│               │   │   ├── pinMode()            [Arduino Built-in]
+│               │   │   └── pinMode()            [Arduino Built-in]
+│               │   │
+│               │   ├── 📁 actuator.ino: playAudioCommand()
+│               │   │   └── myDFPlayer.play()    [DFPlayerMini Library]
+│               │   │
+│               │   └── 📁 Network.ino: initializeDummyPackages()
+│               │       └── Array assignments    [C++ Built-in]
+│               │
+│               └── WHILE(TRUE) RUNTIME LOOP:
+│                   ├── 📁 sensor.ino: readLimitSwitches()
+│                   │   ├── pcfEntryInput.digitalRead() [PCF8574 Library]
+│                   │   └── pcfExitOutput.digitalRead() [PCF8574 Library]
+│                   │
+│                   ├── 📁 actuator.ino: controlAllLokers()
+│                   │   ├── for loop             [C++ Built-in]
+│                   │   ├── 📁 actuator.ino: openLokerCompartment()
+│                   │   │   ├── 📁 actuator.ino: convertAngleToPulse()
+│                   │   │   │   └── map()        [Arduino Built-in]
+│                   │   │   └── servo.setPWM()   [Adafruit_PWMServoDriver Library]
+│                   │   └── 📁 actuator.ino: closeLokerCompartment()
+│                   │       ├── 📁 actuator.ino: convertAngleToPulse()
+│                   │       │   └── map()        [Arduino Built-in]
+│                   │       └── servo.setPWM()   [Adafruit_PWMServoDriver Library]
+│                   │
+│                   ├── 📁 actuator.ino: controlMainDoor()
+│                   │   ├── 📁 actuator.ino: openMainDoor()
+│                   │   │   ├── 📁 actuator.ino: convertAngleToPulse()
+│                   │   │   └── servo.setPWM()   [Adafruit_PWMServoDriver Library]
+│                   │   ├── 📁 actuator.ino: closeMainDoor()
+│                   │   │   ├── 📁 actuator.ino: convertAngleToPulse()
+│                   │   │   └── servo.setPWM()   [Adafruit_PWMServoDriver Library]
+│                   │   └── 📁 actuator.ino: stopMainDoor()
+│                   │       ├── 📁 actuator.ino: convertAngleToPulse()
+│                   │       └── servo.setPWM()   [Adafruit_PWMServoDriver Library]
+│                   │
+│                   ├── 📁 actuator.ino: controlRelayOutput()
+│                   │   └── digitalWrite()       [Arduino Built-in]
+│                   │
+│                   ├── 📁 actuator.ino: processRemoteLokerCommands()
+│                   │   └── for loop             [C++ Built-in]
+│                   │
+│                   ├── 📁 menu.ino: menu()      [⭐ STATE MACHINE UTAMA]
+│                   │   ├── switch statement     [C++ Built-in]
+│                   │   ├── 📁 display.ino: displayTextOnLCD()
+│                   │   │   ├── String operations [C++ Built-in]
+│                   │   │   ├── lcd.setCursor()  [LiquidCrystal_I2C Library]
+│                   │   │   ├── lcd.print()      [LiquidCrystal_I2C Library]
+│                   │   │   └── snprintf()       [C Built-in]
+│                   │   ├── 📁 actuator.ino: playAudioCommand()
+│                   │   │   └── myDFPlayer.play() [DFPlayerMini Library]
+│                   │   ├── 📁 sensor.ino: scanBarcodeFromSerial()
+│                   │   │   ├── Serial2.readStringUntil() [ESP32 Serial Library]
+│                   │   │   └── Serial.println() [ESP32 Serial Library]
+│                   │   ├── keyPad.isPressed()   [SparkFun_Qwiic_Keypad Library]
+│                   │   ├── keyPad.getChar()     [SparkFun_Qwiic_Keypad Library]
+│                   │   ├── digitalRead()        [Arduino Built-in]
+│                   │   ├── Serial2.available()  [ESP32 Serial Library]
+│                   │   ├── Serial2.readStringUntil() [ESP32 Serial Library]
+│                   │   ├── digitalWrite()       [Arduino Built-in]
+│                   │   ├── vTaskDelay()         [FreeRTOS Built-in]
+│                   │   ├── lcd.clear()          [LiquidCrystal_I2C Library]
+│                   │   └── for loops untuk search [C++ Built-in]
+│                   │
+│                   ├── 📁 sensor.ino: readDistanceSensor()
+│                   │   └── sonar.ping_cm()      [NewPing Library]
+│                   │
+│                   └── 📁 sensor.ino: processSerialCommands()
+│                       ├── Serial.available()   [ESP32 Serial Library]
+│                       ├── Serial.readStringUntil() [ESP32 Serial Library]
+│                       ├── Serial.println()     [ESP32 Serial Library]
+│                       ├── 📁 actuator.ino: playAudioCommand()
+│                       │   └── myDFPlayer.play() [DFPlayerMini Library]
+│                       ├── ESP.restart()        [ESP32 Built-in]
+│                       └── String operations    [C++ Built-in]
+│
+└── 📁 ShintyaFirmwareWithComments.ino: loop()
+    └── [EMPTY - No operations here]
+```
+
+### **Library Dependencies per File:**
+
+#### **📁 library.h**
+```cpp
+#include <WiFi.h>                      // ESP32 WiFi
+#include <Wire.h>                      // I2C Communication
+#include <LiquidCrystal_I2C.h>         // LCD Display
+#include <Adafruit_PWMServoDriver.h>   // Servo Controller
+#include <FirebaseClient.h>            // Firebase
+#include <WiFiClientSecure.h>          // SSL Client
+#include <ArduinoJson.h>               // JSON Parser
+#include <DFPlayerMini.h>              // Audio Player
+#include <PCF8574.h>                   // GPIO Expander
+#include <SparkFun_Qwiic_Keypad.h>     // Keypad
+#include <NewPing.h>                   // Ultrasonic Sensor
+```
+
+#### **External Hardware Dependencies:**
+```
+🔌 POWER: 5V Power Supply
+📡 NETWORK: WiFi Connection 
+🗄️ DATABASE: Firebase Firestore
+🔊 AUDIO: SD Card dengan audio files
+📱 MOBILE: React Native App untuk remote control
+```
+
+---
+
+## 10. ANALISIS DETAIL IMPLEMENTASI PER FILE
+
+### **Critical Function Analysis:**
+
+#### **🔥 MOST CALLED FUNCTIONS (High Frequency)**
+```
+📊 Call Frequency Analysis:
+
+1. displayTextOnLCD()           // ⭐⭐⭐⭐⭐ Dipanggil setiap UI update
+2. servo.setPWM()               // ⭐⭐⭐⭐⭐ Dipanggil setiap servo movement  
+3. readLimitSwitches()          // ⭐⭐⭐⭐⭐ Dipanggil setiap loop cycle
+4. updateDatabaseData()         // ⭐⭐⭐⭐ Dipanggil setiap 5 detik
+5. menu()                       // ⭐⭐⭐⭐ Dipanggil setiap loop cycle
+6. readDistanceSensor()         // ⭐⭐⭐⭐ Dipanggil setiap loop cycle
+7. processSerialCommands()      // ⭐⭐⭐ Dipanggil setiap loop cycle
+8. playAudioCommand()           // ⭐⭐⭐ Dipanggil pada UI events
+9. convertAngleToPulse()        // ⭐⭐ Dipanggil pada servo movements
+10. controlAllLokers()          // ⭐⭐ Dipanggil setiap loop cycle
+```
+
+#### **📋 INITIALIZATION FUNCTIONS (One-time only)**
+```
+📊 Init Sequence (Called once at boot):
+
+1. setup()                      // Arduino framework entry
+2. setupRTOS()                  // RTOS task creation
+3. initializeNetworkConnection() // WiFi setup
+4. initializeFirebaseDatabase() // Firebase setup  
+5. initializeAudioSystem()      // DFPlayer setup
+6. initializeLCDDisplay()       // LCD setup
+7. initializeSensors()          // I2C sensors setup
+8. initializeServoController()  // PCA9685 setup
+9. initializeKeypad()           // Keypad setup
+10. initializeRelay()           // Relay pin setup
+11. initializeButtons()         // Button pins setup
+12. initializeDummyPackages()   // Test data load
+```
+
+#### **🔄 RUNTIME FUNCTIONS (Continuous)**
+```
+📊 Runtime Loop Functions (Called continuously):
+
+CORE 0 (Database Task):
+- updateDatabaseData()          // Every 5 seconds
+- app.loop()                    // Maintain connection
+- vTaskDelay()                  // 2 second delay
+
+CORE 1 (Control Task):
+- readLimitSwitches()           // Every cycle
+- controlAllLokers()            // Every cycle  
+- controlMainDoor()             // Every cycle
+- controlRelayOutput()          // Every cycle
+- processRemoteLokerCommands()  // Every cycle
+- menu()                        // Every cycle
+- readDistanceSensor()          // Every cycle
+- processSerialCommands()       // Every cycle
+```
+
+---
+
+**Pengembang:** SHINTYA PUTRI WIJAYA (2141160117)  
+**Proyek:** Smart Packet Box COD ESP32 Firmware - Analisis Entry Point & Function Hierarchy  
+**Dokumentasi:** Struktur lengkap dari setup() hingga semua function calls dengan lokasi file yang detail
 ├── GPIO: Ultrasonic(32,33), Relay(27), Tombol(36,39)
 └── PWM: 7 channel servo melalui PCA9685
 ```
