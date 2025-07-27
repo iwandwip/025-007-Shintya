@@ -1,64 +1,88 @@
 
+/**
+ * @brief Menginisialisasi koneksi Wi-Fi.
+ * 
+ * Fungsi ini mencoba untuk terhubung ke jaringan Wi-Fi yang ditentukan
+ * menggunakan SSID dan kata sandi yang telah didefinisikan. Ini akan
+ * terus mencoba hingga koneksi berhasil dan kemudian mencetak alamat IP lokal.
+ */
 void initializeNetworkConnection() {
-  // Start Wi-Fi connection
+  // Memulai koneksi Wi-Fi
   Serial.println("Connecting to WiFi...");
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  // Wait until connected
+  // Tunggu hingga terhubung
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);  // Wait 1 second
+    delay(1000);  // Tunggu 1 detik
     Serial.print(".");
   }
 
-  // If successfully connected, display IP Address
+  // Jika berhasil terhubung, tampilkan Alamat IP
   Serial.println();
   Serial.println("WiFi Connected");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 }
 
+/**
+ * @brief Menginisialisasi koneksi ke Firebase Firestore.
+ * 
+ * Fungsi ini mengatur klien SSL, menginisialisasi aplikasi Firebase,
+ * dan menyiapkan objek Firestore::Documents untuk interaksi database.
+ */
 void initializeFirebaseDatabase() {
   Firebase.printf("Firebase Client v%s\n", FIREBASE_CLIENT_VERSION);
 
+  // Mengatur klien SSL agar tidak aman (untuk pengembangan, tidak disarankan untuk produksi)
   set_ssl_client_insecure_and_buffer(ssl_client);
 
   Serial.println("Initializing app...");
   // initializeApp(aClient, app, getAuth(user_auth), auth_debug_print, "🔐 authTask");
 
-  // Or intialize the app and wait.
+  // Atau inisialisasi aplikasi dan tunggu.
   initializeApp(aClient, app, getAuth(user_auth), 120 * 1000, auth_debug_print);
 
   Serial.println("Initializing app finish!!");
+  // Mendapatkan instance Firestore::Documents dari aplikasi Firebase
   app.getApp<Firestore::Documents>(Docs);
 }
 
-
-
+/**
+ * @brief Memperbarui data dari Firebase Firestore.
+ * 
+ * Fungsi ini secara berkala mengambil data dari koleksi 'users', 'receipts',
+ * dan 'lokerControl' di Firestore, kemudian mendeserialisasikannya ke dalam
+ * struktur data lokal yang sesuai.
+ */
 void updateDatabaseData() {
-  // To maintain the authentication and async tasks
+  // Untuk menjaga otentikasi dan tugas asinkron
   app.loop();
 
-  static uint32_t firestoreUpdateTimer;
+  static uint32_t firestoreUpdateTimer; // Timer untuk pembaruan Firestore
+  // Perbarui setiap 5 detik jika aplikasi siap
   if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
     firestoreUpdateTimer = millis();
 
+    // Mengambil payload JSON dari koleksi 'users', 'receipts', dan 'lokerControl'
     String usersJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "users", GetDocumentOptions(DocumentMask("")));
     String receiptsJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "receipts", GetDocumentOptions(DocumentMask("")));
     String lokerControlJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "lokerControl", GetDocumentOptions(DocumentMask("")));
 
+    // Mendeserialisasikan payload JSON ke dalam objek JsonDocument
     deserializeJson(usersDocument, usersJsonPayload);
     deserializeJson(receiptsDocument, receiptsJsonPayload);
     deserializeJson(lokerControlDocument, lokerControlJsonPayload);
 
-    // serializeJsonPretty(usersDocument, Serial);
-    // serializeJsonPretty(receiptsDocument, Serial);
-    // serializeJsonPretty(lokerControlDocument, Serial);
+    // serializeJsonPretty(usersDocument, Serial); // Contoh: mencetak JSON pengguna (dikomentari)
+    // serializeJsonPretty(receiptsDocument, Serial); // Contoh: mencetak JSON resi (dikomentari)
+    // serializeJsonPretty(lokerControlDocument, Serial); // Contoh: mencetak JSON kontrol loker (dikomentari)
 
     int currentUserIndex = 0;
     int currentReceiptIndex = 0;
     int currentLokerControlIndex = 0;
 
+    // Memproses data pengguna dari dokumen JSON
     for (JsonVariant v : usersDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
       if (currentUserIndex < MAX_USERS) {
@@ -68,6 +92,7 @@ void updateDatabaseData() {
       currentUserIndex++;
     }
 
+    // Memproses data resi dari dokumen JSON
     for (JsonVariant v : receiptsDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
       if (currentReceiptIndex < MAX_RECEIPTS) {
@@ -81,6 +106,7 @@ void updateDatabaseData() {
       currentReceiptIndex++;
     }
 
+    // Memproses data kontrol loker dari dokumen JSON
     for (JsonVariant v : lokerControlDocument["documents"].as<JsonArray>()) {
       JsonObject obj = v.as<JsonObject>();
       if (currentLokerControlIndex < MAX_LOKER_CONTROL) {
@@ -93,8 +119,12 @@ void updateDatabaseData() {
   }
 }
 
-
-
+/**
+ * @brief Memperbarui data pelacakan (tracking) paket.
+ * 
+ * Fungsi ini adalah placeholder untuk memperbarui data pelacakan paket
+ * berdasarkan informasi dari database. Saat ini, bagian ini dikomentari.
+ */
 void updateTrackingData() {
   if (app.ready()) {
     for (int i = 0; i <= MAX_PACKAGES; i++) {
@@ -105,6 +135,12 @@ void updateTrackingData() {
   }
 }
 
+/**
+ * @brief Menginisialisasi data paket dummy.
+ * 
+ * Fungsi ini mengisi array `packageDatabase` dengan data paket contoh
+ * untuk tujuan pengujian atau demonstrasi.
+ */
 void initializeDummyPackages() {
   packageDatabase[0].trackingNumber = "004420188204";
   packageDatabase[0].assignedLoker = 1;

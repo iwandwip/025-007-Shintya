@@ -1,24 +1,36 @@
+/**
+ * @brief Menginisialisasi sistem audio menggunakan modul DFPlayer Mini.
+ * 
+ * Fungsi ini mengatur komunikasi serial dengan DFPlayer Mini,
+ * melakukan inisialisasi modul, mengatur volume awal, dan
+ * memilih perangkat output (kartu SD).
+ */
 void initializeAudioSystem() {
+  // Memulai komunikasi serial untuk DFPlayer Mini
   Serial1.begin(9600, SERIAL_8N1, SPEAKER_RX_PIN, SPEAKER_TX_PIN);
   Serial.println();
   Serial.println("DFPlayer Mini Demo");
   Serial.println("Initializing DFPlayer...");
 
+  // Memulai inisialisasi DFPlayer Mini
   if (!myDFPlayer.begin(Serial1)) {
     Serial.println("Unable to begin:");
     Serial.println("1.Please recheck the connection!");
     Serial.println("2.Please insert the SD card!");
-    while (true)
+    while (true) // Loop tak terbatas jika inisialisasi gagal
       ;
   }
   Serial.println(F("DFPlayer Mini online."));
 
+  // Mengatur batas waktu (timeout) untuk komunikasi DFPlayer
   myDFPlayer.setTimeOut(500);
 
-  // Set initial volume
-  myDFPlayer.volume(VOLUME);  // Set initial volume value (0~30).
+  // Mengatur volume awal (0~30)
+  myDFPlayer.volume(VOLUME);  
+  // Mengatur equalizer ke mode normal
   myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
-  // myDFPlayer.EQ(DFPLAYER_EQ_BASS);
+  // myDFPlayer.EQ(DFPLAYER_EQ_BASS); // Contoh: equalizer bass
+  // Memilih kartu SD sebagai perangkat output
   myDFPlayer.outputDevice(DFPLAYER_DEVICE_SD);
 
   Serial.println("Ready to play songs...");
