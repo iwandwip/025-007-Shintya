@@ -1,549 +1,440 @@
-# DOCS.md - Dokumentasi Firmware ESP32 ShintyaFirmwareWithComments
+# DOKUMENTASI FIRMWARE ESP32 SMART PACKET BOX COD
+### Analisis Code Structure dan Function Hierarchy
 
-## Overview
+---
 
-Dokumentasi ini menjelaskan cara kerja firmware ESP32 untuk Smart Packet Box dengan dukungan Cash on Delivery (COD). Firmware menggunakan arsitektur RTOS dual-core untuk kontrol hardware real-time dan komunikasi Firebase.
+## DAFTAR ISI
 
-## Struktur File dan Fungsinya
+1. [Overview Sistem](#1-overview-sistem)
+2. [Struktur File dan Isinya](#2-struktur-file-dan-isinya)
+3. [Cara Kerja Program](#3-cara-kerja-program)
+4. [Function Call Hierarchy](#4-function-call-hierarchy)
+5. [Hardware Configuration](#5-hardware-configuration)
+6. [Database Structure](#6-database-structure)
+7. [Menu State Machine](#7-menu-state-machine)
+8. [Debug dan Troubleshooting](#8-debug-dan-troubleshooting)
 
-### 1. **ShintyaFirmwareWithComments.ino** - File Utama
-**Fungsi**: Entry point utama program
-**Isi**:
-- `setup()`: Inisialisasi komunikasi serial dan memulai task RTOS
-- `loop()`: Dibiarkan kosong karena semua logika ditangani oleh task RTOS
-- Include library.h yang berisi semua definisi global
+---
 
-**Cara Kerja**:
-1. Program dimulai dengan `setup()` yang menginisialisasi serial pada 115200 baud
-2. Memanggil `setupRTOS()` untuk membuat dan menjalankan task-task RTOS
-3. `loop()` kosong karena semua pemrosesan dilakukan oleh task RTOS yang berjalan parallel
+## 1. OVERVIEW SISTEM
 
-### 2. **library.h** - Header File dengan Definisi Global
-**Fungsi**: Menyimpan semua definisi, variabel global, dan konfigurasi
-**Isi**:
-- **Include Libraries**: FirebaseClient, LCD, Sensor, Audio, dll
-- **Konfigurasi Hardware**:
-  - LCD: `LiquidCrystal_I2C lcd(0x27, 20, 4)` - LCD 20x4 alamat I2C 0x27
-  - Ultrasonic: `NewPing sonar` - Pin 32/33, jarak max 45cm
-  - Barcode Scanner: Serial2 - Pin RX:26, TX:25
-  - Keypad: `I2CKeyPad` alamat 0x22
-  - Servo Controller: `Adafruit_PWMServoDriver` alamat 0x40
-  - Audio: `DFRobotDFPlayerMini` - Pin TX:17, RX:16
-- **Variabel Global**:
-  - `currentDistance`: Jarak sensor ultrasonik saat ini
-  - `scannedBarcode`: String barcode yang dipindai
-  - `lokerControlCommands[5]`: Array perintah kontrol loker 1-5
-  - `mainDoorControl`: Kontrol pintu utama (buka/tutup)
-  - `entrySwitches[6]`, `exitSwitches[6]`: Status limit switch
-- **Struktur Data**:
-  - `UsersTypedef`: email, nama
-  - `RececiptsTypedef`: nama, noResi, nomorLoker, status, tipePaket, userEmail
-  - `LokerControlTypedef`: nomorLoker, buka, tutup
-- **Konfigurasi Network**: WiFi SSID, password, Firebase API key, project ID
+### Arsitektur RTOS Dual-Core
+- **Core 0**: Database operations (TaskDatabase)
+- **Core 1**: Hardware control (TaskControl)
+- **Tujuan**: Pemisahan network I/O dan hardware control untuk real-time response
 
-### 3. **RTOS.ino** - Manajemen Task RTOS
-**Fungsi**: Mengatur task dual-core RTOS
-**Isi**:
-- `TaskDatabase()`: Task untuk Core 0 - operasi Firebase
-- `TaskControl()`: Task untuk Core 1 - kontrol hardware dan UI
-- `setupRTOS()`: Membuat dan assign task ke core
+### Komponen Utama
+- ESP32 dengan WiFi
+- LCD 20x4 (I2C 0x27)
+- Ultrasonic sensor (Pin 32/33)
+- Barcode scanner GM67 (Serial2)
+- Keypad 4x4 (I2C 0x22)
+- 7 Servo motors (PCA9685 0x40)
+- Audio DFPlayer Mini (Serial1)
+- 12 Limit switches (PCF8574 0x20/0x21)
 
-**Cara Kerja**:
-1. **Core 0 (TaskDatabase)**:
-   - Inisialisasi koneksi WiFi dan Firebase
-   - Update data dari database setiap 2 detik
-   - Sinkronisasi data users, receipts, lokerControl
-2. **Core 1 (TaskControl)**:
-   - Inisialisasi semua hardware (audio, LCD, sensor, servo, keypad)
-   - Loop kontrol hardware: baca sensor, kontrol aktuator, proses menu
-   - Responsif terhadap input user dan perintah serial
+---
 
-### 4. **sensor.ino** - Manajemen Sensor dan Input
-**Fungsi**: Mengatur semua sensor dan input device
-**Isi**:
-- `initializeSensors()`: Inisialisasi I2C, Serial2, PCF8574
-- `scanBarcodeFromSerial()`: Membaca barcode dari GM67 scanner
-- `readDistanceSensor()`: Membaca jarak ultrasonik (0-45cm)
-- `initializeKeypad()`: Setup keypad I2C
-- `processKeypadInput()`: Proses input tombol keypad
-- `processSerialCommands()`: Proses perintah dari Serial Monitor
-- `readLimitSwitches()`: Baca status limit switch dari PCF8574
+## 2. STRUKTUR FILE DAN ISINYA
 
-**Cara Kerja**:
-1. **Ultrasonic Sensor**: `sonar.ping_cm()` mengukur jarak, return MAX_DISTANCE jika 0
-2. **Barcode Scanner**: `Serial2.readStringUntil('\r')` baca hingga carriage return
-3. **Keypad**: Mapping karakter `"147*2580369#ABCDNF"` untuk tombol 4x4
-4. **Limit Switches**: PCF8574 expander alamat 0x20 (entry) dan 0x21 (exit)
-5. **Serial Commands**: 
-   - `r`: restart ESP32
-   - `o1-o5`: buka loker 1-5
-   - `c1-c5`: tutup loker 1-5
-   - `ot/ct`: buka/tutup pintu utama
+### **ShintyaFirmwareWithComments.ino**
+**Isi:**
+- `setup()`: Entry point, start serial communication, call setupRTOS()
+- `loop()`: Empty (semua logic di RTOS tasks)
+- Include library.h
 
-### 5. **actuator.ino** - Kontrol Aktuator
-**Fungsi**: Mengontrol semua aktuator (servo, audio, relay)
-**Isi**:
-- `initializeAudioSystem()`: Setup DFPlayer Mini dengan volume 30
-- `playAudioCommand()`: Kontrol audio (volume s0-s30, pause p, play 1-100)
-- `initializeRelay()`: Setup relay pin 27 (pintu utama)
-- `controlRelayOutput()`: Kontrol relay HIGH/LOW
-- `controlAllLokers()`: Kontrol semua loker 1-5
-- `openLokerCompartment()`, `closeLokerCompartment()`: Kontrol individual loker
-- `openMainDoor()`, `closeMainDoor()`: Kontrol pintu utama (servo channel 5-6)
-- `initializeServoController()`: Setup PCA9685 PWM driver
-- `convertAngleToPulse()`: Konversi sudut (0-180°) ke PWM pulse
-- `processRemoteLokerCommands()`: Proses perintah loker dari Firebase
+**Fungsi:** Program entry point dan RTOS initialization
 
-**Cara Kerja**:
-1. **Audio System**: DFPlayer Mini dengan kartu SD, file audio 1-100
-2. **Servo Control**: PCA9685 driver, channel 0-4 untuk loker, 5-6 untuk pintu utama
-3. **Servo Positions**:
-   - Loker buka: 135° (atau 100° jika limit switch aktif)
-   - Loker tutup: 75° (atau 100° jika limit switch aktif)
-   - Pintu utama buka: channel 5=142°, channel 6=80°
-   - Pintu utama tutup: channel 5=80°, channel 6=119°
-4. **Relay Control**: LOW=aktif (pintu terbuka), HIGH=nonaktif (pintu tertutup)
+### **library.h**
+**Isi:**
+- Library includes (FirebaseClient, LCD, sensors, actuators)
+- Hardware pin definitions dan I2C addresses
+- Global variables (currentDistance, scannedBarcode, lokerControlCommands[])
+- Data structures (UsersTypedef, RececiptsTypedef, LokerControlTypedef)
+- Network configuration (WiFi, Firebase credentials)
+- Constants (MAX_USERS=10, MAX_PACKAGES=30, MAX_DISTANCE=45)
 
-### 6. **display.ino** - Manajemen LCD Display
-**Fungsi**: Mengatur tampilan LCD 20x4
-**Isi**:
-- `initializeLCDDisplay()`: Inisialisasi LCD, tampilkan judul dan NIM
-- `displayTextOnLCD()`: Tampilkan teks dengan smart update (mencegah flicker)
-- `displaySystemData()`: Placeholder untuk tampilan data sistem
+**Fungsi:** Global configuration dan variable declarations
 
-**Cara Kerja**:
-1. **Smart Display Update**: Buffer `lastDisplayedText[4]` menyimpan teks terakhir per baris
-2. **Anti-Flicker**: Hanya update LCD jika teks berubah
-3. **Format Text**: Pastikan panjang 20 karakter (tambah spasi atau potong)
-4. **Positioning**: `lcd.setCursor(x, y)` untuk posisi kursor
+### **RTOS.ino**
+**Isi:**
+- `TaskDatabase(void *pvParameters)`: Core 0 task function
+- `TaskControl(void *pvParameters)`: Core 1 task function  
+- `setupRTOS()`: Creates dan assigns tasks to cores
+- Task handles (DatabaseHandle, ControlHandle)
 
-### 7. **menu.ino** - Sistem Menu dan Navigasi
-**Fungsi**: Mengelola flow menu dan interaksi user
-**Isi**:
-- **Enum MenuState**: 9 status menu (MAIN, SELECT_COURIER, INPUT_TRACKING, dll)
-- **Variabel Menu**:
-  - `currentMenuState`: Status menu saat ini
-  - `selectedCourier`: Kurir terpilih (0=Belum Ada, 1=Shopee, 2=J&T, 3=SiCepat)
-  - `trackingInput`: Input resi manual
-  - `currentPackageIndex`: Indeks paket aktif
-  - `packageType`: Tipe paket (COD/Non-COD)
-- `menu()`: Fungsi utama dengan switch-case untuk tiap status
+**Fungsi:** RTOS task management dan core assignment
 
-**Flow Menu**:
-1. **MENU_MAIN**: Tampil kapasitas, pilih INPUT/SCAN resi, QR access (#)
-2. **MENU_SELECT_COURIER**: Pilih kurir (1=Shopee, 2=J&T, 3=SiCepat)
-3. **MENU_INPUT_TRACKING**: Input resi manual dengan keypad
-4. **MENU_SCAN_TRACKING**: Scan barcode resi dengan GM67
-5. **MENU_COMPARE_TRACKING**: Validasi resi dengan database
-6. **MENU_INSERT_PACKAGE**: Masukkan paket ke box utama
-7. **MENU_OPEN_LOKER**: Buka loker COD untuk ambil uang
-8. **MENU_CLOSE_LOKER**: Tutup loker COD setelah selesai
-9. **MENU_OPEN_DOOR**: Akses QR code untuk buka pintu
+### **sensor.ino**
+**Isi:**
+- `initializeSensors()`: I2C, Serial2, PCF8574 initialization
+- `scanBarcodeFromSerial()`: Read barcode dari Serial2
+- `readDistanceSensor()`: Ultrasonic ping measurement
+- `initializeKeypad()`: I2C keypad setup
+- `processKeypadInput()`: Handle keypad input
+- `processSerialCommands()`: Debug commands via Serial
+- `readLimitSwitches()`: PCF8574 digital read untuk 12 switches
 
-### 8. **Network.ino** - Komunikasi Firebase
-**Fungsi**: Mengatur koneksi WiFi dan Firebase
-**Isi**:
-- `initializeNetworkConnection()`: Koneksi WiFi dengan SSID/password
-- `initializeFirebaseDatabase()`: Setup Firebase Firestore
-- `updateDatabaseData()`: Update data dari database setiap 5 detik
-- `updateTrackingData()`: Placeholder update tracking data
-- `initializeDummyPackages()`: Data paket contoh untuk testing
+**Fungsi:** Input device management dan sensor reading
 
-**Cara Kerja**:
-1. **WiFi Connection**: Loop hingga `WL_CONNECTED`, tampilkan IP address
-2. **Firebase Setup**: SSL client, UserAuth, FirebaseApp, Firestore::Documents
-3. **Data Sync**: GET request ke koleksi users/receipts/lokerControl
-4. **JSON Parsing**: Deserialize ke struktur data lokal
-5. **Update Frequency**: Setiap 5 detik jika `app.ready()`
+### **actuator.ino** 
+**Isi:**
+- `initializeAudioSystem()`: DFPlayer Mini setup
+- `playAudioCommand()`: Audio control (volume, play, pause)
+- `initializeRelay()`: Relay pin setup
+- `controlRelayOutput()`: Relay on/off control
+- `controlAllLokers()`: Loop control untuk 5 loker servos
+- `openLokerCompartment()` / `closeLokerCompartment()`: Individual loker control
+- `controlMainDoor()`: Main door servo control (channels 5-6)
+- `initializeServoController()`: PCA9685 setup
+- `convertAngleToPulse()`: Angle to PWM conversion
+- `processRemoteLokerCommands()`: Firebase remote commands
 
-## Alur Kerja Program
+**Fungsi:** Output device control dan actuator management
 
-### 1. **Startup Sequence**
-1. `setup()` → `setupRTOS()`
-2. Core 0: `TaskDatabase` → WiFi → Firebase
-3. Core 1: `TaskControl` → Hardware init → Menu loop
+### **display.ino**
+**Isi:**
+- `initializeLCDDisplay()`: LCD init, backlight, title display
+- `displayTextOnLCD()`: Smart LCD update dengan anti-flicker
+- `lastDisplayedText[4]`: Buffer untuk prevent unnecessary updates
+- `displaySystemData()`: Placeholder untuk system info
 
-### 2. **Package Processing Flow**
+**Fungsi:** LCD management dengan optimized rendering
 
-#### **Paket Regular (Non-COD)**:
-1. Pilih metode input (INPUT/SCAN)
-2. Input/scan nomor resi
-3. Validasi dengan database
-4. Buka pintu utama
-5. Deteksi paket masuk (jarak < 20cm)
-6. Tutup pintu utama
-7. Selesai → kembali ke menu utama
+### **menu.ino**
+**Isi:**
+- `enum MenuState`: 9 menu states definition
+- Menu state variables (currentMenuState, selectedCourier, trackingInput)
+- `menu()`: Main state machine dengan switch-case
+- Navigation logic untuk semua menu states
+- User input processing dan state transitions
 
-#### **Paket COD**:
-1. Sama seperti regular hingga step 6
-2. Buka loker COD sesuai `nomorLoker` dari database
-3. Tunggu pengambilan uang (limit switch keluar)
-4. Tutup loker otomatis
-5. Selesai → kembali ke menu utama
+**Fungsi:** User interface state machine dan navigation
 
-#### **QR Code Access**:
-1. Tekan '#' di menu utama
-2. Scan QR code user
-3. Validasi dengan `registeredUserEmails[]`
-4. Jika valid: aktifkan relay 5 detik
-5. Kembali ke menu utama
+### **Network.ino**
+**Isi:**
+- `initializeNetworkConnection()`: WiFi connection setup
+- `initializeFirebaseDatabase()`: Firebase app initialization
+- `updateDatabaseData()`: Periodic data sync (every 5 seconds)
+- `updateTrackingData()`: Package data processing
+- `initializeDummyPackages()`: Test data initialization
+- JSON deserialization untuk users/receipts/lokerControl
 
-### 3. **Hardware Control Loop**
+**Fungsi:** Network communication dan database synchronization
+
+---
+
+## 3. CARA KERJA PROGRAM
+
+### Program Startup Sequence
 ```
-TaskControl (Core 1):
-├── readLimitSwitches()
-├── controlAllLokers()
-├── controlMainDoor()
-├── controlRelayOutput()
-├── processRemoteLokerCommands()
-├── menu()
-├── readDistanceSensor()
-└── processSerialCommands()
+1. main() [Arduino Framework]
+2. setup() → Serial.begin(115200) → setupRTOS()
+3. xTaskCreatePinnedToCore(TaskDatabase, Core 0)
+4. xTaskCreatePinnedToCore(TaskControl, Core 1)
+5. Kedua task mulai execute secara parallel
 ```
 
-### 4. **Database Sync Loop**
+### Core 0 (TaskDatabase) Flow
 ```
-TaskDatabase (Core 0):
-├── app.loop() (maintain Firebase connection)
-├── Timer check (every 5 seconds)
-├── GET users/receipts/lokerControl
-├── JSON deserialize
-└── Update local arrays
-```
-
-## Konfigurasi Hardware
-
-### **Pin Assignment**:
-- **Ultrasonic**: TRIG=33, ECHO=32
-- **Barcode**: RX=26, TX=25
-- **Audio**: RX=16, TX=17
-- **Relay**: Pin 27
-- **Buttons**: Pin 36, 39
-
-### **I2C Devices**:
-- **LCD**: 0x27 (20x4 display)
-- **Keypad**: 0x22 (4x4 matrix)
-- **Servo Driver**: 0x40 (PCA9685)
-- **Limit Switch Entry**: 0x20 (PCF8574)
-- **Limit Switch Exit**: 0x21 (PCF8574)
-
-### **Servo Channels**:
-- **Channel 0-4**: Loker 1-5
-- **Channel 5-6**: Pintu utama
-
-## Audio System
-
-### **Sound Enum**:
-- `soundResiCocok = 1`: Resi cocok
-- `soundLoker1Terbuka = 2`: Loker 1 terbuka
-- `soundInputResi = 14`: Input resi
-- `soundScanResi = 15`: Scan resi
-- `soundTerimaKasih = 16`: Terima kasih
-- `soundResiTidakCocok = 17`: Resi tidak cocok
-
-## Database Structure
-
-### **Collections**:
-1. **users**: email, nama
-2. **receipts**: nama, noResi, nomorLoker, status, tipePaket, userEmail
-3. **lokerControl**: nomorLoker, buka, tutup
-
-### **Local Arrays**:
-- `users[MAX_USERS]`: Data pengguna
-- `receipts[MAX_RECEIPTS]`: Data resi/paket
-- `lokerControl[MAX_LOKER_CONTROL]`: Perintah kontrol loker
-
-## Troubleshooting
-
-### **Common Issues**:
-1. **LCD tidak tampil**: Cek alamat I2C 0x27
-2. **Servo tidak bergerak**: Cek koneksi PCA9685
-3. **Audio tidak keluar**: Cek kartu SD DFPlayer
-4. **Keypad tidak responsif**: Cek alamat I2C 0x22
-5. **Limit switch salah baca**: Cek wiring PCF8574
-
-### **Debug Commands**:
-- Serial Monitor 115200 baud
-- Status koneksi Firebase
-- Pembacaan sensor dan limit switch
-- Navigasi menu dan pemrosesan perintah
-
-## Function Call Hierarchy & Execution Flow
-
-### **Program Entry Points**
-```
-main() [Arduino Framework]
-├── setup()                           // ShintyaFirmwareWithComments.ino
-│   ├── Serial.begin(115200)
-│   └── setupRTOS()                   // RTOS.ino
-│       ├── xTaskCreatePinnedToCore(TaskDatabase, Core 0)
-│       └── xTaskCreatePinnedToCore(TaskControl, Core 1)
-└── loop()                            // ShintyaFirmwareWithComments.ino [EMPTY - All logic in RTOS tasks]
+TaskDatabase():
+├── initializeNetworkConnection() → WiFi.begin() → wait connection
+├── initializeFirebaseDatabase() → SSL setup → Firebase app init
+└── while(true):
+    ├── app.loop() → maintain Firebase connection
+    └── updateDatabaseData() [every 5 seconds]:
+        ├── GET users collection → deserializeJson(usersDocument)
+        ├── GET receipts collection → deserializeJson(receiptsDocument)
+        ├── GET lokerControl collection → deserializeJson(lokerControlDocument)
+        └── Update local arrays (users[], receipts[], lokerControl[])
 ```
 
-### **Core 0 - TaskDatabase Execution Flow**
+### Core 1 (TaskControl) Flow
+```
+TaskControl():
+├── Hardware Initialization:
+│   ├── initializeAudioSystem() → DFPlayer Mini setup
+│   ├── initializeLCDDisplay() → LCD init + title display
+│   ├── initializeSensors() → I2C + Serial2 + PCF8574
+│   ├── initializeServoController() → PCA9685 setup
+│   ├── initializeKeypad() → keypad setup
+│   ├── initializeRelay() → relay pin setup
+│   └── initializeButtons() → button pins setup
+├── playAudioCommand(soundPilihMetode)
+├── initializeDummyPackages()
+└── while(true) [Main Control Loop]:
+    ├── readLimitSwitches() → update entrySwitches[], exitSwitches[]
+    ├── controlAllLokers() → servo control berdasarkan lokerControlCommands[]
+    ├── controlMainDoor() → servo control berdasarkan mainDoorControl
+    ├── controlRelayOutput() → relay control berdasarkan relayControlCommand
+    ├── processRemoteLokerCommands() → process Firebase commands
+    ├── menu() → state machine execution
+    ├── currentDistance = readDistanceSensor()
+    └── processSerialCommands() → debug commands
+```
+
+---
+
+## 4. FUNCTION CALL HIERARCHY
+
+### Entry Points
+```
+setup() [ShintyaFirmwareWithComments.ino]
+└── setupRTOS() [RTOS.ino]
+    ├── xTaskCreatePinnedToCore(TaskDatabase, Core 0)
+    └── xTaskCreatePinnedToCore(TaskControl, Core 1)
+```
+
+### Core 0 Function Calls
 ```
 TaskDatabase() [RTOS.ino]
-├── initializeNetworkConnection()     // Network.ino
-│   ├── WiFi.begin()
-│   └── while(WiFi.status() != WL_CONNECTED)
-├── initializeFirebaseDatabase()      // Network.ino
-│   ├── set_ssl_client_insecure_and_buffer()
-│   ├── initializeApp()
-│   └── app.getApp<Firestore::Documents>()
-└── while(true) [Infinite Loop]
-    ├── updateDatabaseData()          // Network.ino
-    │   ├── app.loop()
-    │   ├── Docs.get("users")
-    │   ├── Docs.get("receipts")
-    │   ├── Docs.get("lokerControl")
-    │   ├── deserializeJson(usersDocument)
-    │   ├── deserializeJson(receiptsDocument)
-    │   └── deserializeJson(lokerControlDocument)
-    └── vTaskDelay(2000)
+├── initializeNetworkConnection() [Network.ino]
+├── initializeFirebaseDatabase() [Network.ino]
+└── updateDatabaseData() [Network.ino] [Called every 5 seconds]
+    ├── Docs.get() → Firebase API calls
+    ├── deserializeJson() → JSON parsing
+    └── Array updates → users[], receipts[], lokerControl[]
 ```
 
-### **Core 1 - TaskControl Execution Flow**
+### Core 1 Function Calls
 ```
 TaskControl() [RTOS.ino]
-├── initializeAudioSystem()           // actuator.ino
-│   ├── Serial1.begin()
-│   ├── myDFPlayer.begin()
-│   ├── myDFPlayer.volume(VOLUME)
-│   └── myDFPlayer.outputDevice(SD)
-├── initializeLCDDisplay()            // display.ino
-│   ├── lcd.init()
-│   ├── lcd.backlight()
-│   ├── lcd.setCursor() + lcd.print() [Title & NIM]
-│   └── lcd.clear()
-├── initializeSensors()               // sensor.ino
-│   ├── Wire.begin()
-│   ├── Serial2.begin()
-│   ├── pcfEntryInput.begin(0x20)
-│   └── pcfExitOutput.begin(0x21)
-├── initializeServoController()       // actuator.ino
-│   ├── servo.begin()
-│   ├── servo.setPWMFreq(60)
-│   └── servo.setPWM() [Initial positions]
-├── initializeKeypad()                // sensor.ino
-│   ├── keyPad.begin()
-│   └── keyPad.loadKeyMap()
-├── initializeRelay()                 // actuator.ino
-│   ├── pinMode(RELAY_SELECT_PIN)
-│   └── digitalWrite(RELAY_SELECT_PIN, HIGH)
-├── initializeButtons()               // actuator.ino
-│   ├── pinMode(button1pin, INPUT)
-│   └── pinMode(button2pin, INPUT)
-├── playAudioCommand(soundPilihMetode) // actuator.ino
-├── initializeDummyPackages()         // Network.ino
-└── while(true) [Infinite Main Loop]
-    ├── readLimitSwitches()           // sensor.ino
-    │   ├── pcfEntryInput.digitalRead() [for all 6 switches]
-    │   └── pcfExitOutput.digitalRead() [for all 6 switches]
-    ├── controlAllLokers()            // actuator.ino
-    │   └── for(i=0; i<5; i++)
-    │       ├── closeLokerCompartment(i) [if "tutup"]
-    │       └── openLokerCompartment(i)  [if "buka"]
-    │           ├── servo.setPWM(i, convertAngleToPulse(135/75))
-    │           └── servo.setPWM(i, convertAngleToPulse(100))
-    ├── controlMainDoor()             // actuator.ino
-    │   ├── closeMainDoor() [if "tutup"]
-    │   ├── openMainDoor()  [if "buka"]
-    │   │   ├── servo.setPWM(5, convertAngleToPulse())
-    │   │   └── servo.setPWM(6, convertAngleToPulse())
-    │   └── stopMainDoor()  [else]
-    ├── controlRelayOutput()          // actuator.ino
-    │   └── digitalWrite(RELAY_SELECT_PIN, relayControlCommand=="buka"?LOW:HIGH)
-    ├── processRemoteLokerCommands()  // actuator.ino
-    │   └── for(i=0; i<5; i++)
-    │       ├── if(lokerControl[i].buka) serialInput = "o" + String(i+1)
-    │       └── if(lokerControl[i].tutup) serialInput = "c" + String(i+1)
-    ├── menu()                        // menu.ino [Main State Machine]
-    │   └── switch(currentMenuState)
-    │       ├── MENU_MAIN
-    │       │   ├── displayTextOnLCD() [4 calls for each line]
-    │       │   ├── if(button1) → MENU_SELECT_COURIER
-    │       │   ├── if(button2) → MENU_SCAN_TRACKING
-    │       │   └── if(keyPad '#') → MENU_OPEN_DOOR
-    │       ├── MENU_SELECT_COURIER
-    │       │   ├── displayTextOnLCD() [courier options]
-    │       │   └── if(keyPad '1','2','3') → MENU_INPUT_TRACKING
-    │       ├── MENU_INPUT_TRACKING
-    │       │   ├── displayTextOnLCD() [input interface]
-    │       │   ├── if(keyPad.isPressed()) [character input]
-    │       │   └── if(keyPad '#') → MENU_COMPARE_TRACKING
-    │       ├── MENU_SCAN_TRACKING
-    │       │   ├── if(isBarcodeReady) scanBarcodeFromSerial()
-    │       │   ├── displayTextOnLCD() [scan status]
-    │       │   └── if(button2 && isNewBarcodeScanned) → MENU_COMPARE_TRACKING
-    │       ├── MENU_COMPARE_TRACKING
-    │       │   ├── playAudioCommand(soundCekResi)
-    │       │   ├── for(i=0; i<MAX_PACKAGES) [search in receipts[]]
-    │       │   ├── if(found) → MENU_INSERT_PACKAGE
-    │       │   └── if(not found) → MENU_MAIN
-    │       ├── MENU_INSERT_PACKAGE
-    │       │   ├── if(!entrySwitches[5]) [main door open]
-    │       │   ├── if(currentDistance < 20cm) [package detected]
-    │       │   ├── if(packageType=="COD") → MENU_OPEN_LOKER
-    │       │   └── if(packageType=="Non-COD") → MENU_MAIN
-    │       ├── MENU_OPEN_LOKER
-    │       │   ├── displayTextOnLCD() [loker status]
-    │       │   ├── switch(receipts[].nomorLoker) [open specific loker]
-    │       │   └── if(!exitSwitches[]) → MENU_CLOSE_LOKER
-    │       ├── MENU_CLOSE_LOKER
-    │       │   ├── switch(receipts[].nomorLoker) [close specific loker]
-    │       │   └── if(!entrySwitches[]) → MENU_MAIN
-    │       └── MENU_OPEN_DOOR
-    │           ├── if(Serial2.available()) [QR code scan]
-    │           ├── for(i=0; i<MAX_USERS) [validate email]
-    │           ├── if(isUserFound) digitalWrite(RELAY_SELECT_PIN, LOW)
-    │           └── vTaskDelay(5000) → MENU_MAIN
-    ├── currentDistance = readDistanceSensor() // sensor.ino
-    │   ├── sonar.ping_cm()
-    │   └── return (measuredDistance==0) ? MAX_DISTANCE : measuredDistance
-    └── processSerialCommands()       // sensor.ino
-        ├── if(Serial.available()) Serial.readStringUntil('\n')
-        ├── playAudioCommand(serialInput)
-        └── Command Processing:
-            ├── "r" → ESP.restart()
-            ├── "o1-o5" → lokerControlCommands[0-4] = "buka"
-            ├── "c1-c5" → lokerControlCommands[0-4] = "tutup"
-            ├── "ot/ct" → mainDoorControl = "buka"/"tutup"
-            └── "or/cr" → relayControlCommand = "buka"/"tutup"
+├── Initialization Phase:
+│   ├── initializeAudioSystem() [actuator.ino]
+│   ├── initializeLCDDisplay() [display.ino]
+│   ├── initializeSensors() [sensor.ino]
+│   ├── initializeServoController() [actuator.ino]
+│   ├── initializeKeypad() [sensor.ino]
+│   ├── initializeRelay() [actuator.ino]
+│   └── initializeButtons() [actuator.ino]
+└── Main Loop [Every cycle]:
+    ├── readLimitSwitches() [sensor.ino]
+    ├── controlAllLokers() [actuator.ino]
+    │   └── Calls: openLokerCompartment(), closeLokerCompartment()
+    ├── controlMainDoor() [actuator.ino]
+    │   └── Calls: openMainDoor(), closeMainDoor(), stopMainDoor()
+    ├── controlRelayOutput() [actuator.ino]
+    ├── processRemoteLokerCommands() [actuator.ino]
+    ├── menu() [menu.ino] [Main state machine]
+    │   ├── displayTextOnLCD() [display.ino] [~40+ calls per cycle]
+    │   ├── playAudioCommand() [actuator.ino] [On state changes]
+    │   ├── scanBarcodeFromSerial() [sensor.ino] [In SCAN_TRACKING state]
+    │   └── processKeypadInput() [sensor.ino] [In input states]
+    ├── readDistanceSensor() [sensor.ino]
+    └── processSerialCommands() [sensor.ino]
 ```
 
-### **Function Dependencies & Call Relationships**
-
-#### **Display Functions (display.ino)**
+### Function Dependencies
 ```
-displayTextOnLCD()
-├── Called by: menu() [All menu states - ~40+ calls total]
-├── Dependencies: lastDisplayedText[] buffer
-└── Hardware: lcd object (0x27)
+displayTextOnLCD() [display.ino]
+├── Called by: menu() [All 9 states, multiple calls per state]
+├── Uses: lastDisplayedText[] buffer untuk anti-flicker
+└── Hardware: lcd object (I2C 0x27)
 
-initializeLCDDisplay()
-├── Called by: TaskControl() [Once during startup]
-└── Hardware: lcd.init(), lcd.backlight()
-```
+controlAllLokers() [actuator.ino]  
+├── Called by: TaskControl() main loop
+├── Uses: lokerControlCommands[] array
+├── Calls: openLokerCompartment(), closeLokerCompartment()
+└── Hardware: servo object (PCA9685 channels 0-4)
 
-#### **Sensor Functions (sensor.ino)**
-```
-readDistanceSensor()
-├── Called by: TaskControl() [Every loop iteration]
+readDistanceSensor() [sensor.ino]
+├── Called by: TaskControl() main loop
 ├── Updates: currentDistance global variable
+├── Used by: menu() untuk package detection
 └── Hardware: sonar object (pins 32/33)
 
-scanBarcodeFromSerial()
-├── Called by: MENU_SCAN_TRACKING state in menu()
-├── Updates: scannedBarcode global variable
-└── Hardware: Serial2 (pins 25/26)
-
-readLimitSwitches()
-├── Called by: TaskControl() [Every loop iteration]
-├── Updates: entrySwitches[], exitSwitches[] arrays
-└── Hardware: pcfEntryInput (0x20), pcfExitOutput (0x21)
-
-processKeypadInput()
-├── Called by: menu() states [INPUT_TRACKING, SELECT_COURIER, etc.]
-├── Dependencies: keyPad object
-└── Hardware: I2C Keypad (0x22)
+processRemoteLokerCommands() [actuator.ino]
+├── Called by: TaskControl() main loop  
+├── Reads: lokerControl[] array (from Firebase)
+├── Updates: serialInput variable
+└── Triggers: loker open/close commands
 ```
 
-#### **Actuator Functions (actuator.ino)**
-```
-controlAllLokers()
-├── Called by: TaskControl() [Every loop iteration]
-├── Dependencies: lokerControlCommands[] array
-└── Calls: openLokerCompartment(), closeLokerCompartment()
+---
 
-openLokerCompartment()/closeLokerCompartment()
-├── Called by: controlAllLokers(), menu() [COD operations]
-├── Dependencies: entrySwitches[], exitSwitches[]
-├── Calls: convertAngleToPulse()
-└── Hardware: servo object (PCA9685 0x40)
+## 5. HARDWARE CONFIGURATION
 
-controlMainDoor()
-├── Called by: TaskControl() [Every loop iteration]
-├── Dependencies: mainDoorControl variable
-├── Calls: openMainDoor(), closeMainDoor(), stopMainDoor()
-└── Hardware: servo channels 5-6
-
-playAudioCommand()
-├── Called by: menu() [All audio feedback], processSerialCommands()
-├── Dependencies: myDFPlayer object
-└── Hardware: DFPlayer Mini (pins 16/17)
+### I2C Device Mapping
+```cpp
+0x27 - LCD 20x4
+0x22 - Keypad 4x4
+0x40 - PCA9685 Servo Driver
+0x20 - PCF8574 Entry Limit Switches
+0x21 - PCF8574 Exit Limit Switches
 ```
 
-#### **Network Functions (Network.ino)**
-```
-updateDatabaseData()
-├── Called by: TaskDatabase() [Every 2 seconds]
-├── Updates: users[], receipts[], lokerControl[] arrays
-├── Dependencies: Docs object, JsonDocument objects
-└── Network: Firebase Firestore API calls
+### Pin Configuration
+```cpp
+// Ultrasonic
+#define SONAR_TRIG_PIN 33
+#define SONAR_ECHO_PIN 32
 
-initializeNetworkConnection()
-├── Called by: TaskDatabase() [Once during startup]
-└── Network: WiFi.begin(), connection loop
+// Barcode Scanner GM67
+#define RX_GM67 26
+#define TX_GM67 25
 
-initializeFirebaseDatabase()
-├── Called by: TaskDatabase() [Once after WiFi]
-└── Network: Firebase app initialization
-```
+// Audio DFPlayer Mini  
+#define SPEAKER_TX_PIN 17
+#define SPEAKER_RX_PIN 16
 
-### **Critical Data Flow**
+// Relay
+#define RELAY_SELECT_PIN 27
 
-#### **Package Processing Data Flow**
-```
-User Input → menu() → Database Validation → Hardware Control
-    ↓              ↓              ↓                ↓
-keyPad/button → currentMenuState → receipts[] → lokerControlCommands[]
-    ↓              ↓              ↓                ↓
-scannedBarcode → COMPARE_TRACKING → packageType → servo.setPWM()
+// Buttons
+#define button1pin 39  // INPUT RESI
+#define button2pin 36  // SCAN RESI
 ```
 
-#### **Hardware Status Flow**
-```
-Physical Sensors → Read Functions → Global Variables → Control Functions
-       ↓               ↓               ↓                ↓
-Limit Switches → readLimitSwitches() → entrySwitches[] → controlAllLokers()
-Ultrasonic → readDistanceSensor() → currentDistance → menu()[MENU_INSERT_PACKAGE]
-Keypad → processKeypadInput() → currentMenuState → menu() state machine
-```
+### Servo Channel Assignment
+```cpp
+Channel 0-4: Loker COD 1-5
+Channel 5-6: Main Door (dual servo)
 
-#### **Firebase Sync Flow**
-```
-Firebase Database → Network Functions → Local Arrays → Menu Logic
-       ↓                 ↓                ↓              ↓
-Firestore → updateDatabaseData() → receipts[] → MENU_COMPARE_TRACKING
-lokerControl → JSON deserialize → lokerControl[] → processRemoteLokerCommands()
+Servo Positions:
+- 75°: Closed position
+- 100°: Neutral/stop position  
+- 135°: Open position
 ```
 
-### **Execution Timing**
+---
 
-#### **Real-time Operations (Core 1 - every loop)**
-- `readLimitSwitches()` - Hardware safety monitoring
-- `controlAllLokers()` - Servo position updates
-- `controlMainDoor()` - Main door servo control
-- `menu()` - User interface state machine
-- `readDistanceSensor()` - Package detection
+## 6. DATABASE STRUCTURE
 
-#### **Background Operations (Core 0)**
-- `updateDatabaseData()` - Every 5 seconds
-- `app.loop()` - Firebase connection maintenance
-- Network reconnection handling
+### Local Arrays (ESP32 Memory)
+```cpp
+UsersTypedef users[MAX_USERS];           // Max 20 users
+RececiptsTypedef receipts[MAX_RECEIPTS]; // Max 30 packages  
+LokerControlTypedef lokerControl[5];     // 5 COD lokers
+```
 
-#### **Event-driven Operations**
-- `scanBarcodeFromSerial()` - When barcode detected
-- `processKeypadInput()` - When key pressed
-- `playAudioCommand()` - On state changes
-- QR code processing - When '#' pressed
+### Firebase Collections
+```
+users: {email, nama}
+receipts: {nama, noResi, nomorLoker, status, tipePaket, userEmail}
+lokerControl: {nomorLoker, buka, tutup}
+```
 
-## Security Features
+### Data Sync Flow
+```
+Firebase → updateDatabaseData() → JSON deserialize → Local arrays
+Local arrays → menu() logic → Hardware control
+Remote commands → lokerControl[] → processRemoteLokerCommands() → Hardware
+```
 
-1. **QR Code Validation**: Email harus ada di `registeredUserEmails[]`
-2. **Receipt Verification**: Nomor resi harus ada di database
-3. **Timeout Protection**: Relay otomatis mati setelah 5 detik
-4. **Limit Switch Monitoring**: Deteksi buka/tutup loker dan pintu
+---
 
-Firmware ini mengimplementasikan sistem smart locker dengan kontrol real-time, integrasi cloud database, dan multiple interface (keypad, barcode, QR code) untuk operasi COD yang aman dan efisien.
+## 7. MENU STATE MACHINE
+
+### State Definitions
+```cpp
+enum MenuState {
+  MENU_MAIN,              // Main menu with capacity display
+  MENU_SELECT_COURIER,    // Courier selection (1=Shopee, 2=J&T, 3=SiCepat)
+  MENU_INPUT_TRACKING,    // Manual tracking number input
+  MENU_SCAN_TRACKING,     // Barcode scanning mode
+  MENU_COMPARE_TRACKING,  // Database validation
+  MENU_INSERT_PACKAGE,    // Package insertion detection
+  MENU_OPEN_LOKER,        // COD loker opening
+  MENU_CLOSE_LOKER,       // COD loker closing
+  MENU_OPEN_DOOR          // QR code access
+};
+```
+
+### State Transitions
+```
+MENU_MAIN:
+├── button1 → MENU_SELECT_COURIER
+├── button2 → MENU_SCAN_TRACKING  
+└── keyPad '#' → MENU_OPEN_DOOR
+
+MENU_SELECT_COURIER:
+├── keyPad '1','2','3' → MENU_INPUT_TRACKING
+└── keyPad 'B' → MENU_MAIN
+
+MENU_INPUT_TRACKING:
+├── keyPad '#' → MENU_COMPARE_TRACKING
+└── keyPad '*' → MENU_MAIN
+
+MENU_SCAN_TRACKING:
+├── button2 + isNewBarcodeScanned → MENU_COMPARE_TRACKING
+└── keyPad 'B' → MENU_MAIN
+
+MENU_COMPARE_TRACKING:
+├── resi found → MENU_INSERT_PACKAGE
+└── resi not found → MENU_MAIN
+
+MENU_INSERT_PACKAGE:
+├── packageType == "COD" → MENU_OPEN_LOKER
+└── packageType == "Non-COD" → MENU_MAIN
+
+MENU_OPEN_LOKER:
+└── exitSwitches[loker] triggered → MENU_CLOSE_LOKER
+
+MENU_CLOSE_LOKER:
+└── entrySwitches[loker] triggered → MENU_MAIN
+
+MENU_OPEN_DOOR:
+├── valid QR → 5s door access → MENU_MAIN
+└── invalid QR → error message → MENU_MAIN
+```
+
+### State Variables
+```cpp
+MenuState currentMenuState = MENU_MAIN;
+int selectedCourier = 0;                    // 0=None, 1=Shopee, 2=J&T, 3=SiCepat
+String trackingInput;                       // Manual input buffer
+int currentPackageIndex;                    // Active package index in receipts[]
+String packageType;                         // "COD" or "Non-COD"
+bool isPackageReceived = false;             // Package insertion flag
+```
+
+---
+
+## 8. DEBUG DAN TROUBLESHOOTING
+
+### Serial Commands (115200 baud)
+```
+System:
+r          → ESP.restart()
+
+Loker Control:
+o1-o5      → lokerControlCommands[0-4] = "buka"
+c1-c5      → lokerControlCommands[0-4] = "tutup"
+
+Main Door:
+ot         → mainDoorControl = "buka"
+ct         → mainDoorControl = "tutup"  
+st         → mainDoorControl = "stop"
+
+Relay:
+or         → relayControlCommand = "buka"
+cr         → relayControlCommand = "tutup"
+
+Audio:
+s0-s30     → Volume control
+p          → Pause
+1-100      → Play file number
+```
+
+### Critical Variables to Monitor
+```cpp
+currentDistance        // Ultrasonic reading
+entrySwitches[6]      // Limit switch status
+exitSwitches[6]       // Limit switch status  
+currentMenuState      // Current UI state
+lokerControlCommands[5] // Loker servo commands
+mainDoorControl       // Main door servo command
+scannedBarcode        // Last scanned barcode
+```
+
+### Common Issues
+- I2C device not found: Check wiring dan addresses
+- Servo not moving: Check PCA9685 connection dan power supply
+- LCD not updating: Check displayTextOnLCD() buffer logic
+- Database sync fail: Check WiFi connection dan Firebase credentials
+- Menu stuck: Check state transition logic dalam menu()
+
+---
+
+**Developer:** SHINTYA PUTRI WIJAYA (2141160117)  
+**Project:** Smart Packet Box COD ESP32 Firmware
