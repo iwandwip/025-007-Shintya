@@ -268,6 +268,277 @@ TaskDatabase (Core 0):
 - Pembacaan sensor dan limit switch
 - Navigasi menu dan pemrosesan perintah
 
+## Function Call Hierarchy & Execution Flow
+
+### **Program Entry Points**
+```
+main() [Arduino Framework]
+├── setup()                           // ShintyaFirmwareWithComments.ino
+│   ├── Serial.begin(115200)
+│   └── setupRTOS()                   // RTOS.ino
+│       ├── xTaskCreatePinnedToCore(TaskDatabase, Core 0)
+│       └── xTaskCreatePinnedToCore(TaskControl, Core 1)
+└── loop()                            // ShintyaFirmwareWithComments.ino [EMPTY - All logic in RTOS tasks]
+```
+
+### **Core 0 - TaskDatabase Execution Flow**
+```
+TaskDatabase() [RTOS.ino]
+├── initializeNetworkConnection()     // Network.ino
+│   ├── WiFi.begin()
+│   └── while(WiFi.status() != WL_CONNECTED)
+├── initializeFirebaseDatabase()      // Network.ino
+│   ├── set_ssl_client_insecure_and_buffer()
+│   ├── initializeApp()
+│   └── app.getApp<Firestore::Documents>()
+└── while(true) [Infinite Loop]
+    ├── updateDatabaseData()          // Network.ino
+    │   ├── app.loop()
+    │   ├── Docs.get("users")
+    │   ├── Docs.get("receipts")
+    │   ├── Docs.get("lokerControl")
+    │   ├── deserializeJson(usersDocument)
+    │   ├── deserializeJson(receiptsDocument)
+    │   └── deserializeJson(lokerControlDocument)
+    └── vTaskDelay(2000)
+```
+
+### **Core 1 - TaskControl Execution Flow**
+```
+TaskControl() [RTOS.ino]
+├── initializeAudioSystem()           // actuator.ino
+│   ├── Serial1.begin()
+│   ├── myDFPlayer.begin()
+│   ├── myDFPlayer.volume(VOLUME)
+│   └── myDFPlayer.outputDevice(SD)
+├── initializeLCDDisplay()            // display.ino
+│   ├── lcd.init()
+│   ├── lcd.backlight()
+│   ├── lcd.setCursor() + lcd.print() [Title & NIM]
+│   └── lcd.clear()
+├── initializeSensors()               // sensor.ino
+│   ├── Wire.begin()
+│   ├── Serial2.begin()
+│   ├── pcfEntryInput.begin(0x20)
+│   └── pcfExitOutput.begin(0x21)
+├── initializeServoController()       // actuator.ino
+│   ├── servo.begin()
+│   ├── servo.setPWMFreq(60)
+│   └── servo.setPWM() [Initial positions]
+├── initializeKeypad()                // sensor.ino
+│   ├── keyPad.begin()
+│   └── keyPad.loadKeyMap()
+├── initializeRelay()                 // actuator.ino
+│   ├── pinMode(RELAY_SELECT_PIN)
+│   └── digitalWrite(RELAY_SELECT_PIN, HIGH)
+├── initializeButtons()               // actuator.ino
+│   ├── pinMode(button1pin, INPUT)
+│   └── pinMode(button2pin, INPUT)
+├── playAudioCommand(soundPilihMetode) // actuator.ino
+├── initializeDummyPackages()         // Network.ino
+└── while(true) [Infinite Main Loop]
+    ├── readLimitSwitches()           // sensor.ino
+    │   ├── pcfEntryInput.digitalRead() [for all 6 switches]
+    │   └── pcfExitOutput.digitalRead() [for all 6 switches]
+    ├── controlAllLokers()            // actuator.ino
+    │   └── for(i=0; i<5; i++)
+    │       ├── closeLokerCompartment(i) [if "tutup"]
+    │       └── openLokerCompartment(i)  [if "buka"]
+    │           ├── servo.setPWM(i, convertAngleToPulse(135/75))
+    │           └── servo.setPWM(i, convertAngleToPulse(100))
+    ├── controlMainDoor()             // actuator.ino
+    │   ├── closeMainDoor() [if "tutup"]
+    │   ├── openMainDoor()  [if "buka"]
+    │   │   ├── servo.setPWM(5, convertAngleToPulse())
+    │   │   └── servo.setPWM(6, convertAngleToPulse())
+    │   └── stopMainDoor()  [else]
+    ├── controlRelayOutput()          // actuator.ino
+    │   └── digitalWrite(RELAY_SELECT_PIN, relayControlCommand=="buka"?LOW:HIGH)
+    ├── processRemoteLokerCommands()  // actuator.ino
+    │   └── for(i=0; i<5; i++)
+    │       ├── if(lokerControl[i].buka) serialInput = "o" + String(i+1)
+    │       └── if(lokerControl[i].tutup) serialInput = "c" + String(i+1)
+    ├── menu()                        // menu.ino [Main State Machine]
+    │   └── switch(currentMenuState)
+    │       ├── MENU_MAIN
+    │       │   ├── displayTextOnLCD() [4 calls for each line]
+    │       │   ├── if(button1) → MENU_SELECT_COURIER
+    │       │   ├── if(button2) → MENU_SCAN_TRACKING
+    │       │   └── if(keyPad '#') → MENU_OPEN_DOOR
+    │       ├── MENU_SELECT_COURIER
+    │       │   ├── displayTextOnLCD() [courier options]
+    │       │   └── if(keyPad '1','2','3') → MENU_INPUT_TRACKING
+    │       ├── MENU_INPUT_TRACKING
+    │       │   ├── displayTextOnLCD() [input interface]
+    │       │   ├── if(keyPad.isPressed()) [character input]
+    │       │   └── if(keyPad '#') → MENU_COMPARE_TRACKING
+    │       ├── MENU_SCAN_TRACKING
+    │       │   ├── if(isBarcodeReady) scanBarcodeFromSerial()
+    │       │   ├── displayTextOnLCD() [scan status]
+    │       │   └── if(button2 && isNewBarcodeScanned) → MENU_COMPARE_TRACKING
+    │       ├── MENU_COMPARE_TRACKING
+    │       │   ├── playAudioCommand(soundCekResi)
+    │       │   ├── for(i=0; i<MAX_PACKAGES) [search in receipts[]]
+    │       │   ├── if(found) → MENU_INSERT_PACKAGE
+    │       │   └── if(not found) → MENU_MAIN
+    │       ├── MENU_INSERT_PACKAGE
+    │       │   ├── if(!entrySwitches[5]) [main door open]
+    │       │   ├── if(currentDistance < 20cm) [package detected]
+    │       │   ├── if(packageType=="COD") → MENU_OPEN_LOKER
+    │       │   └── if(packageType=="Non-COD") → MENU_MAIN
+    │       ├── MENU_OPEN_LOKER
+    │       │   ├── displayTextOnLCD() [loker status]
+    │       │   ├── switch(receipts[].nomorLoker) [open specific loker]
+    │       │   └── if(!exitSwitches[]) → MENU_CLOSE_LOKER
+    │       ├── MENU_CLOSE_LOKER
+    │       │   ├── switch(receipts[].nomorLoker) [close specific loker]
+    │       │   └── if(!entrySwitches[]) → MENU_MAIN
+    │       └── MENU_OPEN_DOOR
+    │           ├── if(Serial2.available()) [QR code scan]
+    │           ├── for(i=0; i<MAX_USERS) [validate email]
+    │           ├── if(isUserFound) digitalWrite(RELAY_SELECT_PIN, LOW)
+    │           └── vTaskDelay(5000) → MENU_MAIN
+    ├── currentDistance = readDistanceSensor() // sensor.ino
+    │   ├── sonar.ping_cm()
+    │   └── return (measuredDistance==0) ? MAX_DISTANCE : measuredDistance
+    └── processSerialCommands()       // sensor.ino
+        ├── if(Serial.available()) Serial.readStringUntil('\n')
+        ├── playAudioCommand(serialInput)
+        └── Command Processing:
+            ├── "r" → ESP.restart()
+            ├── "o1-o5" → lokerControlCommands[0-4] = "buka"
+            ├── "c1-c5" → lokerControlCommands[0-4] = "tutup"
+            ├── "ot/ct" → mainDoorControl = "buka"/"tutup"
+            └── "or/cr" → relayControlCommand = "buka"/"tutup"
+```
+
+### **Function Dependencies & Call Relationships**
+
+#### **Display Functions (display.ino)**
+```
+displayTextOnLCD()
+├── Called by: menu() [All menu states - ~40+ calls total]
+├── Dependencies: lastDisplayedText[] buffer
+└── Hardware: lcd object (0x27)
+
+initializeLCDDisplay()
+├── Called by: TaskControl() [Once during startup]
+└── Hardware: lcd.init(), lcd.backlight()
+```
+
+#### **Sensor Functions (sensor.ino)**
+```
+readDistanceSensor()
+├── Called by: TaskControl() [Every loop iteration]
+├── Updates: currentDistance global variable
+└── Hardware: sonar object (pins 32/33)
+
+scanBarcodeFromSerial()
+├── Called by: MENU_SCAN_TRACKING state in menu()
+├── Updates: scannedBarcode global variable
+└── Hardware: Serial2 (pins 25/26)
+
+readLimitSwitches()
+├── Called by: TaskControl() [Every loop iteration]
+├── Updates: entrySwitches[], exitSwitches[] arrays
+└── Hardware: pcfEntryInput (0x20), pcfExitOutput (0x21)
+
+processKeypadInput()
+├── Called by: menu() states [INPUT_TRACKING, SELECT_COURIER, etc.]
+├── Dependencies: keyPad object
+└── Hardware: I2C Keypad (0x22)
+```
+
+#### **Actuator Functions (actuator.ino)**
+```
+controlAllLokers()
+├── Called by: TaskControl() [Every loop iteration]
+├── Dependencies: lokerControlCommands[] array
+└── Calls: openLokerCompartment(), closeLokerCompartment()
+
+openLokerCompartment()/closeLokerCompartment()
+├── Called by: controlAllLokers(), menu() [COD operations]
+├── Dependencies: entrySwitches[], exitSwitches[]
+├── Calls: convertAngleToPulse()
+└── Hardware: servo object (PCA9685 0x40)
+
+controlMainDoor()
+├── Called by: TaskControl() [Every loop iteration]
+├── Dependencies: mainDoorControl variable
+├── Calls: openMainDoor(), closeMainDoor(), stopMainDoor()
+└── Hardware: servo channels 5-6
+
+playAudioCommand()
+├── Called by: menu() [All audio feedback], processSerialCommands()
+├── Dependencies: myDFPlayer object
+└── Hardware: DFPlayer Mini (pins 16/17)
+```
+
+#### **Network Functions (Network.ino)**
+```
+updateDatabaseData()
+├── Called by: TaskDatabase() [Every 2 seconds]
+├── Updates: users[], receipts[], lokerControl[] arrays
+├── Dependencies: Docs object, JsonDocument objects
+└── Network: Firebase Firestore API calls
+
+initializeNetworkConnection()
+├── Called by: TaskDatabase() [Once during startup]
+└── Network: WiFi.begin(), connection loop
+
+initializeFirebaseDatabase()
+├── Called by: TaskDatabase() [Once after WiFi]
+└── Network: Firebase app initialization
+```
+
+### **Critical Data Flow**
+
+#### **Package Processing Data Flow**
+```
+User Input → menu() → Database Validation → Hardware Control
+    ↓              ↓              ↓                ↓
+keyPad/button → currentMenuState → receipts[] → lokerControlCommands[]
+    ↓              ↓              ↓                ↓
+scannedBarcode → COMPARE_TRACKING → packageType → servo.setPWM()
+```
+
+#### **Hardware Status Flow**
+```
+Physical Sensors → Read Functions → Global Variables → Control Functions
+       ↓               ↓               ↓                ↓
+Limit Switches → readLimitSwitches() → entrySwitches[] → controlAllLokers()
+Ultrasonic → readDistanceSensor() → currentDistance → menu()[MENU_INSERT_PACKAGE]
+Keypad → processKeypadInput() → currentMenuState → menu() state machine
+```
+
+#### **Firebase Sync Flow**
+```
+Firebase Database → Network Functions → Local Arrays → Menu Logic
+       ↓                 ↓                ↓              ↓
+Firestore → updateDatabaseData() → receipts[] → MENU_COMPARE_TRACKING
+lokerControl → JSON deserialize → lokerControl[] → processRemoteLokerCommands()
+```
+
+### **Execution Timing**
+
+#### **Real-time Operations (Core 1 - every loop)**
+- `readLimitSwitches()` - Hardware safety monitoring
+- `controlAllLokers()` - Servo position updates
+- `controlMainDoor()` - Main door servo control
+- `menu()` - User interface state machine
+- `readDistanceSensor()` - Package detection
+
+#### **Background Operations (Core 0)**
+- `updateDatabaseData()` - Every 5 seconds
+- `app.loop()` - Firebase connection maintenance
+- Network reconnection handling
+
+#### **Event-driven Operations**
+- `scanBarcodeFromSerial()` - When barcode detected
+- `processKeypadInput()` - When key pressed
+- `playAudioCommand()` - On state changes
+- QR code processing - When '#' pressed
+
 ## Security Features
 
 1. **QR Code Validation**: Email harus ada di `registeredUserEmails[]`
