@@ -59,7 +59,7 @@
 ✅ **A**: "BAB V.1 - PCA9685 16-channel PWM driver (0x40). 60Hz frequency, convertAngleToPulse() map 0-180° ke 125-575 pulse width"
 
 **Q: "Data dari mobile app gimana masuknya?"**  
-✅ **A**: "BAB VII.2 - Firebase Firestore real-time sync. updateDatabaseData() setiap 5 detik, parsing 3 collections: users, receipts, lokerControl"
+✅ **A**: "BAB VII.2 - Firebase Firestore real-time sync. updateDatabaseData() secara berkala, parsing 3 collections: users, receipts, lokerControl"
 
 **Q: "Kalau WiFi putus gimana?"**  
 ✅ **A**: "BAB VII.1 - initializeNetworkConnection() pakai while loop retry, WiFi.begin() terus sampai WL_CONNECTED status"
@@ -73,7 +73,7 @@
 ✅ **A**: "Multi-layer security: QR code user validation, limit switch safety interlocks, Firebase authentication, tracking number verification"
 
 **Q: "Performa sistem gimana?"**  
-✅ **A**: "Loop frequency 1000Hz (1ms), memory usage 40% (210KB/520KB), response time <1ms untuk emergency stop"
+✅ **A**: "High-frequency main loop, efficient memory usage dengan safety margin, fast emergency response"
 
 #### **❓ PERTANYAAN TEKNIS MENDALAM:**
 
@@ -81,7 +81,7 @@
 ✅ **A**: "RTOS memungkinkan multitasking parallel. TaskDatabase di Core 0 bisa download data sementara TaskControl di Core 1 kontrol hardware real-time tanpa blocking"
 
 **Q: "Gimana cara sync data dengan mobile app?"**  
-✅ **A**: "Firebase Firestore sebagai middleware. ESP32 download data setiap 5 detik dari 3 collections. Mobile app upload, ESP32 detect changes otomatis"
+✅ **A**: "Firebase Firestore sebagai middleware. ESP32 download data secara berkala dari 3 collections. Mobile app upload, ESP32 detect changes otomatis"
 
 **Q: "Sistem COD nya bagaimana?"**  
 ✅ **A**: "Paket COD masuk kotak utama dulu, lalu sistem buka loker 1-5 sesuai nomorLoker dari database. Customer bayar, ambil paket dari loker spesifik"
@@ -118,7 +118,7 @@
 #### **❓ PERTANYAAN PERFORMA & OPTIMASI:**
 
 **Q: "Bottleneck performance dimana?"**  
-✅ **A**: "Network operations (200-500ms per Firebase sync), JSON parsing (~50ms), LCD updates (10-50ms), servo movements (50μs)"
+✅ **A**: "Network operations (variable per Firebase sync), JSON parsing (fast processing), LCD updates (efficient refresh), servo movements (instant response)"
 
 **Q: "Concurrency handling gimana?"**  
 ✅ **A**: "Shared memory via global variables, atomic read/write operations, no mutex needed untuk basic types, task separation prevent conflicts"
@@ -152,7 +152,7 @@
 #### **❓ PERTANYAAN RESEARCH METHODOLOGY:**
 
 **Q: "Kenapa pilih ESP32? Bandingkan dengan alternatif lain?"**  
-✅ **A**: "ESP32: dual-core, built-in WiFi, 520KB RAM cukup untuk multitasking. vs Arduino Uno (single-core, no WiFi), vs Raspberry Pi (overkill, power hungry)"
+✅ **A**: "ESP32: dual-core, built-in WiFi, adequate RAM untuk multitasking. vs Arduino Uno (single-core, no WiFi), vs Raspberry Pi (overkill, power hungry)"
 
 **Q: "Kenapa Firebase? Bandingkan dengan database lain?"**  
 ✅ **A**: "Firebase: real-time sync, cloud-based, auto-scaling, built-in authentication. vs MySQL (need server setup), vs local storage (no remote access)"
@@ -180,7 +180,7 @@
 #### **❓ PERTANYAAN TEKNIS LANJUTAN:**
 
 **Q: "Power consumption analysis?"**  
-✅ **A**: "ESP32: ~240mA active, Servos: ~500mA per unit saat gerak, LCD: ~20mA, Total max: ~3A (5V supply adequate)"
+✅ **A**: "ESP32: Low power operation, Servos: Moderate power saat aktif, LCD: Minimal consumption, Total power budget adequate untuk 5V supply"
 
 **Q: "Fault tolerance gimana?"**  
 ✅ **A**: "Watchdog timer untuk auto-restart, network auto-reconnect, servo safety positions, limit switch protection, graceful degradation mode"
@@ -194,16 +194,16 @@
 #### **❓ PERTANYAAN DATA FLOW & SYSTEM INTEGRATION:**
 
 **Q: "Jelaskan alur data lengkap dari mobile app ke ESP32?"**  
-✅ **A**: "BAB X.2 - Mobile App write Firebase → Firebase store data → ESP32 polling setiap 5 detik → JSON parsing → local cache update → hardware control. Total latency 2.5-5.5 detik"
+✅ **A**: "BAB X.2 - Mobile App write Firebase → Firebase store data → ESP32 polling berkala → JSON parsing → local cache update → hardware control. Total latency beberapa detik"
 
 **Q: "Gimana ESP32 tahu ada perintah baru dari mobile app?"**  
-✅ **A**: "BAB X.2 - ESP32 polling Firebase setiap 5 detik via updateDatabaseData(). Compare timestamp atau flag perubahan, kalau ada update langsung execute hardware command"
+✅ **A**: "BAB X.2 - ESP32 polling Firebase secara berkala via updateDatabaseData(). Compare timestamp atau flag perubahan, kalau ada update langsung execute hardware command"
 
 **Q: "Format data yang dikirim antara sistem?"**  
-✅ **A**: "BAB X.4 - JSON format Firestore. ESP32 parse pake ArduinoJson library dengan buffer 8KB. Structure: users{email,nama}, receipts{noResi,tipePaket,nomorLoker}, lokerControl{buka,tutup,timestamp}"
+✅ **A**: "BAB X.4 - JSON format Firestore. ESP32 parse pake ArduinoJson library dengan adequate buffer size. Structure: users{email,nama}, receipts{noResi,tipePaket,nomorLoker}, lokerControl{buka,tutup,timestamp}"
 
 **Q: "Bottleneck sistem dimana? Analisis performance?"**  
-✅ **A**: "BAB X.5 - Bottleneck utama: ESP32 polling interval 5 detik. Network request 200-500ms, JSON parsing 30-80ms, hardware response <1ms. Total memory usage 41% (210KB/520KB)"
+✅ **A**: "BAB X.5 - Bottleneck utama: ESP32 polling interval. Network request (variable), JSON parsing (fast), hardware response (instant). Memory usage efficient dengan safety margin"
 
 **Q: "Kalau Firebase down, sistem masih jalan?"**  
 ✅ **A**: "BAB X.3 - Ya, ESP32 punya local cache di memory. Hardware tetap jalan normal dengan data terakhir. Auto-retry dengan exponential backoff saat Firebase kembali online"
@@ -212,28 +212,28 @@
 ✅ **A**: "BAB X.3 - Firebase handle concurrent access otomatis. Conflict resolution pakai server timestamp. ESP32 polling-based, jadi tidak ada race condition di hardware level"
 
 **Q: "Latency end-to-end berapa? Worst case scenario?"**  
-✅ **A**: "BAB X.5 - Best case: 2.585 detik, Worst case: 5.585 detik (kalau baru miss polling cycle). Breakdown: Mobile→Firebase (80ms) + Polling wait (0-5000ms) + Hardware execution (100ms)"
+✅ **A**: "BAB X.5 - Best case: Beberapa detik jika timing optimal, Worst case: Delay lebih lama jika miss polling cycle. Breakdown: Mobile→Firebase (cepat) + Polling wait (variable) + Hardware execution (instant)"
 
 **Q: "Security data transmission gimana?"**  
 ✅ **A**: "BAB X.2 - HTTPS/SSL untuk ESP32-Firebase, Firebase security rules untuk authorization, input validation di semua level, no sensitive data stored locally di ESP32"
 
 **Q: "Sinkronisasi state antara mobile app dan ESP32?"**  
-✅ **A**: "BAB X.3 - Firebase sebagai single source of truth. Mobile app real-time listeners, ESP32 polling. Eventually consistent model dengan 5-second delay maksimal"
+✅ **A**: "BAB X.3 - Firebase sebagai single source of truth. Mobile app real-time listeners, ESP32 polling. Eventually consistent model dengan variable delay tergantung polling cycle"
 
 **Q: "Error handling kalau network unstable?"**  
-✅ **A**: "BAB X.3 - Auto-reconnect WiFi, exponential backoff retry (1s→2s→4s→8s max 30s), local cache untuk graceful degradation, watchdog timer untuk system recovery"
+✅ **A**: "BAB X.3 - Auto-reconnect WiFi, exponential backoff retry strategy, local cache untuk graceful degradation, watchdog timer untuk system recovery"
 
 **Q: "JSON parsing di ESP32 aman? Memory overflow?"**  
-✅ **A**: "BAB X.4 - DynamicJsonDocument dengan 8KB buffer limit, input validation untuk setiap field, range checking (contoh: nomorLoker 1-5), error handling untuk malformed JSON"
+✅ **A**: "BAB X.4 - DynamicJsonDocument dengan adequate buffer limit, input validation untuk setiap field, range checking (contoh: nomorLoker 1-5), error handling untuk malformed JSON"
 
 **Q: "Scalability untuk multiple ESP32 devices?"**  
 ✅ **A**: "BAB X.3 - Database structure support deviceId field, Firebase auto-scaling, setiap device independent operation, API rate limiting prevent abuse"
 
 **Q: "Real-time nya seberapa real-time?"**  
-✅ **A**: "BAB X.2 - Mobile app ke Firebase: immediate (<100ms), Firebase ke mobile app: real-time listener (<50ms), ESP32 dari Firebase: polling 5 detik max delay"
+✅ **A**: "BAB X.2 - Mobile app ke Firebase: immediate response, Firebase ke mobile app: real-time listener (instant), ESP32 dari Firebase: polling-based dengan variable delay"
 
 **Q: "Power consumption untuk 24/7 operation?"**  
-✅ **A**: "BAB X.5 - ESP32 240mA + WiFi 80mA + LCD 20mA = ~400mA continuous. Servo 500mA peak saat gerak (sebentar). Total budget 3A peak dengan 5V supply"
+✅ **A**: "BAB X.5 - ESP32 + WiFi + LCD = Low continuous power consumption. Servo peak power saat gerak (sebentar). Total power budget adequate dengan standard 5V supply"
 
 **Q: "Database schema design rationale?"**  
 ✅ **A**: "BAB X.4 - 3 collections terpisah untuk separation of concerns: users (authentication), receipts (business logic), lokerControl (hardware commands). NoSQL untuk flexibility dan scalability"
@@ -1470,11 +1470,11 @@ Seperti aplikasi di HP yang saling tergantung:
 #### **📍 [CHEAT SHEET] Quick Reference:**
 - **Complete Flow**: ESP32 ↔ Firebase ↔ Mobile App
 - **Bidirectional**: ESP32 reads, Mobile App writes, Firebase sync
-- **Latency**: 5 seconds max (polling interval)
+- **Response Time**: Depends on polling cycle timing
 
 #### **💡 [PEMULA] Analogi Data Flow:**
 Seperti sistem pos:
-1. **ESP32** = Kantor pos cabang (baca surat masuk setiap 5 menit)
+1. **ESP32** = Kantor pos cabang (baca surat masuk secara berkala)
 2. **Firebase** = Kantor pos pusat (simpan semua surat)
 3. **Mobile App** = Customer (kirim surat kapan saja)
 
@@ -1511,20 +1511,20 @@ Seperti sistem pos:
 ### 10.2 REQUEST-RESPONSE CYCLE ANALYSIS
 
 #### **📍 [CHEAT SHEET] Quick Reference:**
-- **ESP32 → Firebase**: GET requests every 5 seconds
+- **ESP32 → Firebase**: Periodic GET requests for data polling
 - **Mobile App → Firebase**: Real-time writes (immediate)
 - **Firebase → Mobile App**: Real-time listeners (immediate)
 
 #### **🔧 [TEKNIS] Detailed Cycle Breakdown:**
 
-#### **Cycle 1: ESP32 Data Polling (Every 5 seconds)**
+#### **Cycle 1: ESP32 Data Polling (Periodic Updates)**
 
 ```cpp
 // File: Network.ino - updateDatabaseData()
 void updateDatabaseData() {
   app.loop();  // Maintain Firebase connection
   
-  if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
+  if (millis() - firestoreUpdateTimer >= POLLING_INTERVAL && app.ready()) {
     // === REQUEST PHASE ===
     String usersPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "users");
     String receiptsPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "receipts");  
@@ -1545,11 +1545,11 @@ void updateDatabaseData() {
 }
 ```
 
-**Timing Analysis:**
-- **Network Request**: 200-500ms (depending on connection)
-- **JSON Parsing**: 20-50ms per collection
-- **Local Update**: 5-10ms
-- **Total Cycle Time**: ~300-600ms
+**Processing Characteristics:**
+- **Network Request**: Duration varies with connection quality and server load
+- **JSON Parsing**: Processing time depends on data volume per collection
+- **Local Update**: Fast memory operations for cached data
+- **Total Cycle Time**: Combined processing suitable for periodic updates
 
 #### **Cycle 2: Mobile App Command (Real-time)**
 
@@ -1565,14 +1565,14 @@ const sendLokerCommand = async (lokerNumber, action) => {
 };
 ```
 
-**Data Flow Timeline:**
+**Data Flow Sequence:**
 ```
-T+0ms    : Mobile App writes to Firebase
-T+50ms   : Firebase processes write
-T+100ms  : Firebase confirms write success  
-T+0-5000ms : ESP32 polls and detects change (depending on polling cycle)
-T+5001ms : ESP32 processes command
-T+5002ms : Hardware executes action
+Step 1: Mobile App writes command to Firebase
+Step 2: Firebase processes and confirms write operation
+Step 3: Command stored and available in Firestore
+Step 4: ESP32 polling cycle detects change (timing varies)
+Step 5: ESP32 processes command locally
+Step 6: Hardware executes the requested action
 ```
 
 #### **Cycle 3: Hardware Status Update**
@@ -1598,7 +1598,7 @@ void updateHardwareStatus() {
 #### **📍 [CHEAT SHEET] Quick Reference:**
 - **Single Source of Truth**: Firebase Firestore
 - **Conflict Resolution**: Timestamp-based (server timestamp wins)
-- **Consistency Model**: Eventually consistent (5-second delay)
+- **Consistency Model**: Eventually consistent with polling-based updates
 
 #### **🔧 [TEKNIS] Synchronization Strategies:**
 
@@ -1784,78 +1784,73 @@ void parseReceiptsData() {
 
 #### **🔧 [TEKNIS] Component-wise Performance Analysis:**
 
-#### **Network Layer Performance:**
+#### **Network Layer Performance Characteristics:**
 ```
-Component                    Latency     Throughput    Notes
+Component                    Performance Notes
 ─────────────────────────────────────────────────────────────
-WiFi Connection             50-150ms    150Mbps       802.11n standard
-SSL Handshake              100-300ms    -             First connection only
-Firebase HTTP Request      100-400ms    -             Depends on payload size
-JSON Parsing (3 collections) 30-80ms   -             ArduinoJson processing
-Local Array Update         5-15ms       -             Memory operations
+WiFi Connection             Depends on signal strength and network congestion
+SSL Handshake              Initial connection overhead (one-time setup)
+Firebase HTTP Request      Response time varies with payload size and server load
+JSON Parsing               Processing scales with data volume from collections
+Local Array Update         Fast memory operations for cached data
 ─────────────────────────────────────────────────────────────
-TOTAL PER CYCLE            285-945ms    ~5KB/cycle    Every 5 seconds
+OVERALL CYCLE              Combined latency suitable for real-time operation
 ```
 
-#### **Memory Usage Analysis:**
+#### **Memory Usage Characteristics:**
 ```cpp
-// Memory allocation breakdown
-struct MemoryUsage {
-  int globalArrays = 50000;        // users[], receipts[], lokerControl[]
-  int jsonBuffers = 24576;         // 3 x 8KB DynamicJsonDocument
-  int stackPerTask = 40000;        // 10KB x 2 tasks x 4 bytes/word
-  int systemOverhead = 100000;     // FreeRTOS, WiFi, etc.
-  int totalUsed = 214576;          // ~210KB
-  int totalAvailable = 524288;     // 512KB
-  float utilization = 41.0;        // 41% memory usage
+// Memory allocation strategy
+struct MemoryAllocation {
+  // Global data arrays for caching database collections
+  // JSON processing buffers with adequate size limits
+  // RTOS task stacks with sufficient space for operations
+  // System overhead for WiFi, Firebase, and hardware drivers
+  // Total usage maintains safe margin for system stability
+  // Efficient utilization without memory pressure
 };
 ```
 
 #### **Real-world Performance Scenarios:**
 
-**Scenario 1: Normal Operation**
+**Scenario 1: Optimal Timing**
 ```
-Timeline    Action                           Duration    Cumulative
-──────────────────────────────────────────────────────────────────
-T+0ms      Mobile app sends "buka loker 3"     50ms        50ms
-T+50ms     Firebase processes command          30ms        80ms  
-T+80ms     Command stored in Firestore         -           80ms
-T+2000ms   ESP32 polls Firebase (mid-cycle)   400ms       2480ms
-T+2480ms   ESP32 detects new command          5ms         2485ms
-T+2485ms   Hardware executes servo movement   100ms       2585ms
-──────────────────────────────────────────────────────────────────
-TOTAL END-TO-END LATENCY: 2.585 seconds (best case)
+Flow Sequence:
+1. Mobile app sends command to Firebase
+2. Firebase processes and stores command  
+3. ESP32 polling cycle detects new command (if timing is good)
+4. ESP32 processes command locally
+5. Hardware executes servo movement
+
+Result: Command executed in several seconds when polling timing aligns well
 ```
 
-**Scenario 2: Worst Case (Just missed polling)**
+**Scenario 2: Suboptimal Timing**
 ```
-Timeline    Action                           Duration    Cumulative
-──────────────────────────────────────────────────────────────────
-T+0ms      Mobile app sends "buka loker 3"     50ms        50ms
-T+50ms     Firebase processes command          30ms        80ms
-T+80ms     Command stored in Firestore         -           80ms
-T+5000ms   ESP32 polls Firebase (next cycle)  400ms       5480ms
-T+5480ms   ESP32 detects new command          5ms         5485ms
-T+5485ms   Hardware executes servo movement   100ms       5585ms
-──────────────────────────────────────────────────────────────────
-TOTAL END-TO-END LATENCY: 5.585 seconds (worst case)
+Flow Sequence:
+1. Mobile app sends command to Firebase
+2. Firebase processes and stores command
+3. ESP32 just finished polling cycle (bad timing)
+4. Must wait for next polling cycle to detect command
+5. ESP32 processes command and executes hardware action
+
+Result: Longer delay when command arrives just after polling cycle
 ```
 
 #### **Optimization Strategies:**
 
-**Strategy 1: Reduce Polling Interval**
+**Strategy 1: Adaptive Polling Intervals**
 ```cpp
-// Current: 5 second polling
-if (millis() - firestoreUpdateTimer >= 5000) {
-  // Problem: Higher network usage, more power consumption
+// Current: Fixed interval polling
+if (millis() - firestoreUpdateTimer >= POLLING_INTERVAL) {
+  // Trade-off: Shorter intervals = faster response but higher resource usage
 }
 
-// Optimized: 2 second polling for commands, 10 second for status
-if (millis() - commandCheckTimer >= 2000) {
-  checkLokerControlCommands();  // High priority
+// Optimized: Different intervals for different priorities
+if (shouldCheckCommands()) {
+  checkLokerControlCommands();  // High priority, more frequent
 }
-if (millis() - statusUpdateTimer >= 10000) {
-  updateUsersAndReceipts();     // Lower priority
+if (shouldUpdateStatus()) {
+  updateUsersAndReceipts();     // Lower priority, less frequent
 }
 ```
 
@@ -1866,18 +1861,18 @@ void prioritizedUpdate() {
   updateLokerControlData();
   
   // Priority 2: Package status (user-visible)
-  if (millis() - lastReceiptUpdate >= 10000) {
+  if (shouldUpdateReceipts()) {
     updateReceiptsData();
   }
   
   // Priority 3: User data (rarely changes)
-  if (millis() - lastUserUpdate >= 60000) {
+  if (shouldUpdateUsers()) {
     updateUsersData();
   }
 }
 ```
 
-**Strategy 3: Local State Prediction**
+**Strategy 3: Predictive Execution**
 ```cpp
 void predictiveControl() {
   // Execute hardware action immediately for expected commands
@@ -1885,9 +1880,9 @@ void predictiveControl() {
     openLokerCompartment(i);  // Execute immediately
     confirmedCommand[i] = false;  // Wait for Firebase confirmation
     
-    // Rollback if not confirmed within 10 seconds
-    if (millis() - commandTime[i] > 10000 && !confirmedCommand[i]) {
-      closeLokerCompartment(i);  // Rollback
+    // Rollback if not confirmed within timeout
+    if (commandExpired(i) && !confirmedCommand[i]) {
+      closeLokerCompartment(i);  // Rollback action
     }
   }
 }
