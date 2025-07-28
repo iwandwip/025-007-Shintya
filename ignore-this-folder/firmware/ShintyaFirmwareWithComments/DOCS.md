@@ -59,7 +59,7 @@
 ✅ **A**: "BAB V.1 - PCA9685 16-channel PWM driver (0x40). 60Hz frequency, convertAngleToPulse() map 0-180° ke 125-575 pulse width"
 
 **Q: "Data dari mobile app gimana masuknya?"**  
-✅ **A**: "BAB VII.2 - Firebase Firestore real-time sync. updateDatabaseData() secara berkala, parsing 3 collections: users, receipts, lokerControl"
+✅ **A**: "BAB VII.2 - Firebase Firestore real-time sync. updateDatabaseData() setiap 5 detik, parsing 3 collections: users, receipts, lokerControl"
 
 **Q: "Kalau WiFi putus gimana?"**  
 ✅ **A**: "BAB VII.1 - initializeNetworkConnection() pakai while loop retry, WiFi.begin() terus sampai WL_CONNECTED status"
@@ -81,7 +81,7 @@
 ✅ **A**: "RTOS memungkinkan multitasking parallel. TaskDatabase di Core 0 bisa download data sementara TaskControl di Core 1 kontrol hardware real-time tanpa blocking"
 
 **Q: "Gimana cara sync data dengan mobile app?"**  
-✅ **A**: "Firebase Firestore sebagai middleware. ESP32 download data secara berkala dari 3 collections. Mobile app upload, ESP32 detect changes otomatis"
+✅ **A**: "Firebase Firestore sebagai middleware. ESP32 download data setiap 5 detik dari 3 collections. Mobile app upload, ESP32 detect changes otomatis"
 
 **Q: "Sistem COD nya bagaimana?"**  
 ✅ **A**: "Paket COD masuk kotak utama dulu, lalu sistem buka loker 1-5 sesuai nomorLoker dari database. Customer bayar, ambil paket dari loker spesifik"
@@ -96,7 +96,7 @@
 ✅ **A**: "9 states: MAIN, SELECT_COURIER, INPUT_TRACKING, SCAN_TRACKING, COMPARE_TRACKING, INSERT_PACKAGE, OPEN_LOKER, CLOSE_LOKER, OPEN_DOOR"
 
 **Q: "Memory managementnya gimana?"**  
-✅ **A**: "Stack 10KB per task (20KB total), global arrays untuk cache database, string optimization, buffer management untuk LCD anti-flicker"
+✅ **A**: "Stack 10KB per task (RTOS.ino line 72,83) total 20KB dari 520KB SRAM ESP32, MAX_PACKAGES=30, MAX_USERS=20 (library.h), global arrays cache dengan buffer management LCD anti-flicker"
 
 **Q: "Error handling sistemnya?"**  
 ✅ **A**: "Timeout handling, input validation, range checking, JSON parsing verification, hardware fault detection via limit switches"
@@ -127,7 +127,7 @@
 ✅ **A**: "Unit testing per function, integration testing dengan ESP32 simulator, real-world testing dengan multiple user accounts, stress testing network"
 
 **Q: "Scalability sistemnya?"**  
-✅ **A**: "MAX_USERS=20, MAX_PACKAGES=30, 5 COD lokers. Bisa di-scale up dengan modify constants dan tambah hardware loker"
+✅ **A**: "MAX_USERS=20, MAX_PACKAGES=30, MAX_LOKER_CONTROL=5. Konstanta di library.h bisa di-scale up dengan tambah hardware loker"
 
 #### **❓ PERTANYAAN KONTEKS BISNIS & APLIKASI:**
 
@@ -152,7 +152,7 @@
 #### **❓ PERTANYAAN RESEARCH METHODOLOGY:**
 
 **Q: "Kenapa pilih ESP32? Bandingkan dengan alternatif lain?"**  
-✅ **A**: "ESP32: dual-core, built-in WiFi, adequate RAM untuk multitasking. vs Arduino Uno (single-core, no WiFi), vs Raspberry Pi (overkill, power hungry)"
+✅ **A**: "ESP32: dual-core 240MHz, built-in WiFi, 520KB SRAM untuk multitasking. vs Arduino Uno (single-core, no WiFi), vs Raspberry Pi (overkill, power hungry)"
 
 **Q: "Kenapa Firebase? Bandingkan dengan database lain?"**  
 ✅ **A**: "Firebase: real-time sync, cloud-based, auto-scaling, built-in authentication. vs MySQL (need server setup), vs local storage (no remote access)"
@@ -194,10 +194,10 @@
 #### **❓ PERTANYAAN DATA FLOW & SYSTEM INTEGRATION:**
 
 **Q: "Jelaskan alur data lengkap dari mobile app ke ESP32?"**  
-✅ **A**: "BAB X.2 - Mobile App write Firebase → Firebase store data → ESP32 polling berkala → JSON parsing → local cache update → hardware control. Total latency beberapa detik"
+✅ **A**: "BAB X.2 - Mobile App write Firebase → Firebase store data → ESP32 polling setiap 5 detik → JSON parsing → local cache update → hardware control. Total latency beberapa detik tergantung timing"
 
 **Q: "Gimana ESP32 tahu ada perintah baru dari mobile app?"**  
-✅ **A**: "BAB X.2 - ESP32 polling Firebase secara berkala via updateDatabaseData(). Compare timestamp atau flag perubahan, kalau ada update langsung execute hardware command"
+✅ **A**: "BAB X.2 - ESP32 polling Firebase setiap 5 detik via updateDatabaseData(). Timer: `millis() - firestoreUpdateTimer >= 5000` (Network.ino line 64). Compare timestamp atau flag perubahan, kalau ada update langsung execute hardware command"
 
 **Q: "Format data yang dikirim antara sistem?"**  
 ✅ **A**: "BAB X.4 - JSON format Firestore. ESP32 parse pake ArduinoJson library dengan adequate buffer size. Structure: users{email,nama}, receipts{noResi,tipePaket,nomorLoker}, lokerControl{buka,tutup,timestamp}"
@@ -218,7 +218,7 @@
 ✅ **A**: "BAB X.2 - HTTPS/SSL untuk ESP32-Firebase, Firebase security rules untuk authorization, input validation di semua level, no sensitive data stored locally di ESP32"
 
 **Q: "Sinkronisasi state antara mobile app dan ESP32?"**  
-✅ **A**: "BAB X.3 - Firebase sebagai single source of truth. Mobile app real-time listeners, ESP32 polling. Eventually consistent model dengan variable delay tergantung polling cycle"
+✅ **A**: "BAB X.3 - Firebase sebagai single source of truth. Mobile app real-time listeners, ESP32 polling setiap 5 detik (updateDatabaseData(), vTaskDelay(2000) RTOS.ino line 14). Eventually consistent model"
 
 **Q: "Error handling kalau network unstable?"**  
 ✅ **A**: "BAB X.3 - Auto-reconnect WiFi, exponential backoff retry strategy, local cache untuk graceful degradation, watchdog timer untuk system recovery"
@@ -230,7 +230,7 @@
 ✅ **A**: "BAB X.3 - Database structure support deviceId field, Firebase auto-scaling, setiap device independent operation, API rate limiting prevent abuse"
 
 **Q: "Real-time nya seberapa real-time?"**  
-✅ **A**: "BAB X.2 - Mobile app ke Firebase: immediate response, Firebase ke mobile app: real-time listener (instant), ESP32 dari Firebase: polling-based dengan variable delay"
+✅ **A**: "BAB X.2 - Mobile app ke Firebase: immediate response, Firebase ke mobile app: real-time listener (instant), ESP32 dari Firebase: polling setiap 5 detik via updateDatabaseData() (Network.ino line 64)"
 
 **Q: "Power consumption untuk 24/7 operation?"**  
 ✅ **A**: "BAB X.5 - ESP32 + WiFi + LCD = Low continuous power consumption. Servo peak power saat gerak (sebentar). Total power budget adequate dengan standard 5V supply"
@@ -1470,11 +1470,11 @@ Seperti aplikasi di HP yang saling tergantung:
 #### **📍 [CHEAT SHEET] Quick Reference:**
 - **Complete Flow**: ESP32 ↔ Firebase ↔ Mobile App
 - **Bidirectional**: ESP32 reads, Mobile App writes, Firebase sync
-- **Response Time**: Depends on polling cycle timing
+- **Polling Interval**: 5 seconds (Network.ino line 64)
 
 #### **💡 [PEMULA] Analogi Data Flow:**
 Seperti sistem pos:
-1. **ESP32** = Kantor pos cabang (baca surat masuk secara berkala)
+1. **ESP32** = Kantor pos cabang (baca surat masuk setiap 5 detik)
 2. **Firebase** = Kantor pos pusat (simpan semua surat)
 3. **Mobile App** = Customer (kirim surat kapan saja)
 
@@ -1511,20 +1511,20 @@ Seperti sistem pos:
 ### 10.2 REQUEST-RESPONSE CYCLE ANALYSIS
 
 #### **📍 [CHEAT SHEET] Quick Reference:**
-- **ESP32 → Firebase**: Periodic GET requests for data polling
+- **ESP32 → Firebase**: GET requests every 5 seconds (Network.ino line 64)
 - **Mobile App → Firebase**: Real-time writes (immediate)
 - **Firebase → Mobile App**: Real-time listeners (immediate)
 
 #### **🔧 [TEKNIS] Detailed Cycle Breakdown:**
 
-#### **Cycle 1: ESP32 Data Polling (Periodic Updates)**
+#### **Cycle 1: ESP32 Data Polling (Every 5 seconds)**
 
 ```cpp
 // File: Network.ino - updateDatabaseData()
 void updateDatabaseData() {
   app.loop();  // Maintain Firebase connection
   
-  if (millis() - firestoreUpdateTimer >= POLLING_INTERVAL && app.ready()) {
+  if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
     // === REQUEST PHASE ===
     String usersPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "users");
     String receiptsPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "receipts");  
@@ -1598,7 +1598,7 @@ void updateHardwareStatus() {
 #### **📍 [CHEAT SHEET] Quick Reference:**
 - **Single Source of Truth**: Firebase Firestore
 - **Conflict Resolution**: Timestamp-based (server timestamp wins)
-- **Consistency Model**: Eventually consistent with polling-based updates
+- **Consistency Model**: Eventually consistent (5-second polling delay max)
 
 #### **🔧 [TEKNIS] Synchronization Strategies:**
 
@@ -1799,14 +1799,14 @@ OVERALL CYCLE              Combined latency suitable for real-time operation
 
 #### **Memory Usage Characteristics:**
 ```cpp
-// Memory allocation strategy
+// Memory allocation from ESP32 520KB SRAM
 struct MemoryAllocation {
-  // Global data arrays for caching database collections
-  // JSON processing buffers with adequate size limits
-  // RTOS task stacks with sufficient space for operations
-  // System overhead for WiFi, Firebase, and hardware drivers
-  // Total usage maintains safe margin for system stability
-  // Efficient utilization without memory pressure
+  // Task stacks: 10KB each x 2 tasks = 20KB (RTOS.ino line 72, 83)
+  // Global arrays: users[20], receipts[30], lokerControl[5] 
+  // JSON buffers: DynamicJsonDocument for parsing Firebase data
+  // System overhead: FreeRTOS, WiFi stack, hardware drivers
+  // Total usage maintains safe margin from 520KB total SRAM
+  // Efficient utilization with room for dynamic operations
 };
 ```
 
