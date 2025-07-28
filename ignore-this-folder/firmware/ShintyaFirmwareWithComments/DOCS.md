@@ -29,23 +29,68 @@
 **Q: "Entry point program dimana mba?"**  
 ✅ **A**: "BAB II.1 - File `ShintyaFirmwareWithComments.ino`, fungsi `setup()` baris 2-3. Setup hanya panggil Serial.begin(115200) dan setupRTOS()"
 
+**Q: "Main loop ada dimana? Kenapa kosong?"**  
+✅ **A**: "BAB II.1 - `loop()` function sengaja dikosongkan karena pakai RTOS. Semua operasi berjalan di TaskDatabase() dan TaskControl() parallel"
+
 **Q: "Sistem pakai berapa core? Kenapa?"**  
 ✅ **A**: "BAB III.1 - Dual-core ESP32. Core 0 untuk database (TaskDatabase), Core 1 untuk hardware (TaskControl). Mencegah network lag pengaruhi hardware response"
+
+**Q: "File mana yang paling penting?"**  
+✅ **A**: "BAB I.1 - `library.h` untuk global config, `RTOS.ino` untuk task management, `menu.ino` untuk user interface, `Network.ino` untuk Firebase sync"
+
+**Q: "Global variables dimana disimpan?"**  
+✅ **A**: "BAB I.3 - File `library.h` baris 18-244. Hardware objects, state variables, database arrays, semua konstanta sistem ada disini"
+
+**Q: "Include library apa saja yang dipakai?"**  
+✅ **A**: "BAB I.2 - 11 external libraries: FirebaseClient, LiquidCrystal_I2C, NewPing, Adafruit_PWMServoDriver, PCF8574, ArduinoJson, DFRobotDFPlayerMini dll"
+
+**Q: "Pin ESP32 mana saja yang dipakai?"**  
+✅ **A**: "BAB I.4 - Serial2 (25/26) GM67, I2C (21/22) 5 devices, GPIO27 relay, GPIO32/33 ultrasonik, GPIO36/39 buttons, GPIO16/17 speaker"
+
+**Q: "Fungsi init hardware mana yang dipanggil pertama?"**  
+✅ **A**: "BAB II.3 - TaskControl() line 27-35: initializeAudioSystem(), initializeLCDDisplay(), initializeSensors(), initializeServoController(), initializeKeypad()"
 
 **Q: "Kode scan barcode yang mana?"**  
 ✅ **A**: "BAB IV.1 - File `sensor.ino`, fungsi `scanBarcodeFromSerial()` line 21-22. Pakai Serial2.readStringUntil('\\r') untuk GM67 scanner"
 
+**Q: "Function untuk baca sensor jarak mana?"**  
+✅ **A**: "BAB IV.2 - File `sensor.ino`, fungsi `readDistanceSensor()` line 35-38. Return currentDistance 0-45cm via NewPing sonar.ping_cm()"
+
 **Q: "Bagaimana buka loker COD?"**  
 ✅ **A**: "BAB V.1 - File `actuator.ino`, fungsi `openLokerCompartment()`. Cek exitSwitches dulu, lalu servo.setPWM(135°) atau netral(100°)"
+
+**Q: "Function kontrol semua servo mana?"**  
+✅ **A**: "BAB V.1 - File `actuator.ino`, fungsi `controlAllLokers()` loop for 5 lokers, cek lokerControlCommands[] array untuk buka/tutup decision"
 
 **Q: "Sistem menu gimana kerjanya?"**  
 ✅ **A**: "BAB VI.1 - File `menu.ino`, fungsi `menu()` dengan finite state machine 9 states. MENU_MAIN sampai MENU_OPEN_DOOR"
 
+**Q: "Enum state machine ada dimana?"**  
+✅ **A**: "BAB VI.1 - File `menu.ino` atau `library.h`, enum MenuState dengan 9 values: MENU_MAIN=0 sampai MENU_OPEN_DOOR=8"
+
+**Q: "Function untuk validasi resi dimana?"**  
+✅ **A**: "BAB VI.2 - File `menu.ino`, case MENU_COMPARE_TRACKING. Loop search receipts[MAX_RECEIPTS] array, compare scannedBarcode == receipts[i].noResi"
+
 **Q: "Koneksi internet pakai apa?"**  
 ✅ **A**: "BAB VII.1 - WiFi ESP32 + Firebase Firestore. File `Network.ino` dengan auto-reconnect dan SSL secure connection"
 
+**Q: "Function untuk download data Firebase mana?"**  
+✅ **A**: "BAB VII.2 - File `Network.ino`, fungsi `updateDatabaseData()` line 58-120. GET 3 collections, JSON parsing, update local arrays"
+
 **Q: "Display LCD anti kedip gimana?"**  
 ✅ **A**: "BAB VIII.1 - File `display.ino`, fungsi `displayTextOnLCD()`. Buffer comparison dengan lastDisplayedText[4] array"
+
+**Q: "Konstanta sistem ada dimana?"**  
+✅ **A**: "BAB I.4 - File `library.h`: MAX_DISTANCE=45, MAX_PACKAGES=30, MAX_USERS=20, SERVOMIN=125, SERVOMAX=575, VOLUME=30"
+
+**Q: "Struktur data untuk simpan user dimana?"**  
+✅ **A**: "BAB VII.2 - File `library.h` line 183-186: struct UsersTypedef {String email; String nama;}, array users[MAX_USERS]"
+
+**Q: "Struktur data untuk simpan paket dimana?"**  
+✅ **A**: "BAB VII.2 - File `library.h` line 189-196: struct RececiptsTypedef {String nama, noResi; int nomorLoker; String status, tipePaket, userEmail;}"
+
+**Q: "Debug serial command ada dimana?"**  
+✅ **A**: "BAB V.4 - File `actuator.ino`, fungsi processSerialCommands(). Support r(restart), o1-o5(open), c1-c5(close), ot/ct(door), s0-s30(volume)"
 
 #### **❓ PERTANYAAN DETAIL IMPLEMENTASI:**
 
