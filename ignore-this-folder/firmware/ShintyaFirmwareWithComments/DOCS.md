@@ -27,13 +27,13 @@
 #### **❓ PERTANYAAN UMUM TENTANG STRUKTUR KODE:**
 
 **Q: "Entry point program dimana mba?"**  
-✅ **A**: "BAB II.1 - File `ShintyaFirmwareWithComments.ino`, fungsi `setup()` baris 2-3. Setup hanya panggil Serial.begin(115200) dan setupRTOS()"
+✅ **A**: "File `ShintyaFirmwareWithComments.ino:13-18`, fungsi `setup()` line 15 Serial.begin(115200), line 17 setupRTOS(). Entry point utama sistem"
 
 **Q: "Main loop ada dimana? Kenapa kosong?"**  
-✅ **A**: "BAB II.1 - `loop()` function sengaja dikosongkan karena pakai RTOS. Semua operasi berjalan di TaskDatabase() dan TaskControl() parallel"
+✅ **A**: "File `ShintyaFirmwareWithComments.ino:27-29`, `loop()` function sengaja kosong karena pakai RTOS. Semua operasi di TaskDatabase() dan TaskControl()"
 
 **Q: "Sistem pakai berapa core? Kenapa?"**  
-✅ **A**: "BAB III.1 - Dual-core ESP32. Core 0 untuk database (TaskDatabase), Core 1 untuk hardware (TaskControl). Mencegah network lag pengaruhi hardware response"
+✅ **A**: "File `RTOS.ino:69-77` dan `RTOS.ino:80-88`, xTaskCreatePinnedToCore Core 0 untuk TaskDatabase, Core 1 untuk TaskControl. Mencegah network lag pengaruhi hardware"
 
 **Q: "File mana yang paling penting?"**  
 ✅ **A**: "BAB I.1 - `library.h` untuk global config, `RTOS.ino` untuk task management, `menu.ino` untuk user interface, `Network.ino` untuk Firebase sync"
@@ -51,46 +51,46 @@
 ✅ **A**: "BAB II.3 - TaskControl() line 27-35: initializeAudioSystem(), initializeLCDDisplay(), initializeSensors(), initializeServoController(), initializeKeypad()"
 
 **Q: "Kode scan barcode yang mana?"**  
-✅ **A**: "BAB IV.1 - File `sensor.ino`, fungsi `scanBarcodeFromSerial()` line 21-22. Pakai Serial2.readStringUntil('\\r') untuk GM67 scanner"
+✅ **A**: "File `sensor.ino:20-23`, fungsi `scanBarcodeFromSerial()` line 21 Serial2.readStringUntil('\\r'), line 22 Serial.println untuk debug"
 
 **Q: "Function untuk baca sensor jarak mana?"**  
-✅ **A**: "BAB IV.2 - File `sensor.ino`, fungsi `readDistanceSensor()` line 35-38. Return currentDistance 0-45cm via NewPing sonar.ping_cm()"
+✅ **A**: "File `sensor.ino:34-38`, fungsi `readDistanceSensor()` line 35 sonar.ping_cm(), line 36-37 return MAX_DISTANCE jika 0 atau measuredDistance"
 
 **Q: "Bagaimana buka loker COD?"**  
-✅ **A**: "BAB V.1 - File `actuator.ino`, fungsi `openLokerCompartment()`. Cek exitSwitches dulu, lalu servo.setPWM(135°) atau netral(100°)"
+✅ **A**: "File `actuator.ino:102-105`, fungsi `openLokerCompartment()` line 103 cek exitSwitches[lokerNumber], servo.setPWM(135°) atau netral(100°)"
 
 **Q: "Function kontrol semua servo mana?"**  
-✅ **A**: "BAB V.1 - File `actuator.ino`, fungsi `controlAllLokers()` loop for 5 lokers, cek lokerControlCommands[] array untuk buka/tutup decision"
+✅ **A**: "File `actuator.ino:95-100`, fungsi `controlAllLokers()` line 96-99 loop 5 lokers, cek lokerControlCommands[i] untuk buka/tutup decision"
 
 **Q: "Sistem menu gimana kerjanya?"**  
-✅ **A**: "BAB VI.1 - File `menu.ino`, fungsi `menu()` dengan finite state machine 9 states. MENU_MAIN sampai MENU_OPEN_DOOR"
+✅ **A**: "File `menu.ino:44-476`, fungsi `menu()` switch-case finite state machine, 9 states dari MENU_MAIN sampai MENU_OPEN_DOOR"
 
 **Q: "Enum state machine ada dimana?"**  
-✅ **A**: "BAB VI.1 - File `menu.ino` atau `library.h`, enum MenuState dengan 9 values: MENU_MAIN=0 sampai MENU_OPEN_DOOR=8"
+✅ **A**: "File `menu.ino:4-15`, enum MenuState dengan 9 values: MENU_MAIN(line 5) sampai MENU_OPEN_DOOR(line 14)"
 
 **Q: "Function untuk validasi resi dimana?"**  
-✅ **A**: "BAB VI.2 - File `menu.ino`, case MENU_COMPARE_TRACKING. Loop search receipts[MAX_RECEIPTS] array, compare scannedBarcode == receipts[i].noResi"
+✅ **A**: "File `menu.ino:212-260`, case MENU_COMPARE_TRACKING line 223-230 loop search receipts[MAX_PACKAGES], compare scannedBarcode == receipts[i].noResi"
 
 **Q: "Koneksi internet pakai apa?"**  
 ✅ **A**: "BAB VII.1 - WiFi ESP32 + Firebase Firestore. File `Network.ino` dengan auto-reconnect dan SSL secure connection"
 
 **Q: "Function untuk download data Firebase mana?"**  
-✅ **A**: "BAB VII.2 - File `Network.ino`, fungsi `updateDatabaseData()` line 58-120. GET 3 collections, JSON parsing, update local arrays"
+✅ **A**: "File `Network.ino:58-120`, fungsi `updateDatabaseData()` line 64 timer 5000ms, line 68-70 GET 3 collections, line 73-75 JSON parsing"
 
 **Q: "Display LCD anti kedip gimana?"**  
-✅ **A**: "BAB VIII.1 - File `display.ino`, fungsi `displayTextOnLCD()`. Buffer comparison dengan lastDisplayedText[4] array"
+✅ **A**: "File `display.ino:42-67`, fungsi `displayTextOnLCD()` line 44 buffer comparison lastDisplayedText[yPosition] != textBuffer"
 
 **Q: "Konstanta sistem ada dimana?"**  
-✅ **A**: "BAB I.4 - File `library.h`: MAX_DISTANCE=45, MAX_PACKAGES=30, MAX_USERS=20, SERVOMIN=125, SERVOMAX=575, VOLUME=30"
+✅ **A**: "File `library.h:28` MAX_DISTANCE=45, `library.h:48` MAX_PACKAGES=30, `library.h:213` MAX_USERS=20, `library.h:85-87` SERVOMIN=125 SERVOMAX=575, `library.h:131` VOLUME=30"
 
 **Q: "Struktur data untuk simpan user dimana?"**  
-✅ **A**: "BAB VII.2 - File `library.h` line 183-186: struct UsersTypedef {String email; String nama;}, array users[MAX_USERS]"
+✅ **A**: "File `library.h:183-186` struct UsersTypedef {String email; String nama;}, `library.h:218` array users[MAX_USERS]"
 
 **Q: "Struktur data untuk simpan paket dimana?"**  
-✅ **A**: "BAB VII.2 - File `library.h` line 189-196: struct RececiptsTypedef {String nama, noResi; int nomorLoker; String status, tipePaket, userEmail;}"
+✅ **A**: "File `library.h:189-196` struct RececiptsTypedef {String nama, noResi; int nomorLoker; String status, tipePaket, userEmail;}, `library.h:220` array receipts[MAX_RECEIPTS]"
 
 **Q: "Debug serial command ada dimana?"**  
-✅ **A**: "BAB V.4 - File `actuator.ino`, fungsi processSerialCommands(). Support r(restart), o1-o5(open), c1-c5(close), ot/ct(door), s0-s30(volume)"
+✅ **A**: "File `sensor.ino:86-109` fungsi processSerialCommands(), line 93 r(restart), line 94-103 o1-o5/c1-c5(lokers), line 104-105 ot/ct(door), `actuator.ino:50-82` s0-s30(volume)"
 
 #### **❓ PERTANYAAN DETAIL IMPLEMENTASI:**
 
