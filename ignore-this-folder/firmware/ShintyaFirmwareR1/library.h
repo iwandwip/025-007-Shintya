@@ -147,7 +147,7 @@ enum sound {
 // AsyncResult firestoreResult;
 
 //////////////////////////////////////////////////
-#define WIFI_SSID "zainul"
+#define WIFI_SSID "shintya"
 #define WIFI_PASSWORD "12345678"
 
 #define API_KEY "AIzaSyA5Lsxqplxa4eQ9H8Zap3e95R_-SFGe2yU"

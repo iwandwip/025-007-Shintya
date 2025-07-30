@@ -43,6 +43,14 @@ void updateDatabaseData() {
   if (millis() - firestoreUpdateTimer >= 5000 && app.ready()) {
     firestoreUpdateTimer = millis();
 
+    int heightV = 100 - (currentDistance * 100 / 45);
+    Values::IntegerValue percentageV(heightV);
+
+    Document<Values::Value> doc("percentage", Values::Value(percentageV));
+    PatchDocumentOptions patchOptions(DocumentMask("percentage"), DocumentMask(), Precondition());
+
+    Docs.patch(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "capacity/box_sensor", patchOptions, doc);
+
     String usersJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "users", GetDocumentOptions(DocumentMask("")));
     String receiptsJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "receipts", GetDocumentOptions(DocumentMask("")));
     String lokerControlJsonPayload = Docs.get(aClient, Firestore::Parent(FIREBASE_PROJECT_ID), "lokerControl", GetDocumentOptions(DocumentMask("")));
